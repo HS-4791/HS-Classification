@@ -1,0 +1,23 @@
+# data — never committed, always reproducible from scripts
+data/raw/
+data/interim/
+data/processed/
+*.faiss
+*.index
+
+# secrets
+.env
+
+# python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# traces are append-only local logs; reports are committed
+traces/

@@ -1,0 +1,333 @@
+{
+  "revision": "2026HTSRev21",
+  "passed": true,
+  "stats": {
+    "revision": "2026HTSRev21",
+    "nodes": 35903,
+    "coded": 29959,
+    "grouping": 5944,
+    "synthetic": 98,
+    "roots": 98,
+    "leaves": 23562,
+    "by_digit_length": {
+      "2": 98,
+      "4": 961,
+      "6": 2093,
+      "8": 6858,
+      "10": 19949
+    },
+    "chapters": 98
+  },
+  "counts": {
+    "errors": 0,
+    "warnings": 50,
+    "by_check": {
+      "special_provision_nesting": 16,
+      "level_jump": 27,
+      "childless_branch": 6,
+      "sections_unresolved": 1
+    }
+  },
+  "issues": [
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.03.02 nests under 9823.03.01 (chapter 98/99 cross-reference)",
+      "node": "n032235"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.03.03 nests under 9823.03.01 (chapter 98/99 cross-reference)",
+      "node": "n032237"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.03.04 nests under 9823.03.01 (chapter 98/99 cross-reference)",
+      "node": "n032238"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.03.05 nests under 9823.03.01 (chapter 98/99 cross-reference)",
+      "node": "n032239"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.03.06 nests under 9823.03.01 (chapter 98/99 cross-reference)",
+      "node": "n032240"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.03.07 nests under 9823.03.01 (chapter 98/99 cross-reference)",
+      "node": "n032241"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.03.08 nests under 9823.03.01 (chapter 98/99 cross-reference)",
+      "node": "n032242"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.03.09 nests under 9823.03.01 (chapter 98/99 cross-reference)",
+      "node": "n032243"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.03.10 nests under 9823.03.01 (chapter 98/99 cross-reference)",
+      "node": "n032244"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.03.11 nests under 9823.03.01 (chapter 98/99 cross-reference)",
+      "node": "n032245"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.03.12 nests under 9823.03.01 (chapter 98/99 cross-reference)",
+      "node": "n032246"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.52.03 nests under 9823.52.02 (chapter 98/99 cross-reference)",
+      "node": "n032440"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.52.05 nests under 9823.52.04 (chapter 98/99 cross-reference)",
+      "node": "n032442"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.52.06 nests under 9823.52.04 (chapter 98/99 cross-reference)",
+      "node": "n032443"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.53.04 nests under 9823.53.03 (chapter 98/99 cross-reference)",
+      "node": "n032452"
+    },
+    {
+      "check": "special_provision_nesting",
+      "severity": "warn",
+      "message": "9823.53.05 nests under 9823.53.03 (chapter 98/99 cross-reference)",
+      "node": "n032453"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'2620.99.75.20' jumps from indent 3 to 5",
+      "node": "n006026"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'2620.99.75.60' jumps from indent 3 to 5",
+      "node": "n006027"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'2620.99.75.80' jumps from indent 3 to 5",
+      "node": "n006028"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'2620.99.75.90' jumps from indent 3 to 5",
+      "node": "n006029"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'2826.90.90.10' jumps from indent 2 to 4",
+      "node": "n006450"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'2826.90.90.90' jumps from indent 2 to 4",
+      "node": "n006451"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'3821.00.00.10' jumps from indent 0 to 2",
+      "node": "n009729"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'3821.00.00.90' jumps from indent 0 to 2",
+      "node": "n009730"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'3907.61.00.10' jumps from indent 2 to 4",
+      "node": "n009957"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'3907.61.00.50' jumps from indent 2 to 4",
+      "node": "n009958"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'3907.69.00.10' jumps from indent 2 to 4",
+      "node": "n009960"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'3907.69.00.50' jumps from indent 2 to 4",
+      "node": "n009961"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'4420.11.00.10' jumps from indent 2 to 4",
+      "node": "n012068"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'4420.11.00.30' jumps from indent 2 to 4",
+      "node": "n012069"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'4420.11.00.90' jumps from indent 2 to 4",
+      "node": "n012070"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'7210.50.00.20' jumps from indent 1 to 3",
+      "node": "n021735"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'7210.50.00.90' jumps from indent 1 to 3",
+      "node": "n021736"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'7606.92.60.55' jumps from indent 3 to 5",
+      "node": "n023831"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'7606.92.60.95' jumps from indent 3 to 5",
+      "node": "n023832"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'8427.90.00.20' jumps from indent 1 to 3",
+      "node": "n025437"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'8427.90.00.90' jumps from indent 1 to 3",
+      "node": "n025438"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'8462.33.00.40' jumps from indent 2 to 4",
+      "node": "n026385"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'8462.33.00.80' jumps from indent 2 to 4",
+      "node": "n026386"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'9404.10.00.20' jumps from indent 1 to 3",
+      "node": "n031216"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'9404.10.00.50' jumps from indent 1 to 3",
+      "node": "n031217"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'9705.39.00.10' jumps from indent 2 to 4",
+      "node": "n031849"
+    },
+    {
+      "check": "level_jump",
+      "severity": "warn",
+      "message": "'9705.39.00.40' jumps from indent 2 to 4",
+      "node": "n031850"
+    },
+    {
+      "check": "childless_branch",
+      "severity": "warn",
+      "message": "'Combined with textile materials:' ends in a colon but has no children",
+      "node": "n010517"
+    },
+    {
+      "check": "childless_branch",
+      "severity": "warn",
+      "message": "'Coveralls, jumpsuits and similar apparel:' ends in a colon but has no children",
+      "node": "n019040"
+    },
+    {
+      "check": "childless_branch",
+      "severity": "warn",
+      "message": "'Coveralls, jumpsuits and similar apparel:' ends in a colon but has no children",
+      "node": "n019072"
+    },
+    {
+      "check": "childless_branch",
+      "severity": "warn",
+      "message": "'Articles for use in civil aircraft:' ends in a colon but has no children",
+      "node": "n020567"
+    },
+    {
+      "check": "childless_branch",
+      "severity": "warn",
+      "message": "'Finishing ceramics, whether or not rectangular, the largest surface area of which is capable of being enclosed in a square the side of which is less than 7 cm:' ends in a colon but has no children",
+      "node": "n020701"
+    },
+    {
+      "check": "childless_branch",
+      "severity": "warn",
+      "message": "'Of a thickness not exceeding 0.25 mm:' ends in a colon but has no children",
+      "node": "n021786"
+    },
+    {
+      "check": "sections_unresolved",
+      "severity": "warn",
+      "message": "no node carries a Section; Section notes cannot be applied yet",
+      "node": null
+    }
+  ]
+}

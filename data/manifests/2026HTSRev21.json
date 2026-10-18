@@ -1,0 +1,59 @@
+{
+  "release": "2026HTSRev21",
+  "release_date": "2026-10-07",
+  "downloaded_at": "2026-10-17",
+  "source": "https://hts.usitc.gov/",
+  "files": {
+    "full-revision.pdf": {
+      "source": "https://hts.usitc.gov/reststop/file?release=2026HTSRev21&filename=finalCopy",
+      "bytes": 18813679,
+      "sha256": "6eb8af206472da27052ee85e2b75add42731f17fb04c3ce7c96c3e478f7f54d4"
+    },
+    "general-rules-of-interpretation.pdf": {
+      "source": "https://hts.usitc.gov/reststop/file?release=2026HTSRev21&filename=General%20Rules%20of%20Interpretation",
+      "bytes": 14752,
+      "sha256": "4fb89778567ddf72c38e1187cf96a7c316ddf56697f84db971d40f1eee15c1aa"
+    },
+    "chapter-61.pdf": {
+      "source": "https://hts.usitc.gov/reststop/file?release=2026HTSRev21&filename=Chapter%2061",
+      "bytes": 1127085,
+      "sha256": "a8b320e088a13444cc6d1d74d48a5e0ad32dda77d7f5ebeb434cf8a9e190bc05"
+    },
+    "change-record.pdf": {
+      "source": "https://hts.usitc.gov/reststop/file?release=2026HTSRev21&filename=Change%20Record",
+      "bytes": 226919,
+      "sha256": "bedd4806d596c8d6ed2afa44e14c3e57b11fad7ea147f93d3d120a72af8a8a02"
+    },
+    "preface.pdf": {
+      "source": "https://hts.usitc.gov/reststop/file?release=2026HTSRev21&filename=Preface",
+      "bytes": 226649,
+      "sha256": "89a3c15387045bb31edada0b1365e5ed463d207a390d047a2d8021fe5e3d586c"
+    },
+    "hts-export.json": {
+      "source": "https://hts.usitc.gov/reststop/exportList?from=0101&to=9999&format=JSON&styles=false",
+      "bytes": 12642180,
+      "sha256": "bea73f235732215a4bfab973be7495c16c450c65b78e40f58324031ebf092a09"
+    }
+  },
+  "expected_tree": {
+    "total_rows": 35805,
+    "coded_lines": 29861,
+    "grouping_lines": 5944,
+    "by_digit_length": {
+      "4": 961,
+      "6": 2093,
+      "8": 6858,
+      "10": 19949
+    },
+    "chapters_present": 98,
+    "chapters_absent": [
+      77
+    ]
+  },
+  "known_quirks": [
+    "indent is zero-padded (03, 04) on 3 rows in chapter 98",
+    "chapter 77 is reserved in the HS and has no lines",
+    "export carries no Section or Chapter nodes - both must be synthesised",
+    "export release parameter is unverified; treat the checksum as the pin"
+  ]
+}
