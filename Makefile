@@ -1,4 +1,4 @@
-.PHONY: setup fetch validate test lint check clean
+.PHONY: setup fetch validate reconcile test lint check clean
 
 VENV := .venv/Scripts
 REV  ?= 2026HTSRev21
@@ -14,13 +14,16 @@ fetch:
 validate:
 	$(VENV)/hsclass schedule validate
 
+reconcile:
+	$(VENV)/hsclass schedule reconcile --chapter 61
+
 test:
 	$(VENV)/python -m pytest -q
 
 lint:
 	$(VENV)/ruff check src tests scripts scripts
 
-check: lint test validate
+check: lint test validate reconcile
 
 clean:
 	rm -rf .pytest_cache .ruff_cache reports/*.json reports/*.md

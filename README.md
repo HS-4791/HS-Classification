@@ -6,8 +6,9 @@ it, and escalate rather than guess when the nomenclature is genuinely ambiguous.
 Scored against real binding rulings issued by US Customs, so the ground truth is an authority's,
 not the author's.
 
-> **Status: week 1 of 4, in progress.** The schedule tree, its validation, the observability
-> layer and the eval harness are built and tested. The baseline accuracy number is **not yet
+> **Status: week 1 of 4, in progress.** The schedule is parsed from the PDF and reconciles
+> against the published export at **99.72%**; the tree, its validation, the observability layer
+> and the eval harness are built and tested. The baseline *classification* accuracy is **not yet
 > measured** — that is this week's gate, and this README will carry the number when it exists.
 > Nothing below is claimed as a result until it appears in the results table.
 
@@ -120,6 +121,38 @@ Current state: **0 errors, 50 warnings**, each one a documented property of the 
 (27 non-contiguous indents, 16 chapter-98/99 cross-references, 6 colon-terminated terminal codes,
 and 1 flagging that Sections are unresolved until the PDF parse lands).
 
+## Parsing the PDF, and proving it
+
+The PDF is the source, because most jurisdictions publish nothing else. The export is the
+**oracle**: it carries the same lines with an explicit `indent`, so every parsed row can be
+checked against it — same code, same depth, same text, same rates.
+
+Across all 4,534 pages: **35,703 of 35,805 rows reconcile exactly — 99.72%**. Chapter 61, the
+chapter the running example lives in, is at 100.00%, and that is enforced in CI.
+
+The hierarchy is encoded in horizontal position alone. Four things make that harder than it
+sounds, each found by the reconciliation rather than by reading the file:
+
+| What | Why it breaks a naive parser |
+| --- | --- |
+| Word spacing | Only survives at `x_tolerance=1.0`. At 1.5 pdfplumber silently yields `T-shirts,allwhite,shorthemmed` |
+| Italics | A scientific name rides ~1.8pt above the roman text *on the same line*. Grouping rows by `top` splits them; grouping by **baseline** keeps them whole |
+| Superscripts | The raised 2 in `g/m2` sits 5.3pt below the line above and 6.6pt above its own — it is nearer the *wrong* line. Identified by font size (5.1pt vs 8.5pt), then attached to the line beneath |
+| `(con.)` headers | A table continuing across a page restates its parent context. The marker sometimes lands on its own line *after* the restated row closed, so a naive rule keeps the duplicate or eats the real row below it |
+
+None of these raise an error. They produce a tree that is quietly wrong.
+
+### Known limits, stated rather than hidden
+
+- **Chapter 99** uses a different column layout (it carries effective-date columns), so its rate
+  fields do not line up with the ordinary grid. Rows match; rate *fields* do not. Chapters 98 and
+  99 are US special provisions that reference goods of other chapters, not ordinary nomenclature.
+- Roughly a hundred rows document-wide contain glyphs the schedule's fonts map to control
+  characters rather than Unicode. The character data is not in the file; they are dropped rather
+  than guessed at.
+- A description ending in an abbreviation (`Ictalurus spp.`) has its dot leaders printed flush
+  against it, so the abbreviating period cannot be told from the leaders. Both are stripped.
+
 ## Results
 
 | Metric | Value |
@@ -177,6 +210,8 @@ src/hsclass/
   schedule/          tree model, export builder, validators
   eval/              metrics (6 vs 10 digit, coverage, per-chapter), runner
   obs/               tracing and the cost ledger
+  schedule/parse_pdf.py  the PDF parser: x-positions back into levels
+  schedule/reconcile.py  row-by-row check against the published export
   retrieval/         embedding backends and the index        (week 1, next)
   pipeline/          the four stages                         (weeks 2-3)
 scripts/             fetch the pinned release, the CI regression gate

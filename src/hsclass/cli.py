@@ -75,6 +75,43 @@ def schedule_validate() -> None:
         raise typer.Exit(code=1)
 
 
+@schedule_app.command("reconcile")
+def schedule_reconcile(chapter: str = "61") -> None:
+    """Parse a chapter from the PDF and check it row by row against the export.
+
+    The PDF is the source; the export is the oracle that proves the parse.
+    """
+    import json
+
+    from hsclass.schedule.parse_pdf import parse_pdf
+    from hsclass.schedule.reconcile import export_rows_for_chapter, reconcile
+
+    settings = get_settings()
+    pdf = settings.raw_dir / f"chapter-{int(chapter)}.pdf"
+    if not pdf.exists():
+        raise typer.BadParameter(f"missing {pdf}; only downloaded chapters can be reconciled")
+
+    parsed = parse_pdf(pdf)
+    export = json.loads((settings.raw_dir / "hts-export.json").read_text(encoding="utf-8"))
+    report = reconcile(parsed, export_rows_for_chapter(export, chapter.zfill(2)), chapter.zfill(2))
+    path = report.write(settings.reports_dir / f"reconcile-ch{chapter.zfill(2)}.json")
+
+    console.print(
+        f"chapter {chapter}: {report.matched}/{report.export_rows} rows matched "
+        f"({report.accuracy:.2%})"
+    )
+    if report.passed:
+        console.print("[green]parse matches the published schedule exactly[/green]")
+    else:
+        table = Table("kind", "count")
+        for kind, n in report.counts().items():
+            table.add_row(kind, str(n))
+        console.print(table)
+    console.print(f"report: {path}")
+    if not report.passed:
+        raise typer.Exit(code=1)
+
+
 @schedule_app.command("show")
 def schedule_show(code: str) -> None:
     """Show one tariff line with the inherited chain that makes it embeddable."""
