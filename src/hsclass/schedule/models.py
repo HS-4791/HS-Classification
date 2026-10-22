@@ -147,17 +147,20 @@ class ScheduleTree:
             "leaves": len(self.leaves()),
             "by_digit_length": dict(sorted(by_len.items())),
             "chapters": len({n.chapter for n in self.nodes.values() if n.chapter}),
+            "sections": len({n.section for n in self.nodes.values() if n.section}),
         }
 
 
 def build_from_export(rows: Iterable[dict], revision: str) -> ScheduleTree:
-    """Build the tree from the USITC JSON export.
+    """Build the tree from flat schedule rows.
 
-    The export is flat: each row carries an ``indent`` and the reader is
-    expected to infer parentage from it. Three things it does not give you:
+    Takes either the USITC JSON export or the rows the PDF parser produces -
+    they share a shape. Each row carries an ``indent`` and the reader is
+    expected to infer parentage from it. Four things to know:
 
-    * no Section or Chapter rows at all - Chapter nodes are synthesised here,
-      and Section is left for the PDF parse to fill in
+    * neither source has Section or Chapter *rows*; both levels are
+      synthesised here. Only the PDF carries a ``section`` on each row, and
+      without it the tree starts at Chapter and Section notes cannot be applied
     * ``indent`` is zero-padded on a handful of rows ("03"), so it is coerced
       to int rather than compared as a string
     * a Roman-numeral subchapter divider is emitted *before* the chapter it
@@ -167,16 +170,36 @@ def build_from_export(rows: Iterable[dict], revision: str) -> ScheduleTree:
     tree = ScheduleTree(revision)
     stack: list[tuple[int, str]] = []  # (indent, key)
     current_chapter: str | None = None
+    current_section: str | None = None
     current_subchapter: str | None = None
     pending_subchapter: str | None = None
     chapter_key: str | None = None
+    section_key: str | None = None
     divider_keys: list[tuple[str, int]] = []
 
     for i, row in enumerate(rows):
         htsno = (row.get("htsno") or "").strip() or None
         indent = int(str(row.get("indent") or "0"))
         description = (row.get("description") or "").strip()
+        section = row.get("section") or None
         code_digits = digits(htsno)
+
+        if section and section != current_section:
+            current_section = section
+            section_key = f"sec{section}"
+            # A Section can be re-entered: chapter 98 and 99 pages interleave
+            # at the end of the schedule. Re-adding the node would replace it
+            # with a fresh one and orphan every chapter already under it.
+            if section_key not in tree.nodes:
+                tree.add(
+                    TariffNode(
+                        key=section_key,
+                        description=f"Section {section}",
+                        indent=-2,
+                        section=section,
+                        synthetic=True,
+                    )
+                )
 
         if code_digits:
             chapter = code_digits[:2]
@@ -186,16 +209,19 @@ def build_from_export(rows: Iterable[dict], revision: str) -> ScheduleTree:
                 current_subchapter = pending_subchapter
                 pending_subchapter = None
                 chapter_key = f"ch{chapter}"
-                tree.add(
-                    TariffNode(
-                        key=chapter_key,
-                        description=f"Chapter {int(chapter)}",
-                        indent=-1,
-                        htsno=chapter,
-                        chapter=chapter,
-                        synthetic=True,
+                if chapter_key not in tree.nodes:
+                    tree.add(
+                        TariffNode(
+                            key=chapter_key,
+                            description=f"Chapter {int(chapter)}",
+                            indent=-1,
+                            htsno=chapter,
+                            chapter=chapter,
+                            section=current_section,
+                            parent=section_key,
+                            synthetic=True,
+                        )
                     )
-                )
                 stack = []
         elif SUBCHAPTER_RE.match(description):
             pending_subchapter = description.rstrip(":")
@@ -221,6 +247,7 @@ def build_from_export(rows: Iterable[dict], revision: str) -> ScheduleTree:
                 parent=parent,
                 chapter=current_chapter,
                 subchapter=pending_subchapter or current_subchapter,
+                section=current_section,
             )
         )
         stack.append((indent, key))

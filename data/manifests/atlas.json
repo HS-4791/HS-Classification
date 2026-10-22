@@ -1,0 +1,45 @@
+{
+  "dataset": "Dayanand314Krishna/cross_rulings_hts_dataset_for_tariffs",
+  "licence": "apache-2.0",
+  "splits": {
+    "train": {
+      "rows": 18254,
+      "usable": 18253,
+      "dropped_no_code": 1,
+      "distinct_codes": 3696,
+      "distinct_codes_at_6": 1740,
+      "with_reasoning": 18253,
+      "code_digit_lengths": {
+        "6": 2,
+        "8": 191,
+        "9": 4,
+        "10": 18055,
+        "12": 1
+      }
+    },
+    "validation": {
+      "rows": 200,
+      "usable": 200,
+      "dropped_no_code": 0,
+      "distinct_codes": 181,
+      "distinct_codes_at_6": 145,
+      "with_reasoning": 200,
+      "code_digit_lengths": {
+        "8": 2,
+        "10": 198
+      }
+    },
+    "test": {
+      "rows": 200,
+      "usable": 200,
+      "dropped_no_code": 0,
+      "distinct_codes": 178,
+      "distinct_codes_at_6": 156,
+      "with_reasoning": 200,
+      "code_digit_lengths": {
+        "8": 3,
+        "10": 197
+      }
+    }
+  }
+}

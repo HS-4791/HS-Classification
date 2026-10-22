@@ -140,3 +140,30 @@ def test_superscripts_rejoin_the_word_they_belong_to():
     # The unit of quantity is square metres, not a stray digit beside a metre.
     assert by_code["5111.11.30.00"].units == ["m2", "kg"]
     assert not any(r.description == "2" for r in rows)
+
+
+@needs_full_pdf
+def test_the_section_notes_page_is_not_a_table():
+    """Section XI's Subheading Notes - where Note 2(A) decides the t-shirt.
+
+    It is headed "Subheading Notes", quotes heading numbers, and carries a
+    year ("1977") in the left column, so a looser test reads it as a table
+    and turns the legal text into tariff rows.
+    """
+    assert parse_pdf(FULL_REVISION, pages=range(1904, 1905)) == []
+
+
+@needs_full_pdf
+def test_a_heading_whose_text_contains_a_colon_stays_one_row():
+    """8201 reads "Handtools of the following kinds...thereof: spades, ...".
+
+    The colon is mid-sentence and the list runs onto the next line at the
+    same depth. Treating every colon as the end of a row splits the heading
+    and leaves the remainder as a grouping line with no children.
+    """
+    rows = parse_pdf(FULL_REVISION, pages=range(2692, 2697))
+    heading = next(r for r in rows if r.full_code == "8201")
+    assert heading.description.startswith("Handtools of the following kinds")
+    assert "spades, shovels" in heading.description
+    # The next row is its first subheading, not an orphaned fragment.
+    assert rows[rows.index(heading) + 1].full_code == "8201.10.00.00"

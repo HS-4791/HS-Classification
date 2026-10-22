@@ -1,0 +1,23 @@
+{
+  "revision": "2026HTSRev21",
+  "embedder": "BAAI/bge-small-en-v1.5",
+  "searchable_lines": 27146,
+  "sets": {
+    "baseline-test-200": {
+      "top1@6": 0.145,
+      "top5@6": 0.28,
+      "top1@10": 0.0609,
+      "n": 200,
+      "seconds": 6.5,
+      "per_classification_ms": 32.4
+    },
+    "baseline-heldout-train": {
+      "top1@6": 0.14,
+      "top5@6": 0.301,
+      "top1@10": 0.0455,
+      "n": 2000,
+      "seconds": 61.2,
+      "per_classification_ms": 30.6
+    }
+  }
+}

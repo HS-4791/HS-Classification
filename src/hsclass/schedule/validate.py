@@ -47,6 +47,10 @@ class ValidationReport:
                 "errors": len(self.errors),
                 "warnings": len(self.warnings),
                 "by_check": dict(Counter(i.check for i in self.issues)),
+                "by_severity_and_check": {
+                    severity: dict(Counter(i.check for i in self.issues if i.severity == severity))
+                    for severity in ("error", "warn")
+                },
             },
             "issues": [asdict(i) for i in self.issues[:200]],
         }
@@ -55,6 +59,20 @@ class ValidationReport:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(self.to_dict(), indent=2), encoding="utf-8")
         return path
+
+
+def _severity(node, base: str = "error") -> str:
+    """Structural rules are binding on the nomenclature, not on chapters 98-99.
+
+    Those are US special classification provisions: they re-describe goods
+    that are classified elsewhere, so they do not nest by digit prefix, they
+    carry effective-date columns instead of the ordinary rate grid, and their
+    grouping lines routinely stand alone. Holding them to the same structural
+    rules reports hundreds of failures that say nothing about the tree the
+    classifier actually walks, so they are recorded as warnings and counted
+    separately rather than quietly skipped.
+    """
+    return "warn" if node.is_special_provision else base
 
 
 def _nearest_coded_ancestor(tree: ScheduleTree, key: str):
@@ -100,11 +118,11 @@ def validate_tree(tree: ScheduleTree, manifest: dict | None = None) -> Validatio
         elif leaf.kind == "subchapter":
             continue
         elif leaf.is_grouping:
-            add(Issue("grouping_leaf", "error",
+            add(Issue("grouping_leaf", _severity(leaf),
                       "grouping line is a leaf, its children were lost: "
                       f"{leaf.description!r}", leaf.key))
         elif len(digits(leaf.htsno)) not in TERMINAL_DIGIT_LENGTHS:
-            add(Issue("short_leaf", "error",
+            add(Issue("short_leaf", _severity(leaf),
                       f"leaf {leaf.htsno} is not a full-length code", leaf.key))
 
     # 3. A coded node must sit under its own code prefix. This is the real
@@ -138,7 +156,7 @@ def validate_tree(tree: ScheduleTree, manifest: dict | None = None) -> Validatio
         parent = tree.get(node.parent)
         if parent.synthetic or node.indent - parent.indent <= 1:
             continue
-        severity = "warn" if node.key in prefix_ok else "error"
+        severity = "warn" if node.key in prefix_ok else _severity(node)
         add(Issue("level_jump", severity,
                   f"{node.htsno or node.description!r} jumps from indent "
                   f"{parent.indent} to {node.indent}", node.key))
@@ -149,7 +167,7 @@ def validate_tree(tree: ScheduleTree, manifest: dict | None = None) -> Validatio
         if not node.description.endswith(":") or node.children or node.kind == "subchapter":
             continue
         terminal = len(digits(node.htsno)) in TERMINAL_DIGIT_LENGTHS
-        add(Issue("childless_branch", "warn" if terminal else "error",
+        add(Issue("childless_branch", "warn" if terminal else _severity(node),
                   f"{node.description!r} ends in a colon but has no children", node.key))
 
     # 6. Counts reconcile against the published schedule.

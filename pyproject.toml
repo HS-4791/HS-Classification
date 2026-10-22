@@ -17,7 +17,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-retrieval = ["sentence-transformers>=3.3", "faiss-cpu>=1.9", "numpy>=1.26"]
+# fastembed runs BGE through ONNX Runtime: no PyTorch, which this machine's
+# Application Control policy refuses to load. Search is exact numpy, no faiss.
+retrieval = ["fastembed>=0.5", "numpy>=1.26"]
 data = ["datasets>=3.2", "pandas>=2.2"]
 llm = ["anthropic>=0.69"]
 dev = ["pytest>=8.3", "pytest-cov>=6.0", "ruff>=0.8", "mypy>=1.13"]

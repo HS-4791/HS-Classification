@@ -69,10 +69,11 @@ DOT_LEADER_RE = re.compile(r"\.{2,}")
 #: A reference to a footnote ("1/"), not part of the article description.
 FOOTNOTE_RE = re.compile(r"^\d+/$")
 
-#: Every table page repeats these column headings above the body. The Notes
-#: pages that open each chapter do not, which is what tells them apart - the
-#: notes quote heading numbers freely, so looking for codes finds them there.
-TABLE_HEADINGS = {"Subheading", "Suf-"}
+#: The statistical-suffix column heading, which appears on every table page
+#: and nowhere else. "Subheading" is no good as a marker: the Section and
+#: Chapter notes are headed "Subheading Notes", and those pages also quote
+#: heading numbers and years ("1977") that read as codes in the left column.
+TABLE_HEADING = "Suf-"
 
 #: Section is the one level that appears nowhere in a code's digits, yet
 #: Section notes are binding - Section XI Note 2 is what decides a 60/40
@@ -117,6 +118,11 @@ class ParsedRow:
     page: int = 0
     open: bool = field(default=True, repr=False)
     con: bool = field(default=False, repr=False)
+    #: Closed only because the text ended in a colon, with no rate and no dot
+    #: leaders to confirm it. Heading 8201 reads "Handtools of the following
+    #: kinds and base metal parts thereof: spades, shovels, ..." - the colon
+    #: is mid-sentence, and the rest runs onto the next line at the same depth.
+    colon_only: bool = field(default=False, repr=False)
 
     @property
     def full_code(self) -> str:
@@ -175,12 +181,42 @@ def _columns_of(words: list[dict]) -> dict[str, list[dict]]:
     return out
 
 
-def _group_lines(words: list[dict]) -> list[list[dict]]:
-    """Cluster words into visual lines by baseline, then place superscripts.
+#: How far above or below its line a small glyph may sit.
+SMALL_GLYPH_WINDOW = 12.0
 
-    Distance alone cannot place a superscript: the raised 2 in "g/m2" sits
-    5.3pt below the line above it and 6.6pt above its own, so it is nearer
-    the wrong one. Size identifies it; it belongs to the line beneath it.
+
+def _attach_small(word: dict, lines: list[tuple[float, list[dict]]]) -> None:
+    """Put a superscript or subscript on the line it belongs to.
+
+    Vertical distance cannot decide this. The raised 2 in "g/m2" is nearer
+    the line *above* than its own; the lowered 2 in a chemical formula is
+    nearer the line *below*. What is reliable is that a small glyph sits
+    immediately to the right of the character it modifies, so the line with
+    the closest word ending just before it wins.
+    """
+    nearby = [line for line in lines if abs(line[0] - word["bottom"]) <= SMALL_GLYPH_WINDOW]
+    best: tuple[float, float] | None = None
+    target: tuple[float, list[dict]] | None = None
+    for line in nearby:
+        ends = [w["x1"] for w in line[1] if w["x1"] <= word["x0"] + 0.5]
+        if not ends:
+            continue
+        rank = (word["x0"] - max(ends), abs(line[0] - word["bottom"]))
+        if best is None or rank < best:
+            best, target = rank, line
+    if target is None:
+        target = min(
+            nearby or lines, key=lambda line: abs(line[0] - word["bottom"]), default=None
+        )
+    if target is not None:
+        target[1].append(word)
+
+
+def _group_lines(words: list[dict]) -> list[list[dict]]:
+    """Cluster words into visual lines by baseline, then place small glyphs.
+
+    Size identifies a superscript or subscript; `_attach_small` decides which
+    line it belongs to, which vertical distance alone gets wrong.
     """
     cutoff = _body_size(words) * SUPERSCRIPT_SIZE_RATIO
     ordinary = [w for w in words if w.get("size", 0.0) >= cutoff]
@@ -194,10 +230,7 @@ def _group_lines(words: list[dict]) -> list[list[dict]]:
             lines.append((word["bottom"], [word]))
 
     for word in raised:
-        below = [line for line in lines if line[0] > word["bottom"]]
-        target = min(below or lines, key=lambda line: abs(line[0] - word["bottom"]), default=None)
-        if target is not None:
-            target[1].append(word)
+        _attach_small(word, lines)
 
     # Left to right within the line: depth is read off the leftmost word, and
     # a baseline cluster holds words from two slightly different `bottom`s.
@@ -260,6 +293,16 @@ def _terminated(description: str, had_rate: bool, raw: str) -> bool:
     )
 
 
+def _closed_on_a_bare_colon(description: str, had_rate: bool, raw: str) -> bool:
+    """Did only a trailing colon end this row, with nothing else confirming it?"""
+    return (
+        description.endswith(":")
+        and not had_rate
+        and not DOT_LEADER_RE.search(raw)
+        and not description.endswith("(con.)")
+    )
+
+
 def parse_page(page, section: str | None = None) -> tuple[list[ParsedRow], str | None, str | None]:
     """Parse one page. Returns its rows plus the Section and Chapter it declares."""
     words = page.extract_words(x_tolerance=X_TOLERANCE, extra_attrs=["size"])
@@ -318,7 +361,19 @@ def parse_page(page, section: str | None = None) -> tuple[list[ParsedRow], str |
             continue
 
         starts_row = bool(CODE_RE.match(code) or SUFFIX_RE.match(suffix) or description)
-        continues_row = current is not None and current.open and not code and not suffix
+        line_indent = indent_of(cols["description"][0]["x0"]) if cols["description"] else -1
+        # A row closed on a bare colon reopens for an uncoded line at its own
+        # depth: a genuine grouping line sits one level deeper than its parent.
+        resumes = (
+            current is not None
+            and current.colon_only
+            and not code
+            and not suffix
+            and line_indent == current.indent
+        )
+        continues_row = (
+            current is not None and (current.open or resumes) and not code and not suffix
+        )
 
         if continues_row and description:
             current.description = f"{current.description} {description}".strip()
@@ -328,6 +383,11 @@ def parse_page(page, section: str | None = None) -> tuple[list[ParsedRow], str |
             current.con = current.con or is_con
             if _terminated(current.description, had_rate, raw_description):
                 current.open = False
+                current.colon_only = _closed_on_a_bare_colon(
+                    current.description, had_rate, raw_description
+                )
+            else:
+                current.open, current.colon_only = True, False
             continue
 
         if current is not None and not code and not suffix and not description:
@@ -348,7 +408,7 @@ def parse_page(page, section: str | None = None) -> tuple[list[ParsedRow], str |
             # extends is the coded line above it.
             htsno=code if CODE_RE.match(code) else (base_code if SUFFIX_RE.match(suffix) else ""),
             suffix=suffix if SUFFIX_RE.match(suffix) else "",
-            indent=indent_of(cols["description"][0]["x0"]) if cols["description"] else 0,
+            indent=line_indent if line_indent >= 0 else 0,
             description=description,
             units=units,
             general=general,
@@ -360,6 +420,7 @@ def parse_page(page, section: str | None = None) -> tuple[list[ParsedRow], str |
             con=is_con,
         )
         current.open = not _terminated(description, had_rate, raw_description)
+        current.colon_only = _closed_on_a_bare_colon(description, had_rate, raw_description)
         rows.append(current)
 
     rows = [r for r in rows if not r.con]
@@ -375,7 +436,7 @@ def is_table_page(page) -> bool:
     """A table page carries the column headings and at least one tariff code."""
     has_headings = has_code = False
     for word in page.extract_words(x_tolerance=X_TOLERANCE):
-        if word["top"] < BODY_TOP and word["text"] in TABLE_HEADINGS:
+        if word["top"] < BODY_TOP and word["text"] == TABLE_HEADING:
             has_headings = True
         elif word["top"] >= BODY_TOP and word["x0"] < 90 and CODE_RE.match(word["text"]):
             has_code = True

@@ -16,12 +16,26 @@ app.add_typer(schedule_app, name="schedule")
 console = Console()
 
 
-def _tree():
+def _rows_path(settings, source: str):
+    """Where each source's flat rows live.
+
+    The PDF is the source of truth: only it carries the Section, which appears
+    nowhere in a code's digits and whose notes are binding. The export is kept
+    as the oracle the parse is checked against.
+    """
+    if source == "pdf":
+        return settings.processed_dir / "pdf-rows.json", (
+            "run `python scripts/parse_full_schedule.py` to parse the PDF first"
+        )
+    return settings.raw_dir / "hts-export.json", "download the release first"
+
+
+def _tree(source: str = "pdf"):
     settings = get_settings()
-    export = settings.raw_dir / "hts-export.json"
-    if not export.exists():
-        raise typer.BadParameter(f"missing {export}; download the release first")
-    return settings, build_from_export(load_export(export), settings.require_revision())
+    path, hint = _rows_path(settings, source)
+    if not path.exists():
+        raise typer.BadParameter(f"missing {path}; {hint}")
+    return settings, build_from_export(load_export(path), settings.require_revision())
 
 
 @app.command("config")
@@ -38,9 +52,9 @@ def show_config() -> None:
 
 
 @schedule_app.command("build")
-def schedule_build() -> None:
-    """Build the nomenclature tree from the published export."""
-    settings, tree = _tree()
+def schedule_build(source: str = "pdf") -> None:
+    """Build the nomenclature tree. Source is "pdf" (default) or "export"."""
+    settings, tree = _tree(source)
     settings.processed_dir.mkdir(parents=True, exist_ok=True)
     out = settings.processed_dir / "tree.json"
     out.write_text(
@@ -52,12 +66,18 @@ def schedule_build() -> None:
 
 
 @schedule_app.command("validate")
-def schedule_validate() -> None:
+def schedule_validate(source: str = "pdf") -> None:
     """Validate the tree and write the report. Exits non-zero on any error."""
-    settings, tree = _tree()
-    manifest = settings.manifest() if settings.manifest_path.exists() else None
+    settings, tree = _tree(source)
+    # The manifest records the *export's* shape. A PDF-sourced tree legitimately
+    # differs from it, and is checked instead by `schedule reconcile`, row by row.
+    manifest = (
+        settings.manifest()
+        if source == "export" and settings.manifest_path.exists()
+        else None
+    )
     report = validate_tree(tree, manifest)
-    path = report.write(settings.reports_dir / "tree-validation.json")
+    path = report.write(settings.reports_dir / f"tree-validation-{source}.json")
 
     table = Table("check", "severity", "count")
     counts: dict[tuple[str, str], int] = {}
@@ -113,13 +133,16 @@ def schedule_reconcile(chapter: str = "61") -> None:
 
 
 @schedule_app.command("show")
-def schedule_show(code: str) -> None:
+def schedule_show(code: str, source: str = "pdf") -> None:
     """Show one tariff line with the inherited chain that makes it embeddable."""
-    _, tree = _tree()
+    _, tree = _tree(source)
     node = tree.by_code(code)
     if node is None:
         raise typer.BadParameter(f"{code} not found in this revision")
-    console.print(f"[bold]{node.htsno}[/bold]  chapter {node.chapter}  indent {node.indent}")
+    console.print(
+        f"[bold]{node.htsno}[/bold]  Section {node.section}  "
+        f"chapter {node.chapter}  indent {node.indent}"
+    )
     if node.subchapter:
         console.print(f"subchapter: {node.subchapter}")
     for part in tree.inherited_chain(node.key):

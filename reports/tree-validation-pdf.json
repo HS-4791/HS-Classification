@@ -1,0 +1,1245 @@
+{
+  "revision": "2026HTSRev21",
+  "passed": false,
+  "stats": {
+    "revision": "2026HTSRev21",
+    "nodes": 36515,
+    "coded": 30298,
+    "grouping": 6217,
+    "synthetic": 120,
+    "roots": 22,
+    "leaves": 23920,
+    "by_digit_length": {
+      "2": 98,
+      "4": 961,
+      "6": 2093,
+      "8": 6862,
+      "10": 20284
+    },
+    "chapters": 98,
+    "sections": 22
+  },
+  "counts": {
+    "errors": 1,
+    "warnings": 655,
+    "by_check": {
+      "grouping_leaf": 240,
+      "special_provision_nesting": 336,
+      "level_jump": 74,
+      "childless_branch": 6
+    },
+    "by_severity_and_check": {
+      "error": {
+        "grouping_leaf": 1
+      },
+      "warn": {
+        "grouping_leaf": 239,
+        "special_provision_nesting": 336,
+        "level_jump": 74,
+        "childless_branch": 6
+      }
+    }
+  },
+  "issues": [
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'the unit of quantity in the applicable subheading of chapter'",
+      "node": "n031899"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'reported should be in the units provided in chapters 1-97.'",
+      "node": "n031900"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'reported should be in the units provided in chapters 1-97.'",
+      "node": "n031916"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'Internal combustion engines'",
+      "node": "n031923"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'Other'",
+      "node": "n031929"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'II statistical note 1.'",
+      "node": "n031932"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'Articles for which duty free treatment is claimed under U.S. note 7(a) to this subchapter'",
+      "node": "n031937"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'Other'",
+      "node": "n031941"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'II statistical note 2.'",
+      "node": "n031942"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'II statistical note 1.'",
+      "node": "n031944"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'Articles to be processed into articles manufactured or produced in the United States'",
+      "node": "n032047"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'XIII statistical note 1.'",
+      "node": "n032054"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'note from the Tariff Schedule of the United States (TSUS).'",
+      "node": "n032067"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: '1996.'",
+      "node": "n032068"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'XVII statistical note 1.'",
+      "node": "n032088"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'note 1 to this subchapter.'",
+      "node": "n032102"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'note 1 to this subchapter.'",
+      "node": "n032112"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'note 1 to this subchapter.'",
+      "node": "n032116"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'note 1 to this subchapter.'",
+      "node": "n032122"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'note 1 to this subchapter.'",
+      "node": "n032135"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'note 1 to this subchapter.'",
+      "node": "n032137"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'note 1 to this subchapter.'",
+      "node": "n032151"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'note 1 to this subchapter.'",
+      "node": "n032165"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032487"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032491"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032506"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032521"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032533"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032551"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032569"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032586"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032604"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032622"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032638"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032655"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032673"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032691"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032709"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032726"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032742"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032759"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'in this heading is likely classifiable in HTS subheading'",
+      "node": "n032777"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032779"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032797"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'and heading 9902.03.81 refer to products with the same'",
+      "node": "n032813"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'and heading 9902.03.80 refer to products with the same'",
+      "node": "n032815"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: \"that matches their shipment's invoice description, and consult\"",
+      "node": "n032816"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032817"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032835"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'was deleted from the tariff schedule; subheading 2922.49.49'",
+      "node": "n032851"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'and Border Protection concerning the use of this duty reduction'",
+      "node": "n032852"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032853"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032870"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032884"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032901"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032915"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032929"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032945"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032960"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032976"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'as a result of international tariff changes. Consult Customs'",
+      "node": "n032995"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n032996"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033011"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033024"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033038"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033052"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033066"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033082"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033099"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033114"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033128"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033142"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033156"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033170"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033182"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033197"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'Probably should reference subheading 2934.10.10. Consult'",
+      "node": "n033209"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033211"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033224"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033239"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033252"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033266"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033279"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033285"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033290"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033298"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033304"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033316"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033326"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033338"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033350"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033360"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033371"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033385"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033400"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033411"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033423"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033435"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033446"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033458"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033468"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033477"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033486"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033497"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033507"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033519"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033529"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033540"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033549"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033561"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033575"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033589"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'was deleted from the tariff schedule; subheading 3824.99.92'",
+      "node": "n033601"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'was deleted from the tariff schedule; subheading 3824.99.92'",
+      "node": "n033603"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'and Border Protection concerning the use of this duty reduction'",
+      "node": "n033604"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033605"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033617"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033633"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033645"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033659"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033671"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'was deleted from the tariff schedule; the product named'",
+      "node": "n033683"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "error",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033685"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033697"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033709"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033721"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033733"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033744"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033756"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033768"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033781"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033791"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033802"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033813"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033823"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033833"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033840"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033849"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033859"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033875"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033887"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033896"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033904"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033913"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033922"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033932"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033941"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033951"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033960"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033972"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033984"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n033993"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034003"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034008"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034014"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034024"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034030"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034037"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034044"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034050"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034057"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034063"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034069"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034075"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034083"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034093"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034103"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034112"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034122"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034133"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034144"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034157"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034169"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034179"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034190"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034200"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034209"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034220"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034232"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034241"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034252"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034262"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034273"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034282"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034292"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034302"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034313"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034323"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034333"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034343"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034353"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034365"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034377"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034391"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034403"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034414"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034423"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034435"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034445"
+    },
+    {
+      "check": "grouping_leaf",
+      "severity": "warn",
+      "message": "grouping line is a leaf, its children were lost: 'indicate the provision has expired'",
+      "node": "n034462"
+    }
+  ]
+}

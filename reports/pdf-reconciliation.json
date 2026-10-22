@@ -1,8 +1,8 @@
 {
   "revision": "2026HTSRev21",
-  "total_matched": 35703,
+  "total_matched": 35746,
   "total_export_rows": 35805,
-  "row_accuracy": 0.9972,
+  "row_accuracy": 0.9984,
   "by_chapter": {
     "01": {
       "row_accuracy": 1.0,
@@ -122,9 +122,7 @@
       "export_rows": 211
     },
     "23": {
-      "extra": 1,
-      "missing": 1,
-      "row_accuracy": 0.9891,
+      "row_accuracy": 1.0,
       "pdf_rows": 92,
       "export_rows": 92
     },
@@ -134,18 +132,13 @@
       "export_rows": 304
     },
     "25": {
-      "extra": 2,
-      "missing": 2,
-      "row_accuracy": 0.9867,
+      "row_accuracy": 1.0,
       "pdf_rows": 150,
       "export_rows": 150
     },
     "26": {
-      "extra": 6,
-      "field:units": 7,
-      "missing": 3,
-      "row_accuracy": 0.979,
-      "pdf_rows": 146,
+      "row_accuracy": 1.0,
+      "pdf_rows": 143,
       "export_rows": 143
     },
     "27": {
@@ -156,33 +149,29 @@
       "export_rows": 218
     },
     "28": {
-      "extra": 3,
       "field:indent": 4,
-      "field:units": 10,
-      "missing": 3,
-      "row_accuracy": 0.994,
+      "field:units": 8,
+      "row_accuracy": 1.0,
       "pdf_rows": 501,
       "export_rows": 501
     },
     "29": {
-      "extra": 24,
+      "extra": 10,
       "field:indent": 8,
-      "missing": 24,
-      "row_accuracy": 0.9871,
-      "pdf_rows": 1859,
+      "missing": 12,
+      "row_accuracy": 0.9935,
+      "pdf_rows": 1857,
       "export_rows": 1859
     },
     "30": {
-      "extra": 6,
-      "missing": 4,
-      "row_accuracy": 0.9859,
-      "pdf_rows": 285,
+      "row_accuracy": 1.0,
+      "pdf_rows": 283,
       "export_rows": 283
     },
     "31": {
-      "extra": 5,
-      "missing": 5,
-      "row_accuracy": 0.878,
+      "extra": 1,
+      "missing": 1,
+      "row_accuracy": 0.9756,
       "pdf_rows": 41,
       "export_rows": 41
     },
@@ -213,22 +202,23 @@
       "export_rows": 27
     },
     "37": {
+      "field:units": 11,
       "row_accuracy": 1.0,
       "pdf_rows": 100,
       "export_rows": 100
     },
     "38": {
-      "extra": 3,
+      "extra": 1,
       "field:indent": 1,
-      "missing": 3,
-      "row_accuracy": 0.9909,
+      "missing": 1,
+      "row_accuracy": 0.997,
       "pdf_rows": 331,
       "export_rows": 331
     },
     "39": {
       "extra": 2,
       "field:indent": 1,
-      "field:units": 9,
+      "field:units": 17,
       "row_accuracy": 1.0,
       "pdf_rows": 504,
       "export_rows": 502
@@ -241,6 +231,7 @@
       "export_rows": 319
     },
     "41": {
+      "field:units": 42,
       "row_accuracy": 1.0,
       "pdf_rows": 314,
       "export_rows": 314
@@ -257,6 +248,7 @@
     },
     "44": {
       "field:other": 12,
+      "field:units": 155,
       "row_accuracy": 1.0,
       "pdf_rows": 876,
       "export_rows": 876
@@ -282,9 +274,8 @@
       "export_rows": 513
     },
     "49": {
-      "extra": 39,
       "row_accuracy": 1.0,
-      "pdf_rows": 119,
+      "pdf_rows": 80,
       "export_rows": 80
     },
     "50": {
@@ -324,6 +315,7 @@
       "export_rows": 133
     },
     "57": {
+      "field:units": 2,
       "row_accuracy": 1.0,
       "pdf_rows": 125,
       "export_rows": 125
@@ -385,21 +377,25 @@
     },
     "68": {
       "field:indent": 1,
+      "field:units": 2,
       "row_accuracy": 1.0,
       "pdf_rows": 160,
       "export_rows": 160
     },
     "69": {
-      "extra": 5,
+      "extra": 1,
       "field:indent": 1,
-      "missing": 4,
-      "row_accuracy": 0.981,
-      "pdf_rows": 212,
+      "field:other": 1,
+      "field:units": 12,
+      "missing": 1,
+      "row_accuracy": 0.9953,
+      "pdf_rows": 211,
       "export_rows": 211
     },
     "70": {
       "extra": 1,
       "field:indent": 1,
+      "field:units": 10,
       "missing": 1,
       "row_accuracy": 0.9979,
       "pdf_rows": 481,
@@ -458,10 +454,8 @@
       "export_rows": 128
     },
     "82": {
-      "extra": 2,
-      "missing": 1,
-      "row_accuracy": 0.9967,
-      "pdf_rows": 305,
+      "row_accuracy": 1.0,
+      "pdf_rows": 304,
       "export_rows": 304
     },
     "83": {
@@ -470,9 +464,9 @@
       "export_rows": 143
     },
     "84": {
-      "extra": 1,
-      "missing": 2,
-      "row_accuracy": 0.9993,
+      "extra": 3,
+      "missing": 4,
+      "row_accuracy": 0.9985,
       "pdf_rows": 2698,
       "export_rows": 2699
     },
@@ -548,21 +542,20 @@
     },
     "98": {
       "extra": 43,
-      "field:units": 2,
+      "field:units": 3,
       "missing": 8,
       "row_accuracy": 0.9866,
       "pdf_rows": 630,
       "export_rows": 595
     },
     "99": {
-      "extra": 596,
-      "field:general": 2165,
-      "field:other": 1654,
+      "extra": 576,
+      "field:general": 2163,
+      "field:other": 1652,
       "field:special": 1657,
-      "field:units": 2,
-      "missing": 27,
-      "row_accuracy": 0.9919,
-      "pdf_rows": 3919,
+      "missing": 17,
+      "row_accuracy": 0.9949,
+      "pdf_rows": 3909,
       "export_rows": 3350
     }
   }

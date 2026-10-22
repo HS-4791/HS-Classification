@@ -6,11 +6,9 @@ it, and escalate rather than guess when the nomenclature is genuinely ambiguous.
 Scored against real binding rulings issued by US Customs, so the ground truth is an authority's,
 not the author's.
 
-> **Status: week 1 of 4, in progress.** The schedule is parsed from the PDF and reconciles
-> against the published export at **99.72%**; the tree, its validation, the observability layer
-> and the eval harness are built and tested. The baseline *classification* accuracy is **not yet
-> measured** — that is this week's gate, and this README will carry the number when it exists.
-> Nothing below is claimed as a result until it appears in the results table.
+> **Status: week 1 of 4 complete.** The schedule is parsed from the PDF and reconciles against
+> the published export at **99.84%**. The vector-only baseline is measured and published below;
+> it is the floor every later component has to beat, and CI fails the build if it drops.
 
 ## The problem
 
@@ -155,19 +153,38 @@ None of these raise an error. They produce a tree that is quietly wrong.
 
 ## Results
 
-| Metric | Value |
-| --- | --- |
-| top-1 @ 6 digits | not yet measured |
-| top-5 @ 6 digits | not yet measured |
-| top-1 @ 10 digits | not yet measured |
-| escalation rate | not yet measured |
-| accuracy on the covered slice | not yet measured |
-| p50 / p95 latency | not yet measured |
-| cost per 1,000 classifications | not yet measured |
+**Vector-only baseline** — embed the description, embed every tariff line, take the nearest.
+No hierarchy, no notes, no rules. `BAAI/bge-small-en-v1.5` over 27,146 searchable lines.
+
+| Metric | Official test split | Held-out slice of train |
+| --- | ---: | ---: |
+| n | 200 | 2,000 |
+| top-1 @ 6 digits | **14.50%** | **14.00%** |
+| top-5 @ 6 digits | 28.00% | 30.10% |
+| top-1 @ 10 digits | 6.09% | 4.55% |
+| escalation rate | 0% — the baseline never declines | 0% |
+| latency per classification | 32ms | 31ms |
+
+Two sets, reported separately and never averaged. The official 200-row split is what the
+published baselines score on, so it is the comparable number; 200 rows carry a confidence
+interval of roughly ±3.5 points, which is wider than several of the deltas the later ablations
+need to show, so a 2,000-row slice of train is scored alongside it at about ±1.1. Nothing is
+trained on ATLAS — the index is built from the tariff schedule alone — so that slice is a second
+test set rather than a leak. The two agree to within half a point at six digits.
 
 Six-digit and ten-digit accuracy are reported separately throughout. Six digits is
 internationally identical and is the primary claim; ten is US-only and harder. Conflating them
 overstates.
+
+**What the floor says.** 14.5% is low, and that is the finding: flat similarity search over a
+legal nomenclature mostly fails. The weakest chapters are the contested ones the domain primer
+names — organic chemicals (7%), machinery (12%), plastics (15%), apparel (18%) — which is
+exactly where the notes and the GRI are supposed to earn their place. `reports/` carries the
+full per-chapter breakdown.
+
+**One measured negative result.** BGE's model card prescribes a query instruction prefix for
+retrieval. Adding it moved top-1 at six digits by +0.5 points and moved top-5 *down* by 1.5, so
+it is not used. Stripping the dataset's question template was worth +4.5 points on its own.
 
 Published baselines this will be scored beside: arXiv `2509.18400` (ATLAS), `2412.14179`
 (independent benchmark), `2605.14857` (deterministic agentic workflow).
