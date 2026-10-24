@@ -6,7 +6,7 @@ it, and escalate rather than guess when the nomenclature is genuinely ambiguous.
 Scored against real binding rulings issued by US Customs, so the ground truth is an authority's,
 not the author's.
 
-> **Status: week 1 of 4 complete.** The schedule is parsed from the PDF and reconciles against
+> **Status: week 2 of 4, in progress.** The schedule is parsed from the PDF and reconciles against
 > the published export at **99.84%**. The vector-only baseline is measured and published below;
 > it is the floor every later component has to beat, and CI fails the build if it drops.
 
@@ -185,6 +185,49 @@ full per-chapter breakdown.
 **One measured negative result.** BGE's model card prescribes a query instruction prefix for
 retrieval. Adding it moved top-1 at six digits by +0.5 points and moved top-5 *down* by 1.5, so
 it is not used. Stripping the dataset's question template was worth +4.5 points on its own.
+
+## Ablations
+
+Each configuration is scored on both sets, and the delta is published. A component that adds
+nothing is a finding, not something to hide.
+
+| Configuration | top-1 @ 6 (test / held-out) | top-5 @ 6 | top-1 @ 10 | Δ top-1 @ 6 |
+| --- | ---: | ---: | ---: | ---: |
+| 1 · vector retrieval only | 14.50% / 14.00% | 28.00% / 30.10% | 6.09% / 4.55% | — |
+| 2 · + hierarchical traversal | 14.00% / 13.55% | 22.00% / 24.25% | 3.05% / 2.78% | **−0.50 / −0.45** |
+
+**Hierarchical traversal does not improve accuracy, and the honest reading is that it costs a
+little.** Top-1 is a wash within noise; top-5 is clearly worse. Its justification is not
+accuracy, and the ablation is what makes that claim checkable rather than rhetorical:
+
+- **It is legally required.** GRI 6 states that only subheadings at the same level are
+  comparable. Flat search weighs a six-digit subheading in one heading against a six-digit
+  subheading in another, which is not a comparison the nomenclature permits.
+- **It bounds the context by construction.** Flat search compares every query against all
+  **27,146** lines. Traversal compares a median of **1,078** — a **96% reduction** — and the
+  winning path carries a median of 628 characters of schedule text. That is the token-budget
+  argument, measured rather than asserted.
+- **It is what the rule engine needs.** GRI rules apply at a level, to the candidates at that
+  level, against the notes in scope. There is nowhere to attach them in a flat ranking.
+
+### Why the first attempt was much worse, and what fixed it
+
+The first run scored 7.00%, which is −7.5 points rather than −0.5. Two design errors, both mine:
+
+| Diagnostic | Finding |
+| --- | --- |
+| Heading recall @5 | **40.0%** — a beam of 5 loses 60% of cases before the walk descends |
+| Heading recall @20 | 66.5% |
+| Heading recall @50 | **78.5%** — the default now |
+
+The heading step is the bottleneck: a heading is a handful of words scored against a detailed
+product description. The spec's own framing — *"which twenty headings might this be?"* — is the
+floor, not the ceiling.
+
+The second error was ranking paths by the **mean** of their level scores. A weak heading match
+then drags down the line that actually matched well. Ranking by the deepest step instead — the
+levels above it only narrowed — is worth **+5 points** of top-1 at six digits on its own.
+
 
 Published baselines this will be scored beside: arXiv `2509.18400` (ATLAS), `2412.14179`
 (independent benchmark), `2605.14857` (deterministic agentic workflow).

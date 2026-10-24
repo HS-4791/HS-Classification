@@ -56,11 +56,22 @@ class LocalEmbedder:
         self.dimensions = 384
 
     def encode(self, texts: list[str]) -> np.ndarray:
+        """Embed in length order, then restore the caller's order.
+
+        Every sequence in a batch is padded to the longest one in it. The
+        schedule mixes five-token headings with sixty-token tariff lines, so
+        batching them as they come pads most of the work away. Sorting by
+        length first makes each batch uniform and costs one permutation.
+        """
         if not texts:
             return np.zeros((0, self.dimensions), dtype=np.float32)
-        vectors = np.asarray(
-            list(self._model.embed(texts, batch_size=self.batch_size)), dtype=np.float32
+        order = sorted(range(len(texts)), key=lambda i: len(texts[i]))
+        embedded = np.asarray(
+            list(self._model.embed([texts[i] for i in order], batch_size=self.batch_size)),
+            dtype=np.float32,
         )
+        vectors = np.empty_like(embedded)
+        vectors[order] = embedded
         # fastembed normalises already; this keeps the contract explicit.
         return _normalise(vectors)
 

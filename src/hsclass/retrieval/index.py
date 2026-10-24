@@ -10,12 +10,16 @@ determinism tests harder to argue.
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
 from hsclass.retrieval.embedder import Embedder
+
+#: How many texts to embed between progress lines.
+PROGRESS_CHUNK = 2000
 
 
 @dataclass
@@ -52,9 +56,23 @@ class VectorIndex:
     def build(cls, candidates: list[Candidate], embedder: Embedder, revision: str,
               progress: bool = False) -> VectorIndex:
         texts = [c.text for c in candidates]
-        if progress:
-            print(f"embedding {len(texts)} tariff lines with {embedder.name} ...", flush=True)
-        return cls(candidates, embedder.encode(texts), embedder.name, revision)
+        if not progress:
+            return cls(candidates, embedder.encode(texts), embedder.name, revision)
+
+        # Embed in chunks so a long build reports where it is rather than
+        # going silent for several minutes.
+        started = time.time()
+        chunks: list[np.ndarray] = []
+        done = 0
+        for start in range(0, len(texts), PROGRESS_CHUNK):
+            chunk = texts[start:start + PROGRESS_CHUNK]
+            chunks.append(embedder.encode(chunk))
+            done += len(chunk)
+            rate = done / max(time.time() - started, 1e-9)
+            remaining = (len(texts) - done) / max(rate, 1e-9)
+            print(f"  embedded {done}/{len(texts)} ({rate:.0f}/s, ~{remaining:.0f}s left)",
+                  flush=True)
+        return cls(candidates, np.vstack(chunks), embedder.name, revision)
 
     def search(self, queries: np.ndarray, k: int = 20) -> list[list[Hit]]:
         """Cosine similarity, because both sides are already normalised."""
