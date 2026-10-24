@@ -21,3 +21,6 @@ htmlcov/
 
 # traces are append-only local logs; reports are committed
 traces/
+
+# planning documents - kept local, not for the public repo
+docs/

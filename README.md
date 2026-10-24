@@ -235,5 +235,4 @@ scripts/             fetch the pinned release, the CI regression gate
 data/manifests/      committed: checksums and expected tree shape
 data/raw/            gitignored: reproducible via scripts/fetch_schedule.py
 reports/             eval output, committed
-docs/                the spec and the domain primer
 ```
