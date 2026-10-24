@@ -195,6 +195,7 @@ nothing is a finding, not something to hide.
 | --- | ---: | ---: | ---: | ---: |
 | 1 · vector retrieval only | 14.50% / 14.00% | 28.00% / 30.10% | 6.09% / 4.55% | — |
 | 2 · + hierarchical traversal | 14.00% / 13.55% | 22.00% / 24.25% | 3.05% / 2.78% | **−0.50 / −0.45** |
+| 3 · + GRI engine adjudicating | 1.50% / 0.10% | 1.50% / 0.10% | 0% / 0% | **−13.00 / −13.90** |
 
 **Hierarchical traversal does not improve accuracy, and the honest reading is that it costs a
 little.** Top-1 is a wash within noise; top-5 is clearly worse. Its justification is not
@@ -227,6 +228,37 @@ floor, not the ceiling.
 The second error was ranking paths by the **mean** of their level scores. A weak heading match
 then drags down the line that actually matched well. Ranking by the deepest step instead — the
 levels above it only narrowed — is worth **+5 points** of top-1 at six digits on its own.
+
+### Ablation 3: the rule engine decides almost nothing, and that is the result
+
+Headline accuracy collapses because an escalated case counts as a miss. The pair of numbers that
+matters is coverage against accuracy on the slice the system actually answered:
+
+| | Decided | Accuracy on those | If those had been forced |
+| --- | ---: | ---: | ---: |
+| test split (n=200) | 3 cases — 1.50% | 3 / 3 | 14.21% |
+| held-out (n=2,000) | 5 cases — 0.25% | 2 / 5 | 13.58% |
+
+**Eight decided cases in total is far too small to claim anything about accuracy**, and nothing
+here should be read as "the rule engine is 100% accurate". What the ablation does establish is
+exactly *why* coverage is so narrow, and that is a measurement rather than a guess:
+
+| Gate | Share of descriptions |
+| --- | ---: |
+| states any percentage at all | 12.0% |
+| yields a mixture with a material that predominates | 5.0% |
+| **and** retrieval proposed candidates the rule can tell apart | **1.5%** |
+
+The engine is not wrong; it is starved. It can only decide a case whose rule condition is
+*evaluable*, and a condition over typed attributes needs those attributes to exist. Composition
+is currently read with a regex from whatever the description happens to say. That is what stage
+1 — model-based attribute extraction from text and images — is for, and it is what widens the
+first row. The third row widens with better candidate generation.
+
+One honest reading of the escalation column: forcing an answer on the declined cases scores
+about 14%, which is the baseline. The refusal is not yet selecting hard cases — it is declining
+nearly everything, because nearly nothing is evaluable. Escalation calibration becomes a real
+question in week 3, once there is a population of genuinely close calls to calibrate on.
 
 
 Published baselines this will be scored beside: arXiv `2509.18400` (ATLAS), `2412.14179`

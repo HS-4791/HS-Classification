@@ -41,8 +41,13 @@ from hsclass.schedule.notes import Note
 PERCENT_BEFORE_RE = re.compile(
     r"(\d{1,3}(?:\.\d+)?)\s*(?:%|percent|pct)\s*(?:of\s+)?([a-z][a-z \-]*)", re.I
 )
+#: Only the single word touching the number: "cotton 60%". Allowing a run of
+#: words here swallows the sentence around it - "a girls' pullover sweater
+#: made of knitted fabric with 90% acrylic" yielded a material called
+#: "pullover sweater made", sharing acrylic's 90% and tying with it, so
+#: nothing predominated and the rule never fired.
 PERCENT_AFTER_RE = re.compile(
-    r"([a-z][a-z \-]*?)\s*[:\-]?\s*(\d{1,3}(?:\.\d+)?)\s*(?:%|percent|pct)", re.I
+    r"([a-z][a-z\-]*)\s*[:\-]?\s*(\d{1,3}(?:\.\d+)?)\s*(?:%|percent|pct)", re.I
 )
 
 #: The schedule phrases a threshold as "85 percent or more by weight of
@@ -97,13 +102,23 @@ class Facts:
 
 
 def _material_of(phrase: str) -> str:
-    """Reduce a captured phrase to the material it names, or to nothing."""
-    words = [w for w in re.split(r"[^a-z\-]+", phrase.lower()) if w]
-    while words and words[0] in FILLER:
-        words.pop(0)
-    while words and words[-1] in FILLER:
-        words.pop()
-    return " ".join(words[:3])
+    """Reduce a captured phrase to the material it names, or to nothing.
+
+    The material ends at the first connective: "100% polyester with a
+    self-fabric hood" names polyester, not "polyester with various". Leading
+    qualifiers are skipped instead, because the schedule writes thresholds as
+    "85 percent or more by weight of wool".
+    """
+    material: list[str] = []
+    for word in (w for w in re.split(r"[^a-z\-]+", phrase.lower()) if w):
+        if word in FILLER:
+            if material:
+                break  # the material has ended
+            continue  # still skipping the qualifier in front of it
+        material.append(word)
+        if len(material) == 3:
+            break
+    return " ".join(material)
 
 
 def extract_facts(description: str) -> Facts:

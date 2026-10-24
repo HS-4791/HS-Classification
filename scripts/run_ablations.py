@@ -18,7 +18,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from hsclass.config import get_settings  # noqa: E402
 from hsclass.data.atlas import as_dataset, load_split  # noqa: E402
 from hsclass.eval.runner import run_eval  # noqa: E402
+from hsclass.pipeline.adjudicated import AdjudicatedClassifier  # noqa: E402
 from hsclass.pipeline.baseline import VectorOnlyClassifier, candidates_from_tree  # noqa: E402
+from hsclass.pipeline.gri import GRIEngine  # noqa: E402
 from hsclass.pipeline.traversal import (  # noqa: E402
     HierarchicalClassifier,
     LevelIndex,
@@ -26,7 +28,9 @@ from hsclass.pipeline.traversal import (  # noqa: E402
 )
 from hsclass.retrieval.embedder import get_embedder  # noqa: E402
 from hsclass.retrieval.index import VectorIndex  # noqa: E402
+from hsclass.schedule.exclusions import build_exclusion_graph  # noqa: E402
 from hsclass.schedule.models import build_from_export, load_export  # noqa: E402
+from hsclass.schedule.notes import Note  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 ATLAS = ROOT / "data" / "raw" / "atlas"
@@ -62,9 +66,21 @@ def main() -> int:
     train, _ = load_split(ATLAS / "train.jsonl")
     held_out = random.Random(SEED).sample(train, min(HELD_OUT_SIZE, len(train)))
 
+    notes_path = settings.processed_dir / "notes.json"
+    raw_notes = json.loads(notes_path.read_text(encoding="utf-8"))
+    notes = [
+        Note(**{k: v for k, v in n.items() if k in Note.__dataclass_fields__})
+        for n in raw_notes
+    ]
+    engine = GRIEngine(notes, build_exclusion_graph(notes))
+    texts = {c.code: c.text for c in levelled.candidates}
+    print(f"{len(notes)} provisions, {len(texts)} candidate texts for the rules", flush=True)
+
+    traversal = HierarchicalClassifier(LevelIndex(levelled), embedder, k=5)
     configurations = {
         "1-vector-only": VectorOnlyClassifier(flat, embedder, k=5),
-        "2-hierarchical": HierarchicalClassifier(LevelIndex(levelled), embedder, k=5),
+        "2-hierarchical": traversal,
+        "3-gri-adjudicated": AdjudicatedClassifier(traversal, engine, texts),
     }
     sets = {"test-200": official, "heldout-2000": held_out}
 
@@ -77,14 +93,17 @@ def main() -> int:
                 revision=revision, reports_dir=settings.reports_dir,
             )
             elapsed = time.time() - started
+            coverage = result.to_dict()["coverage"]
             summary.setdefault(name, {})[set_name] = result.to_dict()["metrics"] | {
                 "n": result.n,
                 "per_classification_ms": round(elapsed / max(result.n, 1) * 1000, 1),
-            }
-            print(f"  {name:16} {set_name:14} "
+            } | coverage
+            print(f"  {name:18} {set_name:14} "
                   f"top1@6={result.metrics['top1@6']:.2%} "
                   f"top5@6={result.metrics['top5@6']:.2%} "
-                  f"top1@10={result.metrics['top1@10']:.2%}", flush=True)
+                  f"top1@10={result.metrics['top1@10']:.2%} "
+                  f"escalated={coverage['escalation_rate']:.1%} "
+                  f"covered@6={coverage['accuracy_on_covered@6']:.2%}", flush=True)
 
     (settings.reports_dir / "ablations.json").write_text(
         json.dumps({"revision": revision, "configurations": summary}, indent=2),
