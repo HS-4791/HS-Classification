@@ -37,7 +37,9 @@ jobs:
       - name: Fetch the pinned release
         run: python scripts/fetch_schedule.py --revision "$HTS_REVISION" --verify
       - name: Validate the tree
-        run: hsclass schedule validate
+        # The export-sourced tree, because building from the PDF needs the
+        # five-minute full parse. The parser is proved by the next step.
+        run: hsclass schedule validate --source export
       - name: The PDF parse must match the published schedule
         run: hsclass schedule reconcile --chapter 61
       - uses: actions/upload-artifact@v4

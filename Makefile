@@ -1,4 +1,4 @@
-.PHONY: setup fetch validate reconcile test lint check clean
+.PHONY: setup fetch validate validate-pdf reconcile test lint check clean
 
 VENV := .venv/Scripts
 REV  ?= 2026HTSRev21
@@ -12,7 +12,10 @@ fetch:
 	$(VENV)/python scripts/fetch_schedule.py --revision $(REV) --verify
 
 validate:
-	$(VENV)/hsclass schedule validate
+	$(VENV)/hsclass schedule validate --source export
+
+validate-pdf:
+	$(VENV)/hsclass schedule validate --source pdf
 
 reconcile:
 	$(VENV)/hsclass schedule reconcile --chapter 61

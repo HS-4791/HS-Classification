@@ -14,12 +14,15 @@ dependencies = [
     "rich>=13.9",
     "pdfplumber>=0.11",
     "httpx>=0.28",
+    # hsclass.retrieval.index imports numpy unconditionally, so it is a core
+    # dependency rather than part of the optional retrieval stack.
+    "numpy>=1.26",
 ]
 
 [project.optional-dependencies]
 # fastembed runs BGE through ONNX Runtime: no PyTorch, which this machine's
 # Application Control policy refuses to load. Search is exact numpy, no faiss.
-retrieval = ["fastembed>=0.5", "numpy>=1.26"]
+retrieval = ["fastembed>=0.5"]
 data = ["datasets>=3.2", "pandas>=2.2"]
 llm = ["anthropic>=0.69"]
 dev = ["pytest>=8.3", "pytest-cov>=6.0", "ruff>=0.8", "mypy>=1.13"]
