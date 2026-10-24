@@ -12,10 +12,10 @@ Schedule version `2026HTSRev21` - n = 200
 
 | metric | value |
 | --- | ---: |
-| escalation_rate | 98.50% |
-| covered_n | 3 |
-| accuracy_on_covered@6 | 100.00% |
-| accuracy_if_forced@6 | 14.21% |
+| escalation_rate | 97.50% |
+| covered_n | 5 |
+| accuracy_on_covered@6 | 60.00% |
+| accuracy_if_forced@6 | 14.36% |
 
 ## Weakest chapters (n >= 20)
 

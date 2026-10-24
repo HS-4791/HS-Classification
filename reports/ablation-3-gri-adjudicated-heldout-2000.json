@@ -3,8 +3,8 @@
   "schedule_version": "2026HTSRev21",
   "n": 2000,
   "metrics": {
-    "top1@6": 0.001,
-    "top5@6": 0.001,
+    "top1@6": 0.0025,
+    "top5@6": 0.0025,
     "top1@10": 0.0
   },
   "scored": {
@@ -13,10 +13,10 @@
     "top1@10": 1979
   },
   "coverage": {
-    "escalation_rate": 0.9975,
-    "covered_n": 5.0,
-    "accuracy_on_covered@6": 0.4,
-    "accuracy_if_forced@6": 0.1358
+    "escalation_rate": 0.99,
+    "covered_n": 20.0,
+    "accuracy_on_covered@6": 0.25,
+    "accuracy_if_forced@6": 0.1354
   },
   "per_chapter": {
     "15": {
@@ -97,7 +97,7 @@
     },
     "61": {
       "n": 353,
-      "top1@6": 0.0057
+      "top1@6": 0.0142
     },
     "62": {
       "n": 10,

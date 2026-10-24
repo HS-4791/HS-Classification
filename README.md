@@ -195,7 +195,7 @@ nothing is a finding, not something to hide.
 | --- | ---: | ---: | ---: | ---: |
 | 1 · vector retrieval only | 14.50% / 14.00% | 28.00% / 30.10% | 6.09% / 4.55% | — |
 | 2 · + hierarchical traversal | 14.00% / 13.55% | 22.00% / 24.25% | 3.05% / 2.78% | **−0.50 / −0.45** |
-| 3 · + GRI engine adjudicating | 1.50% / 0.10% | 1.50% / 0.10% | 0% / 0% | **−13.00 / −13.90** |
+| 3 · + GRI engine adjudicating | 1.50% / 0.25% | 1.50% / 0.25% | 0% / 0% | **−13.00 / −13.75** |
 
 **Hierarchical traversal does not improve accuracy, and the honest reading is that it costs a
 little.** Top-1 is a wash within noise; top-5 is clearly worse. Its justification is not
@@ -236,18 +236,18 @@ matters is coverage against accuracy on the slice the system actually answered:
 
 | | Decided | Accuracy on those | If those had been forced |
 | --- | ---: | ---: | ---: |
-| test split (n=200) | 3 cases — 1.50% | 3 / 3 | 14.21% |
-| held-out (n=2,000) | 5 cases — 0.25% | 2 / 5 | 13.58% |
+| test split (n=200) | 5 cases — 2.50% | 3 / 5 = 60% | 14.36% |
+| held-out (n=2,000) | 20 cases — 1.00% | 5 / 20 = 25% | 13.54% |
 
-**Eight decided cases in total is far too small to claim anything about accuracy**, and nothing
-here should be read as "the rule engine is 100% accurate". What the ablation does establish is
-exactly *why* coverage is so narrow, and that is a measurement rather than a guess:
+**Twenty-five decided cases is too small to claim much**, though both slices sit above the 14%
+baseline. What the ablation does establish is *why* coverage is so narrow, and that is measured
+rather than guessed:
 
 | Gate | Share of descriptions |
 | --- | ---: |
 | states any percentage at all | 12.0% |
-| yields a mixture with a material that predominates | 5.0% |
-| **and** retrieval proposed candidates the rule can tell apart | **1.5%** |
+| yields a mixture of two or more materials | 5.0% |
+| **and** retrieval proposed candidates a rule can tell apart | **1.0–2.5%** |
 
 The engine is not wrong; it is starved. It can only decide a case whose rule condition is
 *evaluable*, and a condition over typed attributes needs those attributes to exist. Composition

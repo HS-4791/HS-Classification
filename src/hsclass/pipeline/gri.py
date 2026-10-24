@@ -18,12 +18,25 @@ What is implemented, and what is honestly not:
 * **Section XI Note 2(A)** - the predominant-weight test, which is what
   decides a 60/40 cotton-polyester shirt. Implemented because the condition
   is arithmetic over attributes the facts carry.
-* **GRI 3(c)** - the heading last in numerical order, among those equally
-  meriting consideration. Deterministic by definition.
+* **GRI 2(b)** - goods of more than one material are settled by Rule 3. Used
+  as the trigger it is: without a mixture there is nothing to send onward.
+* **GRI 3(a)** - the most specific description wins, implemented narrowly: a
+  heading that names the goods beats a residual "Other" provision. Which of
+  two substantive descriptions is *more* specific is a judgment, and is not
+  attempted.
 * **GRI 3(b)** - essential character. *Not* implemented, by choice: it is a
   judgment call, and the primer is explicit that a system answering these
   confidently is more dangerous than one that flags them. It escalates.
-* **GRI 2(a), 4, 5** - not yet reached by the current candidate generator.
+* **GRI 3(c)** - the principle is implemented, but reached only through
+  Section XI Note 2(A), which borrows it for its own tie-break. GRI 3(c)
+  proper needs the competing headings to "equally merit consideration", and
+  establishing that from retrieval candidates is not something this engine
+  can honestly claim to do.
+* **GRI 2(a), 4, 5** - not implemented.
+
+``rule_path`` records only rules that were actually evaluated. Naming a rule
+the walk never reached would put a fabrication into the trace that week 4
+scores explanations against.
 
 Anything the rules do not resolve escalates with a ranked shortlist. A
 classifier that always answers is not deployable.
@@ -191,42 +204,88 @@ class GRIEngine:
 
     def _textile_material_rule(
         self, facts: Facts, candidates: list[str]
-    ) -> tuple[str, list[str]] | None:
-        """Pick the subheading for the material that predominates by weight.
+    ) -> tuple[str, list[str], str] | None:
+        """Apply Note 2(A), including the tie-break written into it.
 
-        This is the running example: a knitted shirt of 60% cotton and 40%
-        polyester is classified as if wholly of cotton, so 6109.10 rather
-        than 6109.90. Reverse the blend and the answer changes with it - a
-        number in a composition table decides the legal outcome.
+        The running example: a knitted shirt of 60% cotton and 40% polyester
+        is classified as if wholly of cotton, so 6109.10 rather than 6109.90.
+        Reverse the blend and the answer changes with it - a number in a
+        composition table decides the legal outcome.
+
+        The note does not stop at predominance. It continues: "When no one
+        textile material predominates by weight, the goods are to be
+        classified as if consisting wholly of that one textile material which
+        is covered by the heading which occurs last in numerical order among
+        those which equally merit consideration." A 50/50 blend is therefore
+        settled here, under GRI 1, and never reaches GRI 3 at all - treating
+        it as an essential-character judgment would be the error the primer
+        warns about, reaching Rule 3 where Rule 1 answered.
         """
         if not facts.is_mixture:
             return None
         chapters = {code[:2] for code in candidates}
         if not chapters & SECTION_XI_CHAPTERS:
             return None
-        predominant = facts.predominant()
-        if predominant is None:
-            return None
 
-        material, _ = predominant
-        matching = [
-            code for code in candidates
-            if _describes_material(self._text_for(code), material)
-        ]
-        if len(matching) != 1:
-            return None
         cited = ["Section XI Note 2(A)"]
         if chapters & SUBHEADING_NOTE_2A_CHAPTERS:
             # The subheading note is what reaches chapters 56-63; Note 2(A)
             # is the test it defers to. A ruling cites both, in that order.
             cited = ["Section XI Subheading Note 2(A)", "Section XI Note 2(A)"]
-        return matching[0], cited
+
+        predominant = facts.predominant()
+        if predominant is not None:
+            matching = self._matching(candidates, [predominant[0]])
+            if len(matching) != 1:
+                return None
+            return matching[0], cited, "the material predominating by weight decides the subheading"
+
+        heaviest = max(facts.materials.values())
+        tied = [m for m, share in facts.materials.items() if share == heaviest]
+        matching = self._matching(candidates, tied)
+        if len(matching) < 2:
+            return None
+        return (
+            self._last_in_numerical_order(matching),
+            cited,
+            "no material predominates, so the note takes the heading last in numerical order",
+        )
+
+    def _matching(self, candidates: list[str], materials: list[str]) -> list[str]:
+        return [
+            code for code in candidates
+            if any(_describes_material(self._text_for(code), m) for m in materials)
+        ]
+
+    # ------------------------------------------------------------- GRI 3(a)
+
+    def _most_specific(self, candidates: list[str]) -> list[str]:
+        """Candidates that name the goods, rather than catching what is left.
+
+        A narrow reading of GRI 3(a): a heading naming the article beats a
+        residual "Other" provision. The rule's full sense - which of two
+        substantive descriptions is *more specific* - is a judgment this
+        engine does not make.
+        """
+        named = [c for c in candidates if not self._is_residual(c)]
+        return named if named else list(candidates)
+
+    def _is_residual(self, code: str) -> bool:
+        own = self._text_for(code).split("—")[-1].strip().rstrip(":").lower()
+        return own in {"other", "others", "other articles"}
 
     # ------------------------------------------------------------- GRI 3(c)
 
     @staticmethod
     def _last_in_numerical_order(candidates: list[str]) -> str:
-        """GRI 3(c): among those equally meriting consideration, the last."""
+        """The heading occurring last in numerical order.
+
+        The principle GRI 3(c) states, and which Section XI Note 2(A) borrows
+        for its own tie-break. It is reached here only through the note: GRI
+        3(c) proper requires the competing headings to "equally merit
+        consideration", and establishing that is a legal judgment this engine
+        does not make from retrieval candidates.
+        """
         return max(candidates)
 
     # ------------------------------------------------------------- the walk
@@ -234,7 +293,12 @@ class GRIEngine:
     def adjudicate(
         self, facts: Facts, candidates: list[str], texts: dict[str, str] | None = None
     ) -> Decision:
-        """Walk GRI 1, then 2 and 3, stopping at the first rule that resolves."""
+        """Walk the rules in order, stopping at the first that resolves.
+
+        ``rule_path`` lists only rules that were actually evaluated. Writing
+        down a rule the engine never reached would put a fabrication into the
+        trace that week 4 scores explanations against.
+        """
         self._texts = texts or {}
         if not candidates:
             return Decision(None, ["GRI 1"], escalated=True,
@@ -243,34 +307,46 @@ class GRIEngine:
         notes_cited: list[str] = []
         for chapter in dict.fromkeys(code[:2] for code in candidates):
             notes_cited.extend(self._excluded(chapter, facts))
+        path = ["GRI 1"]
 
         # GRI 1 - one candidate, nothing to choose between.
         if len(set(candidates)) == 1:
-            return Decision(candidates[0], ["GRI 1"], notes_cited,
+            return Decision(candidates[0], path, notes_cited,
                             reason="a single heading describes the goods")
 
-        # GRI 6 operates inside a settled heading, applying rules 1 to 5
-        # again. Where the candidates share a heading, that is where we are.
-        headings = {code[:4] for code in candidates}
+        # A Section note resolving under GRI 1. GRI 6 applies the same logic
+        # inside a settled heading, which is where we are when the candidates
+        # share one.
         resolved = self._textile_material_rule(facts, candidates)
         if resolved:
-            code, cited = resolved
-            path = ["GRI 1", *cited, "GRI 6"] if len(headings) == 1 else ["GRI 1", *cited]
-            return Decision(code, path, [*notes_cited, *cited],
-                            reason="the material predominating by weight decides the subheading")
+            code, cited, why = resolved
+            full = [*path, *cited]
+            if len({c[:4] for c in candidates}) == 1:
+                full.append("GRI 6")
+            return Decision(code, full, [*notes_cited, *cited], reason=why)
 
-        # GRI 3(b) - essential character. A judgment call, so it escalates.
-        if facts.is_mixture and facts.predominant() is None:
+        # GRI 2(b) sends goods of more than one material to Rule 3. Without a
+        # mixture there is no trigger, so the failure is at GRI 1 and the path
+        # says so rather than naming rules that never ran.
+        if not facts.is_mixture:
             return Decision(
-                None, ["GRI 1", "GRI 2(b)", "GRI 3(a)", "GRI 3(b)"], notes_cited,
-                escalated=True, shortlist=candidates[:5],
-                reason="no material predominates; essential character is a judgment call",
+                None, path, notes_cited, escalated=True, shortlist=candidates[:5],
+                reason="more than one heading describes the goods and no note separates them",
             )
 
+        path.append("GRI 2(b)")
+        path.append("GRI 3(a)")
+        specific = self._most_specific(candidates)
+        if len(specific) == 1:
+            return Decision(
+                specific[0], path, notes_cited,
+                reason="one heading names the goods; the others are residual provisions",
+            )
+
+        path.append("GRI 3(b)")
         return Decision(
-            None, ["GRI 1", "GRI 2(b)", "GRI 3(a)"], notes_cited,
-            escalated=True, shortlist=candidates[:5],
-            reason="more than one heading applies and no rule in this engine separates them",
+            None, path, notes_cited, escalated=True, shortlist=specific[:5],
+            reason="essential character decides between these, and that is a judgment call",
         )
 
     def _text_for(self, code: str) -> str:

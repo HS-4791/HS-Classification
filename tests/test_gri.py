@@ -86,14 +86,57 @@ def test_the_rule_path_cites_what_a_ruling_would(engine):
 
 # ----------------------------------------------------------------- escalation
 
-def test_a_fifty_fifty_blend_escalates_at_essential_character(engine):
-    """GRI 3(b) is a judgment call; answering it confidently is the danger."""
+def test_a_fifty_fifty_blend_is_settled_by_the_note_not_escalated(engine):
+    """Note 2(A) carries its own tie-break, so GRI 3 is never reached.
+
+    "When no one textile material predominates by weight, the goods are to
+    be classified ... under the heading which occurs last in numerical order
+    among those which equally merit consideration." Escalating here would be
+    the error the primer names: reaching Rule 3 where Rule 1 answered.
+    """
     facts = extract_facts("knitted t-shirt, 50% cotton and 50% polyester")
     decision = engine.adjudicate(facts, [COTTON, MAN_MADE], TEXTS)
-    assert decision.code is None
+    assert not decision.escalated
+    assert decision.code == MAN_MADE  # 6109.90 occurs after 6109.10
+    assert "last in numerical order" in decision.reason
+
+
+def test_the_rule_path_names_only_rules_that_were_evaluated(engine):
+    """A path is a record of what fired, not of where the procedure might go.
+
+    Listing GRI 2(b) and 3(a) on a case that never reached them puts a
+    fabrication into the trace that week 4 scores explanations against.
+    """
+    # Two headings, one material: the failure is at GRI 1 and stops there.
+    decision = engine.adjudicate(
+        extract_facts("a cotton t-shirt"), [COTTON, MAN_MADE], TEXTS
+    )
     assert decision.escalated
-    assert decision.rule_path[-1] == "GRI 3(b)"
-    assert decision.shortlist == [COTTON, MAN_MADE]
+    assert decision.rule_path == ["GRI 1"]
+
+
+def test_a_named_heading_beats_a_residual_one_under_gri_3a(engine):
+    """The narrow, deterministic part of GRI 3(a): a basket loses to a name."""
+    texts = {
+        "6109100012": "T-shirts, knitted — Of cotton — men's",
+        "6109909000": "T-shirts, knitted — Of other textile materials — Other",
+    }
+    facts = extract_facts("t-shirt of 50% ramie and 50% silk")
+    decision = engine.adjudicate(facts, list(texts), texts)
+    assert decision.code == "6109100012"
+    assert decision.rule_path == ["GRI 1", "GRI 2(b)", "GRI 3(a)"]
+
+
+def test_essential_character_still_escalates_when_nothing_separates_them(engine):
+    """GRI 3(b) is a judgment call; answering it confidently is the danger."""
+    texts = {
+        "6109100012": "T-shirts, knitted — Of cotton — men's",
+        "6109901000": "T-shirts, knitted — Of man-made fibres — men's",
+    }
+    facts = extract_facts("a composite article of 50% leather and 50% rubber")
+    decision = engine.adjudicate(facts, list(texts), texts)
+    assert decision.code is None and decision.escalated
+    assert decision.rule_path == ["GRI 1", "GRI 2(b)", "GRI 3(a)", "GRI 3(b)"]
 
 
 def test_nothing_proposed_escalates_rather_than_inventing_a_code(engine):
