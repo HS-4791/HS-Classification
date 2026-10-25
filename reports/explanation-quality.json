@@ -1,0 +1,21 @@
+{
+  "revision": "2026HTSRev21",
+  "n": 903,
+  "discriminating": 903,
+  "decided_of_discriminating": 6,
+  "agreed_on_deciding_rule": 0,
+  "agreement": 0.0,
+  "right_code_wrong_path": 1,
+  "rules_the_engine_never_reaches": {
+    "3(b)": 408,
+    "3(c)": 186,
+    "2(a)": 129,
+    "3": 77,
+    "5(a)": 57,
+    "3(a)": 18,
+    "5(b)": 14,
+    "2": 6,
+    "5": 5,
+    "2(b)": 2
+  }
+}
