@@ -32,7 +32,19 @@ What is implemented, and what is honestly not:
   proper needs the competing headings to "equally merit consideration", and
   establishing that from retrieval candidates is not something this engine
   can honestly claim to do.
-* **GRI 2(a), 4, 5** - not implemented.
+* **GRI 2(a)** - an incomplete, unfinished or unassembled article is the
+  finished article. The trigger is textual ("unassembled", "knocked-down"),
+  and the rule directs classification away from a parts provision toward the
+  whole. Whether the goods already have the finished article's *essential
+  character* is a judgment, and is not attempted.
+* **GRI 4** - **deliberately not implemented**, on evidence rather than
+  convenience: it is the deciding rule in **0 of 18,253** rulings, and "the
+  heading for goods they are most akin to" is a similarity judgment. Deciding
+  it would mean putting a similarity call inside stage 3, which is precisely
+  the thing this stage exists not to do. Naming it on a rule path without
+  evaluating it would be the fabrication this engine was corrected for once
+  already.
+* **GRI 5** - not implemented.
 
 ``rule_path`` records only rules that were actually evaluated. Naming a rule
 the walk never reached would put a fabrication into the trace that week 4
@@ -70,6 +82,19 @@ FILLER = {
     "exceeding", "than", "containing", "and", "with", "made", "from",
     "value", "volume", "ad", "valorem", "least", "over", "under", "its",
 }
+
+#: GRI 2(a)'s trigger, as descriptions actually state it. 213 of the 18,253
+#: rulings carry one of these words; 44 of them are cases the ruling itself
+#: decided under 2(a).
+INCOMPLETE_RE = re.compile(
+    r"\b(?:unassembled|disassembled|knocked[-\s]down|unfinished|incomplete"
+    r"|in kit form|not assembled|ready to assemble)\b",
+    re.I,
+)
+
+#: A provision covering parts rather than the article. "Parts thereof",
+#: "parts and accessories".
+PARTS_RE = re.compile(r"\bparts?\b", re.I)
 
 #: Section XI Note 2(A) governs goods of chapters 50 to 55 directly.
 NOTE_2A_CHAPTERS = {f"{n:02d}" for n in range(50, 56)}
@@ -311,6 +336,18 @@ class GRIEngine:
                 full.append("GRI 6")
             return Decision(code, full, [*notes_cited, *cited], reason=why)
 
+        # GRI 2(a) - an incomplete, unfinished or unassembled article is
+        # classified as the finished one. It sits before 2(b) in the sequence.
+        if INCOMPLETE_RE.search(facts.description):
+            path.append("GRI 2(a)")
+            whole = [c for c in candidates if not _is_parts_provision(texts.get(c, ""))]
+            if len(whole) == 1:
+                return Decision(
+                    whole[0], path, notes_cited,
+                    reason="an incomplete or unassembled article is classified as "
+                           "the finished one, not as its parts",
+                )
+
         # GRI 2(b) sends goods of more than one material to Rule 3. Without a
         # mixture there is no trigger, so the failure is at GRI 1 and the path
         # says so rather than naming rules that never ran.
@@ -352,6 +389,22 @@ def _matching(candidates: list[str], materials: list[str], texts: dict[str, str]
         code for code in candidates
         if any(_describes_material(texts.get(code, ""), m) for m in materials)
     ]
+
+
+def _is_parts_provision(text: str) -> bool:
+    """Does this line cover parts rather than the article itself?
+
+    GRI 2(a) turns on exactly this distinction: an unassembled bicycle is a
+    bicycle, not a collection of bicycle parts.
+
+    The whole inherited chain is searched, not just the line's own words:
+    "Parts and accessories of vehicles of heading 8712 - Frames and forks"
+    names parts in its heading and never again, so reading only the last
+    segment makes a parts provision look like the finished article. That is
+    the opposite of the residual test, where "Other" has to be the line's own
+    description to mean anything.
+    """
+    return bool(PARTS_RE.search(text))
 
 
 def _is_residual(text: str) -> bool:

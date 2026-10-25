@@ -191,3 +191,61 @@ def test_the_engine_holds_no_per_request_state(engine):
     # With no texts supplied the rule cannot match a material, so it escalates
     # rather than reusing what the previous call happened to pass in.
     assert second.code is None and second.escalated
+
+
+# ------------------------------------------------------------------ GRI 2(a)
+
+BICYCLE = "8712003000"
+BICYCLE_PARTS = "8714911000"
+VEHICLE_TEXTS = {
+    BICYCLE: "Bicycles and other cycles, not motorized \u2014 Other bicycles",
+    BICYCLE_PARTS: "Parts and accessories of vehicles of heading 8712 \u2014 Frames and forks",
+}
+
+
+def test_an_unassembled_article_is_the_finished_article(engine):
+    """GRI 2(a): an unassembled bicycle is a bicycle, not bicycle parts."""
+    facts = extract_facts("a bicycle imported unassembled, in a carton")
+    decision = engine.adjudicate(facts, [BICYCLE, BICYCLE_PARTS], VEHICLE_TEXTS)
+    assert decision.code == BICYCLE
+    assert decision.rule_path == ["GRI 1", "GRI 2(a)"]
+
+
+def test_the_rule_needs_the_trigger_to_be_stated(engine):
+    """Without "unassembled" there is nothing to establish 2(a) from."""
+    decision = engine.adjudicate(
+        extract_facts("a bicycle"), [BICYCLE, BICYCLE_PARTS], VEHICLE_TEXTS
+    )
+    assert decision.escalated
+    assert "GRI 2(a)" not in decision.rule_path
+
+
+def test_2a_declines_when_it_cannot_tell_the_whole_from_the_parts(engine):
+    """Two parts provisions leave nothing for the rule to choose between.
+
+    213 descriptions carry a trigger word but only 44 are 2(a) cases, so the
+    rule firing whenever the word appears would be worse than not firing.
+    """
+    texts = {
+        "8714911000": "Parts and accessories \u2014 Frames and forks",
+        "8714921000": "Parts and accessories \u2014 Wheel rims and spokes",
+    }
+    decision = engine.adjudicate(
+        extract_facts("unassembled bicycle parts"), list(texts), texts
+    )
+    assert decision.code is None and decision.escalated
+    assert decision.rule_path[-1] == "GRI 2(a)" or "GRI 2(a)" in decision.rule_path
+
+
+def test_gri_4_is_never_claimed(engine):
+    """It decides 0 of 18,253 rulings and "most akin" is a judgment.
+
+    Naming it on a path without evaluating it is the fabrication this engine
+    was already corrected for once.
+    """
+    decisions = [
+        engine.adjudicate(extract_facts("a bicycle"), [BICYCLE, BICYCLE_PARTS], VEHICLE_TEXTS),
+        engine.adjudicate(extract_facts("t-shirt, 50% ramie and 50% silk"),
+                          [COTTON, MAN_MADE], TEXTS),
+    ]
+    assert all("GRI 4" not in d.rule_path for d in decisions)
