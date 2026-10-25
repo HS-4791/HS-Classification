@@ -105,3 +105,27 @@ def test_a_note_pointing_inside_its_own_chapter_is_not_an_edge():
              lead_in="This chapter does not cover:", text="Goods of chapter 61."),
     ])
     assert len(graph) == 0
+
+
+def test_a_single_digit_chapter_is_not_dropped():
+    """The notes write "chapter 5", not "chapter 05".
+
+    Twelve provisions cite a single-digit chapter - chapter 3 Note 1(c) sends
+    goods to chapter 5 among them. A pattern demanding two digits loses those
+    edges silently, and the graph simply has no exclusion where one exists.
+    """
+    found = references_in("...either their species or their condition (chapter 5); flours")
+    assert ref("chapter", "05") in found
+
+
+def test_a_range_of_single_digit_chapters_pads_to_two():
+    assert references_in("goods of chapters 1 to 4") == [
+        ref("chapter", f"{n:02d}") for n in range(1, 5)
+    ]
+
+
+def test_a_heading_reference_still_needs_four_digits():
+    """"heading 39" is not a heading; only a four-digit code is."""
+    assert references_in("heading 0501, 6703 or 6704") == [
+        ref("heading", "0501"), ref("heading", "6703"), ref("heading", "6704")
+    ]

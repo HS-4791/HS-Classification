@@ -30,7 +30,15 @@ EXCLUDES_RE = re.compile(r"\bdoes not (?:cover|apply to|include)\b", re.I)
 #: A reference names a level and then one or more codes, possibly as a range
 #: ("chapters 50 to 55") or a list ("heading 0501, 6703 or 6704").
 LEVEL_RE = re.compile(r"\b(chapters?|headings?|subheadings?)\s+", re.I)
-CODE_RE = re.compile(r"\d{2,4}(?:\.\d{2})*")
+#: Each level writes its codes differently, and a single pattern gets chapters
+#: wrong. The notes say "chapter 5", not "chapter 05" - twelve provisions cite
+#: a single-digit chapter, including chapter 3's exclusion of goods into
+#: chapter 5. A pattern demanding two digits drops those edges silently.
+CODE_PATTERNS = {
+    "chapter": re.compile(r"\d{1,2}(?!\d)"),
+    "heading": re.compile(r"\d{4}(?:\.\d{2})*"),
+    "subheading": re.compile(r"\d{4}(?:\.\d{2})*"),
+}
 #: A note can redirect to a whole Section by numeral - chapter 39 Note 12(p)
 #: sends goods to "section XI (textiles and textile articles)", which is the
 #: return edge for Section XI Note 1(h). Miss it and the round trip the
@@ -82,7 +90,7 @@ def _expand(level: str, codes: list[str], ranged: list[bool]) -> list[str]:
                 out.append(code)
                 continue
             if 0 < stop - start < 100:
-                width = len(out[-1])
+                width = max(len(out[-1]), LEVEL_DIGITS[level])
                 out.extend(str(n).zfill(width) for n in range(start + 1, stop + 1))
                 continue
         out.append(code)
@@ -101,12 +109,13 @@ def references_in(text: str) -> list[Reference]:
     for match in LEVEL_RE.finditer(text):
         level = match.group(1).lower().rstrip("s")
         width = LEVEL_DIGITS[level]
+        code_pattern = CODE_PATTERNS[level]
         codes: list[str] = []
         ranged: list[bool] = []
         position = match.end()
         expecting_range = False
         while position < len(text):
-            code = CODE_RE.match(text, position)
+            code = code_pattern.match(text, position)
             if not code:
                 break
             codes.append(code.group(0))
@@ -121,6 +130,9 @@ def references_in(text: str) -> list[Reference]:
             position += join.end()
         for code in _expand(level, codes, ranged):
             digits = code.replace(".", "")
+            if level == "chapter":
+                # The schedule writes "chapter 5"; a code is always two digits.
+                digits = digits.zfill(width)
             if len(digits) >= width:
                 found.append(Reference(level, digits[:width]))
     # keep document order, drop repeats
