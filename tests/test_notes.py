@@ -97,3 +97,65 @@ def test_a_provision_survives_the_page_break_it_sits_across(section_xi):
 def test_the_four_kinds_are_told_apart(section_xi):
     kinds = {key.split(":")[0] for key in section_xi}
     assert {"note", "subheading_note", "additional_us_note", "statistical_note"} <= kinds
+
+
+@needs_pdf
+def test_sibling_provisions_do_not_nest_on_sub_pixel_drift():
+    """Two provisions at the same depth do not share an exact x position.
+
+    On chapter 4's notes page "(a)" starts at 62.6397 and "(b)" at 62.6400.
+    Compared exactly, "(b)" never closes "(a)" and nests inside it, so Note
+    3(b) is filed as 3(a)(b) and Note 5 becomes a child of Note 4 called "45".
+    """
+    notes = {n.number: n for n in extract_notes(FULL_REVISION, pages=range(970, 972))
+             if n.kind == "note"}
+    assert {"1", "2", "3", "3(a)", "3(b)", "4", "4(a)", "4(b)", "4(c)"} <= set(notes)
+    assert notes["3(b)"].parent == "3"
+    assert notes["4"].parent is None
+    assert not any(num.startswith("45") for num in notes)
+
+
+@needs_pdf
+def test_every_parent_reference_resolves():
+    """A provision whose own text is empty still has to be emitted.
+
+    Section XI Note 2 says nothing itself - 2(A) and 2(B) carry all of it -
+    but dropping it leaves those children naming a parent that is not in the
+    file, and the note tree cannot be walked.
+    """
+    notes = extract_notes(FULL_REVISION, pages=SECTION_XI)
+    present = {(n.kind, n.section, n.chapter, n.number) for n in notes}
+    dangling = [
+        n.citation for n in notes
+        if n.parent and (n.kind, n.section, n.chapter, n.parent) not in present
+    ]
+    assert dangling == []
+
+
+@needs_pdf
+def test_a_sub_provision_keeps_its_parents_kind():
+    """A "Notes (con.)" header between 23(b) and 23(c) must not reclassify it."""
+    notes = extract_notes(FULL_REVISION, pages=SECTION_XI)
+    # Section XI has a Note 1, a Subheading Note 1 and an Additional U.S.
+    # Note 1, so a sibling group is only a group within one kind.
+    children: dict[tuple, list] = {}
+    for note in notes:
+        if note.parent:
+            children.setdefault((note.section, note.chapter, note.parent), []).append(note)
+    for (_, _, parent), group in children.items():
+        parents = [n for n in notes if n.number == parent]
+        for child in group:
+            assert any(p.kind == child.kind for p in parents), (
+                f"{child.citation} has no parent of its own kind"
+            )
+
+
+@needs_pdf
+def test_a_heading_number_used_as_a_label_is_not_a_provision_number():
+    """Chapter 84 prints "8479. Heading 8479 also covers ..." as a paragraph.
+
+    Read as a provision marker it becomes a child of note 8 and is cited as
+    "Chapter 84 Note 88479" - not something a ruling could reference.
+    """
+    numbers = {n.number for n in extract_notes(FULL_REVISION, pages=range(2731, 2733))}
+    assert not any(num.startswith("88479") for num in numbers)

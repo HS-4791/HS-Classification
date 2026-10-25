@@ -68,7 +68,14 @@ KINDS = {
 }
 
 #: A provision opens with "1." or "(a)" or "(A)" or "(ii)".
-MARKER_RE = re.compile(r"^(?:(\d+)\.|\(([A-Za-z]+)\))\s+")
+#:
+#: The numeric form is capped at three digits because the notes also use a
+#: bare heading number as a paragraph label - chapter 84 prints "8479.
+#: Heading 8479 also covers machines for making rope or cable ...". Reading
+#: that as a provision number makes it a child of note 8, cited as "Note
+#: 88479", which is not a provision anyone could look up. No note in the
+#: schedule is numbered above 999.
+MARKER_RE = re.compile(r"^(?:(\d{1,3})\.|\(([A-Za-z]+)\))\s+")
 
 #: One rung of the provision ladder: numbered notes start at x=46.8, lettered
 #: sub-provisions at 62.6, nested ones at 78.5.
@@ -79,6 +86,14 @@ MARKER_RE = re.compile(r"^(?:(\d+)\.|\(([A-Za-z]+)\))\s+")
 #: that position would stop "(B)" from closing "(A)", and Note 2(B) would be
 #: filed as Note 2(A)(B). Inline markers are given their ladder rung instead.
 LADDER_STEP = 15.85
+
+#: Two provisions at the same depth do not share an exact x. On chapter 4's
+#: notes page "(a)" starts at 62.6397 and its sibling "(b)" at 62.6400 - three
+#: ten-thousandths of a point further right. Compared exactly, "(b)" never
+#: closes "(a)" and nests under it instead, so Note 3(b) is filed as 3(a)(b)
+#: and Note 5 becomes a child of Note 4 numbered "45". A rung is 15.85pt wide,
+#: so a tolerance well under that separates drift from a real indent.
+INDENT_TOLERANCE = 1.0
 
 SECTION_MARKER_RE = re.compile(r"^([IVXL]+)-\d+$")
 CHAPTER_MARKER_RE = re.compile(r"^(\d{1,4})-\d+$")
@@ -146,6 +161,10 @@ class _Open:
     note: Note
     x0: float
     lines: list[str] = field(default_factory=list)
+    #: Note 2's own text is empty - everything it says is in 2(A) and 2(B).
+    #: It still has to be emitted, or those children name a parent that is
+    #: not in the file and the note tree cannot be walked.
+    has_children: bool = False
 
 
 def _scope_of(words: list[dict]) -> tuple[str | None, str | None]:
@@ -180,10 +199,10 @@ class NotesParser:
         self._stack: list[_Open] = []
 
     def _close(self, down_to: float) -> None:
-        while self._stack and self._stack[-1].x0 >= down_to:
+        while self._stack and self._stack[-1].x0 >= down_to - INDENT_TOLERANCE:
             done = self._stack.pop()
             done.note.text = " ".join(done.lines).strip()
-            if done.note.text:
+            if done.note.text or done.has_children:
                 self.notes.append(done.note)
 
     def _set_scope(self, words: list[dict]) -> None:
@@ -237,9 +256,14 @@ class NotesParser:
                 lead_in = ""
                 if parent:
                     lead_in = parent.lead_in or " ".join(self._stack[-1].lines).strip()
+                    self._stack[-1].has_children = True
                 self._stack.append(_Open(
                     Note(
-                        kind=self.kind,
+                        # A sub-provision is the same kind as its parent. A
+                        # "Notes (con.)" header appearing between 23(b) and
+                        # 23(c) must not turn one sibling into a Note while
+                        # the others stay Additional U.S. Notes.
+                        kind=parent.kind if parent else self.kind,
                         number=f"{parent.number}{label}" if parent else label,
                         text="",
                         section=self.section,
