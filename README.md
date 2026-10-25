@@ -6,8 +6,8 @@ it, and escalate rather than guess when the nomenclature is genuinely ambiguous.
 Scored against real binding rulings issued by US Customs, so the ground truth is an authority's,
 not the author's.
 
-> **Status: week 2 of 4, in progress.** The schedule is parsed from the PDF; **86.48%** of rows
-> agree with the published export on every field. The vector-only baseline is measured below;
+> **Status: week 2 of 4, in progress.** The schedule is parsed from the PDF; **99.10%** of
+> nomenclature rows agree with the published export on every field. The baseline is measured below;
 > it is the floor every later component has to beat, and CI fails the build if it drops.
 
 ## The problem
@@ -129,8 +129,10 @@ Across all 4,534 pages, two numbers are reported, and the gap between them is th
 
 | | |
 | --- | ---: |
-| rows **found** - code and description align | 99.84% |
-| rows **correct** - every compared field agrees | **86.48%** |
+| rows **found** - code and description align | 99.86% |
+| rows **correct**, chapters 1-97 - every field agrees | **99.10%** |
+| rows correct, chapters 98-99 | 44.74% |
+| rows correct, whole document | 93.11% |
 
 The first was published on its own as "row accuracy" for two weeks. It counts a row as matched
 when it lines up with its counterpart, whatever its contents, so it sat at 99.84% while the same
@@ -158,9 +160,17 @@ None of these raise an error. They produce a tree that is quietly wrong.
 
 ### Known limits, stated rather than hidden
 
-- **Chapter 99** uses a different column layout (it carries effective-date columns), so its rate
-  fields do not line up with the ordinary grid. Rows match; rate *fields* do not. Chapters 98 and
-  99 are US special provisions that reference goods of other chapters, not ordinary nomenclature.
+- **Chapters 98 and 99 are not parsed for rates, and the number says so.** They are US special
+  provisions that re-describe goods classified elsewhere, and their subchapters use layouts this
+  parser does not model - a fifth rate column in 99 I-II, a single "Additional Duties" column in
+  99 IV whose values print at the General position. Every rate mismatch in the whole document is
+  in these two chapters: 2,163 general, 1,657 special, 1,652 Column 2, and **zero anywhere
+  else**. Modelling a second column grid for provisions the classifier never visits would buy
+  nothing, so they are reported separately rather than averaged into a flattering total.
+- **261 units of quantity are still wrong**, all of them `m2`/`m3` where a superscript attaches
+  to the neighbouring row - one row reads `m33` and the row that owned the glyph is left with
+  `m`. Two attempts at the tie-break did not fix it and the mechanism is not yet understood;
+  measured, not guessed at, and not claimed to be solved.
 - Roughly a hundred rows document-wide contain glyphs the schedule's fonts map to control
   characters rather than Unicode. The character data is not in the file; they are dropped rather
   than guessed at.

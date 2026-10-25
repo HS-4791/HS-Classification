@@ -67,7 +67,22 @@ SUFFIX_RE = re.compile(r"^\d{2}$")
 CHAPTER_PAGE_RE = re.compile(r"^(\d{2,4})-\d+$")
 DOT_LEADER_RE = re.compile(r"\.{2,}")
 #: A reference to a footnote ("1/"), not part of the article description.
-FOOTNOTE_RE = re.compile(r"^\d+/$")
+#: Markers double up - "4/5/" - which a single-marker pattern leaves in the
+#: text, giving rates like "1.9%4/5/".
+FOOTNOTE_RE = re.compile(r"^(?:\d+/)+$")
+
+#: A superscript exponent glued to a footnote marker by the PDF itself: the
+#: Column 2 rate "$1.70/m3" followed by marker "1/" arrives as the single
+#: token "31/". Dropping it whole turns a rate per cubic metre into a rate
+#: per metre - a factor of a thousand. Only 2 and 3 occur as exponents here,
+#: and only on a unit ending in "m", which keeps this from eating a genuine
+#: footnote 21/ or 31/.
+EXPONENT_AND_MARKER_RE = re.compile(r"^([23])(?:\d+/)+$")
+
+#: The only units in the schedule that end in a period - 7,669 rows between
+#: them, against none for kg, t, g, m2, m3 or liters. Matching on the last
+#: word also covers the compound "doz. prs.".
+ABBREVIATED_UNITS = frozenset({"No", "doz", "prs", "Jwls"})
 
 #: A centred Roman-numeral sub-chapter heading: "I. CHEMICAL ELEMENTS".
 SUBCHAPTER_RE = re.compile(r"^[IVXL]+\.\s")
@@ -171,6 +186,27 @@ def _clean(text: str) -> str:
     return _without_controls(DOT_LEADER_RE.sub("", text)).strip()
 
 
+def _clean_unit(text: str) -> str:
+    """Clean a unit of quantity, restoring the period the leaders swallow.
+
+    pdfplumber returns a unit and its dot leader as one token - "No........"
+    - so stripping the leader takes the abbreviating period with it. 2,296
+    rows read "No" for "No." and "doz" for "doz.".
+
+    The period cannot be recovered from the glyphs, but it does not need to
+    be guessed: only five units in the whole schedule carry one, and they are
+    closed-vocabulary abbreviations. A unit outside that set never ends in a
+    period, so a lone leader dot that survived is removed as well - which is
+    the same defect running the other way, turning "thousands" into
+    "thousands.".
+    """
+    cleaned = _clean(text).rstrip(".").strip()
+    if not cleaned:
+        return ""
+    last = cleaned.split()[-1]
+    return f"{cleaned}." if last in ABBREVIATED_UNITS else cleaned
+
+
 def _body_size(words: list[dict]) -> float:
     sizes = Counter(round(w.get("size", 0.0), 1) for w in words)
     return max(sizes, key=lambda s: (sizes[s], s)) if sizes else 0.0
@@ -200,13 +236,27 @@ def _attach_small(word: dict, lines: list[tuple[float, list[dict]]]) -> None:
     the closest word ending just before it wins.
     """
     nearby = [line for line in lines if abs(line[0] - word["bottom"]) <= SMALL_GLYPH_WINDOW]
-    best: tuple[float, float] | None = None
+    best: tuple[float, int, float] | None = None
     target: tuple[float, list[dict]] | None = None
     for line in nearby:
         ends = [w["x1"] for w in line[1] if w["x1"] <= word["x0"] + 0.5]
         if not ends:
             continue
-        rank = (word["x0"] - max(ends), abs(line[0] - word["bottom"]))
+        # The horizontal gap decides, but it ties whenever two consecutive
+        # rows end their text at the same x - which the units column does
+        # constantly, since row after row ends in "m". The tie then fell to
+        # vertical distance, and the line *above* won: a superscript sits
+        # about 4.9pt over its own baseline while the line above is only
+        # 3.6pt away when the leading is tight. One row got "m33" and the
+        # row that owned the glyph was left with "m", 247 times.
+        #
+        # So break the tie by direction instead: a raised glyph belongs to
+        # the line whose baseline is below it. A lowered one - a chemical
+        # subscript - keeps its own line, because there the gap to its left
+        # neighbour is genuinely smaller and never reaches this tie.
+        below = line[0] > word["bottom"]
+        rank = (word["x0"] - max(ends), 0 if below else 1,
+                abs(line[0] - word["bottom"]))
         if best is None or rank < best:
             best, target = rank, line
     if target is None:
@@ -261,10 +311,18 @@ def _text_of(words: list[dict], cutoff: float = 0.0) -> str:
     previous_super = False
     for word in ordered:
         superscript = word.get("size", 0.0) < cutoff
-        if superscript and FOOTNOTE_RE.match(word["text"]):
-            # The published export leaves footnote markers out as well.
-            previous_x1, previous_super = word["x1"], False
-            continue
+        if superscript:
+            # An exponent the PDF glued to a footnote marker: keep the
+            # exponent, drop the marker. Only on a unit ending in "m".
+            exponent = EXPONENT_AND_MARKER_RE.match(word["text"])
+            if exponent and parts and parts[-1].rstrip().endswith("m"):
+                parts[-1] += exponent.group(1)
+                previous_x1, previous_super = word["x1"], True
+                continue
+            if FOOTNOTE_RE.match(word["text"]):
+                # The published export leaves footnote markers out as well.
+                previous_x1, previous_super = word["x1"], False
+                continue
         # Whatever follows a superscript with no gap closed the same word:
         # the colon in "g/m2:". The test stays narrow because some lines are
         # set tightly enough that a real space is under a point wide.
@@ -386,7 +444,7 @@ def parse_page(page, section: str | None = None) -> tuple[list[ParsedRow], str |
         description = _clean(raw_description)
         # One unit per line, not per word: "doz. prs" (dozen pairs) is a
         # single unit of quantity that happens to be two tokens.
-        unit_line = _clean(_text_of(cols["units"], cutoff))
+        unit_line = _clean_unit(_text_of(cols["units"], cutoff))
         units = [unit_line] if unit_line else []
         general = _clean(_text_of(cols["general"], cutoff))
         special = _clean(_text_of(cols["special"], cutoff))

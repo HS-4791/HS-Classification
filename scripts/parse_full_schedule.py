@@ -57,10 +57,34 @@ def main() -> int:
         total_matched += report.field_perfect
         total_expected += report.export_rows
 
+    # Chapters 98 and 99 are US special provisions, not nomenclature. Their
+    # subchapters carry a rate layout this parser does not model - a fifth
+    # column in 99 I-II, an "Additional Duties" column in 99 IV - so every
+    # rate cell there disagrees. Reporting one averaged number hides both
+    # facts: that the nomenclature is near-exact, and that 98/99 are not
+    # parsed for rates at all.
+    SPECIAL = {"98", "99"}
+    nomenclature = {c: s for c, s in summary.items() if c not in SPECIAL}
+    special = {c: s for c, s in summary.items() if c in SPECIAL}
+
+    def _share(group: dict) -> tuple[int, int]:
+        rows = sum(s["export_rows"] for s in group.values())
+        perfect = sum(round(s["accuracy"] * s["export_rows"]) for s in group.values())
+        return perfect, rows
+
+    nom_ok, nom_rows = _share(nomenclature)
+    sp_ok, sp_rows = _share(special)
+    print()
+    print(f"chapters 1-97 (the nomenclature): {nom_ok}/{nom_rows} = {nom_ok/nom_rows:.2%}")
+    print(f"chapters 98-99 (special provisions): {sp_ok}/{sp_rows} = {sp_ok/sp_rows:.2%}"
+          "  - rate columns not modelled")
+
     (ROOT / "reports" / "pdf-reconciliation.json").write_text(
         json.dumps({"revision": REVISION, "total_matched": total_matched,
                     "total_export_rows": total_expected,
                     "accuracy": round(total_matched / total_expected, 4),
+                    "nomenclature_accuracy": round(nom_ok / nom_rows, 4),
+                    "special_provisions_accuracy": round(sp_ok / sp_rows, 4),
                     "by_chapter": summary}, indent=2),
         encoding="utf-8",
     )

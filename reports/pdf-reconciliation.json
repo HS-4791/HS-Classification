@@ -1,12 +1,13 @@
 {
   "revision": "2026HTSRev21",
-  "total_matched": 31006,
+  "total_matched": 33337,
   "total_export_rows": 35805,
-  "accuracy": 0.866,
+  "accuracy": 0.9311,
+  "nomenclature_accuracy": 0.991,
+  "special_provisions_accuracy": 0.4474,
   "by_chapter": {
     "01": {
-      "field:units": 23,
-      "accuracy": 0.8175,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 126,
       "export_rows": 126
@@ -26,8 +27,7 @@
       "export_rows": 797
     },
     "04": {
-      "field:units": 4,
-      "accuracy": 0.9908,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 435,
       "export_rows": 435
@@ -39,8 +39,7 @@
       "export_rows": 61
     },
     "06": {
-      "field:units": 16,
-      "accuracy": 0.8491,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 106,
       "export_rows": 106
@@ -90,8 +89,7 @@
       "export_rows": 37
     },
     "14": {
-      "field:units": 2,
-      "accuracy": 0.913,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 23,
       "export_rows": 23
@@ -139,10 +137,7 @@
       "export_rows": 193
     },
     "22": {
-      "field:general": 1,
-      "field:other": 1,
-      "field:special": 1,
-      "accuracy": 0.9953,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 211,
       "export_rows": 211
@@ -154,8 +149,7 @@
       "export_rows": 92
     },
     "24": {
-      "field:units": 5,
-      "accuracy": 0.9836,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 304,
       "export_rows": 304
@@ -233,15 +227,15 @@
       "export_rows": 55
     },
     "36": {
-      "field:units": 7,
-      "accuracy": 0.7407,
+      "field:units": 2,
+      "accuracy": 0.9259,
       "alignment": 1.0,
       "pdf_rows": 27,
       "export_rows": 27
     },
     "37": {
-      "field:units": 12,
-      "accuracy": 0.88,
+      "field:units": 10,
+      "accuracy": 0.9,
       "alignment": 1.0,
       "pdf_rows": 100,
       "export_rows": 100
@@ -257,16 +251,15 @@
     },
     "39": {
       "extra": 1,
-      "field:units": 32,
-      "accuracy": 0.9363,
+      "field:units": 17,
+      "accuracy": 0.9661,
       "alignment": 1.0,
       "pdf_rows": 503,
       "export_rows": 502
     },
     "40": {
-      "field:special": 1,
-      "field:units": 18,
-      "accuracy": 0.9404,
+      "field:units": 2,
+      "accuracy": 0.9937,
       "alignment": 1.0,
       "pdf_rows": 319,
       "export_rows": 319
@@ -279,23 +272,20 @@
       "export_rows": 314
     },
     "42": {
-      "field:units": 64,
-      "accuracy": 0.6923,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 208,
       "export_rows": 208
     },
     "43": {
-      "field:units": 10,
-      "accuracy": 0.8214,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 56,
       "export_rows": 56
     },
     "44": {
-      "field:other": 12,
-      "field:units": 181,
-      "accuracy": 0.7808,
+      "field:units": 137,
+      "accuracy": 0.8436,
       "alignment": 1.0,
       "pdf_rows": 876,
       "export_rows": 876
@@ -307,8 +297,7 @@
       "export_rows": 29
     },
     "46": {
-      "field:units": 26,
-      "accuracy": 0.6867,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 83,
       "export_rows": 83
@@ -320,15 +309,13 @@
       "export_rows": 40
     },
     "48": {
-      "field:units": 4,
-      "accuracy": 0.9922,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 513,
       "export_rows": 513
     },
     "49": {
-      "field:units": 4,
-      "accuracy": 0.95,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 80,
       "export_rows": 80
@@ -402,58 +389,52 @@
       "export_rows": 178
     },
     "61": {
-      "field:units": 114,
-      "accuracy": 0.9152,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 1345,
       "export_rows": 1345
     },
     "62": {
-      "field:units": 162,
-      "accuracy": 0.9225,
+      "field:units": 14,
+      "accuracy": 0.9933,
       "alignment": 1.0,
       "pdf_rows": 2089,
       "export_rows": 2089
     },
     "63": {
-      "field:units": 24,
-      "accuracy": 0.9363,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 377,
       "export_rows": 377
     },
     "64": {
-      "field:units": 53,
-      "accuracy": 0.9191,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 655,
       "export_rows": 655
     },
     "65": {
-      "field:units": 11,
-      "accuracy": 0.9068,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 118,
       "export_rows": 118
     },
     "66": {
-      "field:units": 6,
-      "accuracy": 0.5385,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 13,
       "export_rows": 13
     },
     "67": {
-      "field:units": 10,
-      "accuracy": 0.5238,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 21,
       "export_rows": 21
     },
     "68": {
       "field:indent": 1,
-      "field:units": 6,
-      "accuracy": 0.9563,
+      "field:units": 2,
+      "accuracy": 0.9812,
       "alignment": 1.0,
       "pdf_rows": 160,
       "export_rows": 160
@@ -461,25 +442,24 @@
     "69": {
       "extra": 1,
       "field:other": 1,
-      "field:units": 20,
+      "field:units": 12,
       "missing": 1,
-      "accuracy": 0.8957,
+      "accuracy": 0.9336,
       "alignment": 0.9953,
       "pdf_rows": 211,
       "export_rows": 211
     },
     "70": {
       "extra": 1,
-      "field:units": 65,
+      "field:units": 10,
       "missing": 1,
-      "accuracy": 0.8628,
+      "accuracy": 0.9771,
       "alignment": 0.9979,
       "pdf_rows": 481,
       "export_rows": 481
     },
     "71": {
-      "field:units": 11,
-      "accuracy": 0.9542,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 240,
       "export_rows": 240
@@ -491,15 +471,13 @@
       "export_rows": 951
     },
     "73": {
-      "field:units": 26,
-      "accuracy": 0.9732,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 970,
       "export_rows": 970
     },
     "74": {
-      "field:units": 1,
-      "accuracy": 0.9958,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 238,
       "export_rows": 238
@@ -511,8 +489,7 @@
       "export_rows": 50
     },
     "76": {
-      "field:units": 3,
-      "accuracy": 0.9858,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 212,
       "export_rows": 212
@@ -542,125 +519,110 @@
       "export_rows": 128
     },
     "82": {
-      "field:units": 83,
-      "accuracy": 0.727,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 304,
       "export_rows": 304
     },
     "83": {
-      "field:units": 6,
-      "accuracy": 0.958,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 143,
       "export_rows": 143
     },
     "84": {
       "extra": 2,
-      "field:units": 424,
       "missing": 2,
-      "accuracy": 0.8422,
+      "accuracy": 0.9993,
       "alignment": 0.9993,
       "pdf_rows": 2699,
       "export_rows": 2699
     },
     "85": {
-      "field:units": 399,
-      "accuracy": 0.7455,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 1568,
       "export_rows": 1568
     },
     "86": {
-      "field:units": 15,
-      "accuracy": 0.7321,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 56,
       "export_rows": 56
     },
     "87": {
-      "field:units": 117,
-      "accuracy": 0.8169,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 639,
       "export_rows": 639
     },
     "88": {
-      "field:units": 12,
-      "accuracy": 0.8938,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 113,
       "export_rows": 113
     },
     "89": {
-      "field:units": 17,
-      "accuracy": 0.8191,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 94,
       "export_rows": 94
     },
     "90": {
       "extra": 1,
-      "field:units": 201,
       "missing": 1,
-      "accuracy": 0.699,
+      "accuracy": 0.9985,
       "alignment": 0.9985,
       "pdf_rows": 671,
       "export_rows": 671
     },
     "91": {
-      "field:units": 70,
-      "accuracy": 0.7771,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 314,
       "export_rows": 314
     },
     "92": {
-      "field:units": 33,
-      "accuracy": 0.6633,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 98,
       "export_rows": 98
     },
     "93": {
-      "field:units": 9,
-      "accuracy": 0.9174,
+      "field:units": 1,
+      "accuracy": 0.9908,
       "alignment": 1.0,
       "pdf_rows": 109,
       "export_rows": 109
     },
     "94": {
-      "field:units": 44,
-      "accuracy": 0.9011,
+      "field:units": 1,
+      "accuracy": 0.9978,
       "alignment": 1.0,
       "pdf_rows": 445,
       "export_rows": 445
     },
     "95": {
-      "field:units": 59,
-      "accuracy": 0.6793,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 184,
       "export_rows": 184
     },
     "96": {
-      "field:units": 77,
-      "accuracy": 0.6818,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 242,
       "export_rows": 242
     },
     "97": {
-      "field:units": 11,
-      "accuracy": 0.766,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 47,
       "export_rows": 47
     },
     "98": {
       "extra": 1,
-      "field:units": 29,
-      "accuracy": 0.9513,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 596,
       "export_rows": 595
