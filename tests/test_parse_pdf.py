@@ -167,3 +167,30 @@ def test_a_heading_whose_text_contains_a_colon_stays_one_row():
     assert "spades, shovels" in heading.description
     # The next row is its first subheading, not an orphaned fragment.
     assert rows[rows.index(heading) + 1].full_code == "8201.10.00.00"
+
+
+@needs_full_pdf
+def test_a_footnote_below_the_table_is_not_a_tariff_line():
+    """BODY_TOP keeps the running head out; nothing kept the footnotes out.
+
+    In "1/ See chapter 99 statistical note 1." the token "99" lands at x=103,
+    inside the statistical-suffix column, so it became a suffix on whatever
+    code was last seen: 9901.00.50.99, description "statistical note 1.".
+    342 codes that do not exist in the schedule were invented this way.
+    """
+    rows = parse_pdf(FULL_REVISION, pages=range(3307, 3309))
+    assert not any("statistical note" in r.description.lower() for r in rows)
+    assert not any(r.full_code.endswith(".99") for r in rows if r.full_code)
+
+
+@needs_full_pdf
+def test_a_body_sized_footnote_marker_does_not_eat_the_suffix():
+    """5.4% of markers are set at body size and survive the superscript test.
+
+    The suffix cell then reads "00 1/", SUFFIX_RE fails, and the ten-digit
+    line is emitted as its eight-digit stem - losing the real code and
+    inventing the stem in its place.
+    """
+    codes = {r.full_code for r in parse_pdf(FULL_REVISION, pages=range(3177, 3179))}
+    assert "9802.00.60.00" in codes
+    assert "9802.00.60" not in codes

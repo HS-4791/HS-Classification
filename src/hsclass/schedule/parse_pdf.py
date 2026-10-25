@@ -274,6 +274,43 @@ def _text_of(words: list[dict], cutoff: float = 0.0) -> str:
     return " ".join(parts)
 
 
+def _without_footnote_markers(text: str) -> str:
+    """Drop reference markers from a cell, whatever size they were set at.
+
+    `_text_of` only removes a marker it can recognise as a superscript, and
+    5.4% of them are set at body size. The statistical-suffix cell then reads
+    "00 1/", SUFFIX_RE does not match it, and the ten-digit line is emitted
+    as its eight-digit stem instead - losing 9802.00.60.00 and seven others,
+    and inventing the stems in their place.
+    """
+    return " ".join(t for t in text.split() if not FOOTNOTE_RE.match(t)).strip()
+
+
+def _is_footnote_line(words: list[dict], page_size: float) -> bool:
+    """Is this line a footnote printed below the table rather than a row?
+
+    `BODY_TOP` keeps the running head out, and nothing keeps the footnotes
+    out. They sit inside the body band and were parsed as tariff lines: 342
+    HTS codes that do not exist in the schedule, because in
+    "1/ See chapter 99 statistical note 1." the token "99" lands at x=103,
+    inside the statistical-suffix column, and becomes a suffix on whatever
+    code was last seen - "9901.00.50.99", description "statistical note 1.".
+
+    Two signatures, because neither catches both kinds:
+
+    * the line opens with a reference marker ("1/", "4/") in the code column,
+      which no tariff code ever looks like
+    * the line is set smaller than the page's body text, as the
+      "Note: The shaded areas indicate the provision has expired" line is
+    """
+    if not words:
+        return True
+    leftmost = min(words, key=lambda w: w["x0"])
+    if leftmost["x0"] < 90.0 and FOOTNOTE_RE.match(leftmost["text"]):
+        return True
+    return bool(page_size) and _body_size(words) < page_size - 0.5
+
+
 def indent_of(x0: float) -> int:
     """Convert a description's x position back into a hierarchy level."""
     return max(0, round((x0 - DESCRIPTION_X0) / DESCRIPTION_STEP))
@@ -328,11 +365,18 @@ def parse_page(page, section: str | None = None) -> tuple[list[ParsedRow], str |
     current: ParsedRow | None = None
     base_code = ""  # the coded line that the statistical suffixes below it extend
 
+    page_size = _body_size(body)
+
     for line_words in _group_lines(body):
+        if _is_footnote_line(line_words, page_size):
+            continue
         cols = _columns_of(line_words)
         cutoff = _body_size(line_words) * SUPERSCRIPT_SIZE_RATIO
         code = _text_of(cols["code"], cutoff).strip()
-        suffix = _text_of(cols["suffix"], cutoff).strip()
+        # A marker that happens to be set at body size survives `_text_of`,
+        # and "00 1/" then fails SUFFIX_RE, so the statistical suffix is lost
+        # and the eight-digit line is emitted in its place.
+        suffix = _without_footnote_markers(_text_of(cols["suffix"], cutoff))
         raw_description = _text_of(cols["description"], cutoff)
         description = _clean(raw_description)
         # One unit per line, not per word: "doz. prs" (dozen pairs) is a

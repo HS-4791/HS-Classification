@@ -1,8 +1,8 @@
 {
   "revision": "2026HTSRev21",
-  "total_matched": 30965,
+  "total_matched": 30972,
   "total_export_rows": 35805,
-  "accuracy": 0.8648,
+  "accuracy": 0.865,
   "by_chapter": {
     "01": {
       "field:units": 23,
@@ -259,12 +259,12 @@
       "export_rows": 331
     },
     "39": {
-      "extra": 2,
+      "extra": 1,
       "field:indent": 1,
       "field:units": 32,
       "accuracy": 0.9343,
       "alignment": 1.0,
-      "pdf_rows": 504,
+      "pdf_rows": 503,
       "export_rows": 502
     },
     "40": {
@@ -672,23 +672,22 @@
       "export_rows": 47
     },
     "98": {
-      "extra": 43,
-      "field:units": 28,
-      "missing": 8,
-      "accuracy": 0.9395,
-      "alignment": 0.9866,
-      "pdf_rows": 630,
+      "extra": 1,
+      "field:units": 29,
+      "accuracy": 0.9513,
+      "alignment": 1.0,
+      "pdf_rows": 596,
       "export_rows": 595
     },
     "99": {
-      "extra": 576,
+      "extra": 23,
       "field:general": 2163,
       "field:other": 1652,
       "field:special": 1657,
       "missing": 17,
       "accuracy": 0.3493,
       "alignment": 0.9949,
-      "pdf_rows": 3909,
+      "pdf_rows": 3356,
       "export_rows": 3350
     }
   }
