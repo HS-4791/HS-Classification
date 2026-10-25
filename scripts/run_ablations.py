@@ -72,7 +72,7 @@ def main() -> int:
         Note(**{k: v for k, v in n.items() if k in Note.__dataclass_fields__})
         for n in raw_notes
     ]
-    engine = GRIEngine(notes, build_exclusion_graph(notes))
+    engine = GRIEngine(build_exclusion_graph(notes))
     texts = {c.code: c.text for c in levelled.candidates}
     print(f"{len(notes)} provisions, {len(texts)} candidate texts for the rules", flush=True)
 

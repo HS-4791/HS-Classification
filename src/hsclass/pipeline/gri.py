@@ -48,7 +48,6 @@ import re
 from dataclasses import dataclass, field
 
 from hsclass.schedule.exclusions import ExclusionGraph
-from hsclass.schedule.notes import Note
 
 #: "60% cotton", "60 percent cotton", "cotton 60%".
 PERCENT_BEFORE_RE = re.compile(
@@ -176,12 +175,8 @@ class Decision:
 class GRIEngine:
     """Applies the rules in order and stops at the first that resolves."""
 
-    def __init__(self, notes: list[Note], exclusions: ExclusionGraph) -> None:
+    def __init__(self, exclusions: ExclusionGraph) -> None:
         self.exclusions = exclusions
-        self.notes_by_chapter: dict[str, list[Note]] = {}
-        for note in notes:
-            if note.is_binding and note.chapter:
-                self.notes_by_chapter.setdefault(note.chapter, []).append(note)
 
     # ---------------------------------------------------------------- GRI 1
 
@@ -203,7 +198,7 @@ class GRIEngine:
     # --------------------------------------------------- Section XI Note 2(A)
 
     def _textile_material_rule(
-        self, facts: Facts, candidates: list[str]
+        self, facts: Facts, candidates: list[str], texts: dict[str, str]
     ) -> tuple[str, list[str], str] | None:
         """Apply Note 2(A), including the tie-break written into it.
 
@@ -235,14 +230,14 @@ class GRIEngine:
 
         predominant = facts.predominant()
         if predominant is not None:
-            matching = self._matching(candidates, [predominant[0]])
+            matching = _matching(candidates, [predominant[0]], texts)
             if len(matching) != 1:
                 return None
             return matching[0], cited, "the material predominating by weight decides the subheading"
 
         heaviest = max(facts.materials.values())
         tied = [m for m, share in facts.materials.items() if share == heaviest]
-        matching = self._matching(candidates, tied)
+        matching = _matching(candidates, tied, texts)
         if len(matching) < 2:
             return None
         return (
@@ -251,15 +246,10 @@ class GRIEngine:
             "no material predominates, so the note takes the heading last in numerical order",
         )
 
-    def _matching(self, candidates: list[str], materials: list[str]) -> list[str]:
-        return [
-            code for code in candidates
-            if any(_describes_material(self._text_for(code), m) for m in materials)
-        ]
-
     # ------------------------------------------------------------- GRI 3(a)
 
-    def _most_specific(self, candidates: list[str]) -> list[str]:
+    @staticmethod
+    def _most_specific(candidates: list[str], texts: dict[str, str]) -> list[str]:
         """Candidates that name the goods, rather than catching what is left.
 
         A narrow reading of GRI 3(a): a heading naming the article beats a
@@ -267,12 +257,8 @@ class GRIEngine:
         substantive descriptions is *more specific* - is a judgment this
         engine does not make.
         """
-        named = [c for c in candidates if not self._is_residual(c)]
+        named = [c for c in candidates if not _is_residual(texts.get(c, ""))]
         return named if named else list(candidates)
-
-    def _is_residual(self, code: str) -> bool:
-        own = self._text_for(code).split("—")[-1].strip().rstrip(":").lower()
-        return own in {"other", "others", "other articles"}
 
     # ------------------------------------------------------------- GRI 3(c)
 
@@ -299,7 +285,7 @@ class GRIEngine:
         down a rule the engine never reached would put a fabrication into the
         trace that week 4 scores explanations against.
         """
-        self._texts = texts or {}
+        texts = texts or {}
         if not candidates:
             return Decision(None, ["GRI 1"], escalated=True,
                             reason="no candidate headings were proposed")
@@ -317,7 +303,7 @@ class GRIEngine:
         # A Section note resolving under GRI 1. GRI 6 applies the same logic
         # inside a settled heading, which is where we are when the candidates
         # share one.
-        resolved = self._textile_material_rule(facts, candidates)
+        resolved = self._textile_material_rule(facts, candidates, texts)
         if resolved:
             code, cited, why = resolved
             full = [*path, *cited]
@@ -336,7 +322,7 @@ class GRIEngine:
 
         path.append("GRI 2(b)")
         path.append("GRI 3(a)")
-        specific = self._most_specific(candidates)
+        specific = self._most_specific(candidates, texts)
         if len(specific) == 1:
             return Decision(
                 specific[0], path, notes_cited,
@@ -349,9 +335,6 @@ class GRIEngine:
             reason="essential character decides between these, and that is a judgment call",
         )
 
-    def _text_for(self, code: str) -> str:
-        return self._texts.get(code, "")
-
 
 def _mentions(note_text: str, description: str) -> bool:
     """Does the description use a term the note turns on?
@@ -362,6 +345,18 @@ def _mentions(note_text: str, description: str) -> bool:
     words = {w for w in re.findall(r"[a-z]{5,}", note_text.lower())}
     seen = {w for w in re.findall(r"[a-z]{5,}", description.lower())}
     return bool(words & seen)
+
+
+def _matching(candidates: list[str], materials: list[str], texts: dict[str, str]) -> list[str]:
+    return [
+        code for code in candidates
+        if any(_describes_material(texts.get(code, ""), m) for m in materials)
+    ]
+
+
+def _is_residual(text: str) -> bool:
+    own = text.split("—")[-1].strip().rstrip(":").lower()
+    return own in {"other", "others", "other articles"}
 
 
 def _describes_material(text: str, material: str) -> bool:

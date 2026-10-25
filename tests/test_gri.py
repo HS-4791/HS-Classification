@@ -28,7 +28,7 @@ def engine():
              lead_in="This section does not cover:",
              text="Woven fabrics laminated with plastics, of chapter 39;"),
     ]
-    return GRIEngine(notes, build_exclusion_graph(notes))
+    return GRIEngine(build_exclusion_graph(notes))
 
 
 # ------------------------------------------------------------ fact extraction
@@ -172,3 +172,22 @@ def test_a_decision_serialises_with_its_reasoning():
     decision = Decision("6109100012", ["GRI 1", "GRI 6"], ["Section XI Note 2(A)"])
     assert decision.to_dict()["rule_path"] == ["GRI 1", "GRI 6"]
     assert decision.to_dict()["notes_cited"] == ["Section XI Note 2(A)"]
+
+
+def test_the_engine_holds_no_per_request_state(engine):
+    """Candidate texts are passed in, never stashed on the engine.
+
+    Stashing them made every helper depend on a prior adjudicate() call -
+    calling one directly raised AttributeError - and meant two classifications
+    sharing an engine could read each other's texts.
+    """
+    assert not any(attr.startswith("_texts") for attr in vars(engine))
+    # Deciding one case must not change what the engine knows for the next.
+    first = engine.adjudicate(extract_facts("t-shirt, 60% cotton, 40% polyester"),
+                              [COTTON, MAN_MADE], TEXTS)
+    second = engine.adjudicate(extract_facts("t-shirt, 60% cotton, 40% polyester"),
+                               [COTTON, MAN_MADE], {})
+    assert first.code == COTTON
+    # With no texts supplied the rule cannot match a material, so it escalates
+    # rather than reusing what the previous call happened to pass in.
+    assert second.code is None and second.escalated

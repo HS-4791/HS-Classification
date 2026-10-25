@@ -115,11 +115,6 @@ class LevelIndex:
         return [(rows[i], float(scores[i])) for i in order]
 
 
-def _parent_width(level: int) -> int:
-    """The code length of the level above this one."""
-    return LEVELS[LEVELS.index(level) - 1]
-
-
 def candidates_at_every_level(tree: ScheduleTree) -> list[Candidate]:
     """Searchable entries for headings, subheadings and lines alike.
 
