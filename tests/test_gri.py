@@ -249,3 +249,68 @@ def test_gri_4_is_never_claimed(engine):
                           [COTTON, MAN_MADE], TEXTS),
     ]
     assert all("GRI 4" not in d.rule_path for d in decisions)
+
+
+# ------------------------------------- GRI 1: conditions stated in a provision
+
+SILK_HIGH = "6204194000"
+SILK_LOW = "6204192000"
+CONDITION_TEXTS = {
+    SILK_HIGH: "Women's suits — Of other textile materials — Containing 70 percent "
+               "or more by weight of silk or silk waste",
+    SILK_LOW: "Women's suits — Of other textile materials — Other",
+}
+
+
+def test_a_threshold_the_goods_fail_removes_the_provision(engine):
+    """GRI 1 at its most direct, and arithmetic rather than similarity.
+
+    A suit of 40 percent silk is outside "70 percent or more by weight of
+    silk" as a matter of fact. The two descriptions are near-identical
+    strings, so nothing before this stage can separate them.
+    """
+    facts = Facts(description="a suit of 40% silk and 60% cotton",
+                  materials={"silk": 40.0, "cotton": 60.0})
+    decision = engine.adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
+    assert decision.code == SILK_LOW
+    assert decision.rule_path == ["GRI 1", "GRI 6"]  # same heading, one level down
+    assert decision.conditions_applied and SILK_HIGH in decision.conditions_applied[0]
+    assert not decision.escalated
+
+
+def test_a_threshold_the_goods_meet_does_not_remove_it(engine):
+    facts = Facts(description="a suit of 80% silk", materials={"silk": 80.0})
+    decision = engine.adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
+    assert decision.conditions_applied == []
+
+
+def test_a_survivor_that_survived_by_ignorance_does_not_decide(engine):
+    """The defect this guard exists for, from the held-out set.
+
+    A cardigan of 53 percent rayon and 47 percent wool had its "85 percent
+    or more by weight of wool" candidates correctly eliminated, leaving
+    "Containing 30 percent or more by weight of silk" standing - not because
+    the goods qualify, but because they say nothing about silk, so the
+    condition could not be tested. Deciding on it was a confident wrong
+    answer; the elimination is set aside instead.
+    """
+    wool = "5111196040"
+    silk = "5111903000"
+    texts = {
+        wool: "Woven fabrics of carded wool — Containing 85 percent or more by "
+              "weight of wool or of fine animal hair",
+        silk: "Woven fabrics of carded wool — Other — Containing 30 percent or more "
+              "by weight of silk or silk waste",
+    }
+    facts = Facts(description="a cardigan of 53% rayon and 47% wool",
+                  materials={"rayon": 53.0, "wool": 47.0})
+    decision = engine.adjudicate(facts, [wool, silk], texts)
+    assert decision.code != silk
+    assert decision.conditions_applied == []
+
+
+def test_an_untestable_condition_never_removes_a_candidate(engine):
+    """Nothing is known about silk, so nothing about silk can be concluded."""
+    facts = Facts(description="a cotton suit", materials={"cotton": 100.0})
+    decision = engine.adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
+    assert decision.conditions_applied == []

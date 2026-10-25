@@ -2,9 +2,9 @@
   "revision": "2026HTSRev21",
   "n": 903,
   "discriminating": 903,
-  "decided_of_discriminating": 10,
+  "decided_of_discriminating": 9,
   "agreed_on_deciding_rule": 4,
-  "agreement": 0.4,
+  "agreement": 0.4444,
   "right_code_wrong_path": 1,
   "rules_the_engine_never_reaches": {
     "3(b)": 408,

@@ -5,7 +5,7 @@
 | | |
 | --- | ---: |
 | discriminating cases | 903 |
-| of those, the engine decided | 10 |
+| of those, the engine decided | 9 |
 | agreed on the deciding rule | 4 |
 | right code by a route the ruling did not use | 1 |
 

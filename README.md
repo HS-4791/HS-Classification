@@ -287,6 +287,60 @@ nearly everything, because nearly nothing is evaluable. Escalation calibration b
 question in week 3, once there is a population of genuinely close calls to calibrate on.
 
 
+### The KAG layer: provision text as arithmetic, and why it changes nothing yet
+
+Retrieval cannot separate "Containing 85 percent or more by weight of wool" from "Containing
+less than 85 percent by weight of wool". They are nearly the same string and they describe
+opposite goods; only arithmetic separates them. 980 lines in the schedule state a percentage in
+their own text and 95 binding notes do, so `pipeline/conditions.py` reads them as conditions —
+an attribute, a comparison, a number — and the engine evaluates them under GRI 1, before any
+later rule is reached.
+
+It parses **790 of those 980 lines** into **999 conditions**. The 190 it declines are honest
+declines: the attribute lives in some parent provision ("Not more than 25 percent by weight" —
+of what?), and choosing which parent governs is a judgment, not a parse.
+
+Two defects were found by measuring the parser against all 980 lines rather than by reading it,
+and both were silent:
+
+* **"not over" inverted the comparison.** With only "over" in the operator vocabulary, "not over
+  6 percent by weight of butterfat" parsed as *greater than 6* — a confident wrong answer on the
+  chapter 4 lines that phrase a ceiling that way.
+* **A range parsed as one reversed bound.** "over 6 percent but not over 35 percent" came out as
+  a single `<= 6`, because "but not over" was read as a suffix on the first number instead of as
+  the second bound it introduces.
+
+Wired into the engine, the layer decides **zero additional cases on the test split**, and the
+funnel says exactly why:
+
+| Gate | test split (n=200) |
+| --- | ---: |
+| composition extractable from the description | 24 |
+| a candidate provision carries a condition | 21 |
+| **the condition's attribute is among the extracted facts** | **4** |
+| the condition eliminated a candidate | 1 |
+| elimination left exactly one provision | 0 |
+
+The parser is not the bottleneck. The condition asks about a material the one-line description
+never quantifies — the collapse is 21 to 4. This is the same starvation the ablation reports,
+measured one level deeper, and it localises the fix to stage 1: model-based attribute extraction
+is what fills `Facts`, and nothing in stage 3 can compensate for its absence.
+
+#### Surviving by ignorance is not qualifying
+
+Before that guard existed, the layer did decide one held-out case, and got it wrong. A cardigan
+of 53% rayon and 47% wool had its "85 percent or more by weight of wool" candidates correctly
+eliminated — 47 is not 85, and the arithmetic was right. What survived was "Containing 30
+percent or more by weight of silk or silk waste", kept only because the goods say nothing about
+silk, so that condition could not be tested at all.
+
+"An untested condition has not failed" was applied to elimination and forgotten on selection. A
+lone survivor must now be *positively* consistent — stating no condition, or only conditions
+that were tested and held — or the elimination is set aside and the ordinary rules run on every
+candidate. With the guard, the layer makes **no decisions it cannot justify**: coverage and
+accuracy return to the baseline above exactly, and the judgement oracle drops from 10 decided to
+9 while holding agreement at 4 of 903.
+
 Published baselines this will be scored beside: arXiv `2509.18400` (ATLAS), `2412.14179`
 (independent benchmark), `2605.14857` (deterministic agentic workflow).
 

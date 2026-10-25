@@ -59,6 +59,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from hsclass.pipeline.conditions import consistent_conditions
 from hsclass.schedule.exclusions import ExclusionGraph
 
 #: "60% cotton", "60 percent cotton", "cotton 60%".
@@ -185,6 +186,11 @@ class Decision:
     escalated: bool = False
     shortlist: list[str] = field(default_factory=list)
     reason: str = ""
+    #: Provisions eliminated because the goods contradict a condition stated
+    #: in their own text, quoted as the schedule writes it. Kept separate
+    #: from ``notes_cited`` because the terms of a heading are not a note,
+    #: and a trace that blurred them would cite the wrong authority.
+    conditions_applied: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -194,6 +200,7 @@ class Decision:
             "escalated": self.escalated,
             "shortlist": self.shortlist,
             "reason": self.reason,
+            "conditions_applied": self.conditions_applied,
         }
 
 
@@ -219,6 +226,59 @@ class GRIEngine:
             for edge in self.exclusions.excluded_from(chapter)
             if _mentions(edge.text, facts.description)
         ]
+
+    # ------------------------------------------ GRI 1: the terms of a heading
+
+    def _condition_rule(
+        self, facts: Facts, candidates: list[str], texts: dict[str, str]
+    ) -> tuple[list[str], list[str]]:
+        """Drop candidates whose own stated conditions the goods contradict.
+
+        This is GRI 1 at its most direct - the terms of the heading - and at
+        subheading level GRI 6, which is the same comparison one level down.
+        "Containing 70 percent or more by weight of silk or silk waste" is not
+        a description to be matched by similarity; it is a threshold, and a
+        product of 40 percent silk is outside it as a matter of arithmetic.
+
+        Only a condition evaluated to False removes anything. A condition
+        that could not be tested leaves its candidate standing, because an
+        untested condition has not failed - and the elimination is abandoned
+        altogether if it would empty the list, since every candidate failing
+        means the facts or the reading are wrong rather than the goods being
+        unclassifiable.
+
+        The same discipline applies to the survivor, which is the half this
+        engine got wrong once. A women's cardigan of 53 percent rayon and 47
+        percent wool had its "85 percent or more by weight of wool" siblings
+        correctly eliminated, and what was left standing was "Containing 30
+        percent or more by weight of silk or silk waste" - kept only because
+        the goods say nothing about silk, so the condition could not be
+        tested. Surviving by ignorance is not qualifying, and deciding on it
+        produced a confident wrong answer. A lone survivor therefore has to
+        be positively consistent: it must state no condition at all, or state
+        only conditions that were tested and held. Otherwise the elimination
+        is set aside and the ordinary rules run on every candidate.
+        """
+        if not facts.materials:
+            return candidates, []
+        kept, failed, untested = [], [], set()
+        for code in candidates:
+            text = texts.get(code, "")
+            results = [
+                c.satisfied_by(facts.materials)
+                for c in consistent_conditions(text)
+            ]
+            if False in results:
+                failed.append(f"{code}: {text}")
+                continue
+            if None in results:
+                untested.add(code)
+            kept.append(code)
+        if not failed or not kept:
+            return candidates, []
+        if len(set(kept)) == 1 and kept[0] in untested:
+            return candidates, []
+        return kept, failed
 
     # --------------------------------------------------- Section XI Note 2(A)
 
@@ -304,20 +364,49 @@ class GRIEngine:
     def adjudicate(
         self, facts: Facts, candidates: list[str], texts: dict[str, str] | None = None
     ) -> Decision:
-        """Walk the rules in order, stopping at the first that resolves.
+        """Apply the terms of the competing provisions, then walk the rules.
 
-        ``rule_path`` lists only rules that were actually evaluated. Writing
-        down a rule the engine never reached would put a fabrication into the
-        trace that week 4 scores explanations against.
+        The conditions written into the provisions come first because they
+        *are* GRI 1 - the terms of the headings - and a rule later in the
+        order must not be reached while an earlier one still decides. What
+        they do not settle they still narrow, and the walk continues on the
+        candidates that survive.
         """
         texts = texts or {}
         if not candidates:
             return Decision(None, ["GRI 1"], escalated=True,
                             reason="no candidate headings were proposed")
 
-        notes_cited: list[str] = []
+        narrowed, failed = self._condition_rule(facts, list(candidates), texts)
+        if failed and len(set(narrowed)) == 1:
+            # GRI 6 is GRI 1 applied between subheadings of one heading, so it
+            # is named only when that is what the comparison was.
+            path = ["GRI 1", "GRI 6"] if len({c[:4] for c in candidates}) == 1 else ["GRI 1"]
+            return Decision(
+                narrowed[0], path, self._notes_for(narrowed, facts),
+                conditions_applied=failed,
+                reason="the goods fail the conditions stated in every competing "
+                       "provision but one",
+            )
+
+        decision = self._walk(facts, narrowed, texts)
+        decision.conditions_applied = failed
+        return decision
+
+    def _notes_for(self, candidates: list[str], facts: Facts) -> list[str]:
+        notes: list[str] = []
         for chapter in dict.fromkeys(code[:2] for code in candidates):
-            notes_cited.extend(self._excluded(chapter, facts))
+            notes.extend(self._excluded(chapter, facts))
+        return notes
+
+    def _walk(self, facts: Facts, candidates: list[str], texts: dict[str, str]) -> Decision:
+        """Walk the rules in order, stopping at the first that resolves.
+
+        ``rule_path`` lists only rules that were actually evaluated. Writing
+        down a rule the engine never reached would put a fabrication into the
+        trace that week 4 scores explanations against.
+        """
+        notes_cited = self._notes_for(candidates, facts)
         path = ["GRI 1"]
 
         # GRI 1 - one candidate, nothing to choose between.
