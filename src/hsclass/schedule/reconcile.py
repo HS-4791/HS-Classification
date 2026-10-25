@@ -48,15 +48,25 @@ def normalise_rate(text: str) -> str:
 
 
 def _units(units: list[str]) -> str:
-    return ",".join(normalise(u).replace(".", "") for u in units)
+    """Compare units as printed.
+
+    This used to strip periods, which made the comparison blind to the single
+    largest defect in the parse: 2,296 rows where "No." was read as "No" and
+    "doz." as "doz", because pdfplumber returns the unit glued to its dot
+    leader. A check that deletes the characters it is meant to compare buys
+    confidence it has not earned.
+    """
+    return ",".join(normalise(u) for u in units)
 
 
 def row_key(code: str, description: str) -> tuple[str, str]:
-    """Match on code plus text, ignoring a trailing period.
+    """Match a row to its counterpart on code plus text.
 
-    A description ending in an abbreviation ("Ictalurus spp.") is printed with
-    its dot leaders glued straight onto it, so the abbreviating period cannot
-    be told from the leader that follows it. It carries no legal weight.
+    A trailing period is ignored *here only*, because this decides which rows
+    are the same row - and an abbreviation at the very end of a description
+    ("Ictalurus spp.") is printed with its dot leaders glued on, so the
+    period cannot be recovered. Alignment must survive that. Whether the text
+    then matches is judged separately, by `_compare_fields`.
     """
     return code, normalise(description).casefold().rstrip(".")
 
@@ -77,6 +87,8 @@ class ReconcileReport:
     pdf_rows: int
     export_rows: int
     matched: int = 0
+    #: Rows that aligned *and* whose every compared field agreed.
+    field_perfect: int = 0
     mismatches: list[Mismatch] = field(default_factory=list)
 
     @property
@@ -84,8 +96,20 @@ class ReconcileReport:
         return not self.mismatches
 
     @property
-    def accuracy(self) -> float:
+    def alignment(self) -> float:
+        """How many rows were found at all. Not a correctness figure.
+
+        This was published as "row_accuracy" and reported 99.84% while the
+        same report counted 2,164 wrong general rates, 1,666 wrong Column 2
+        rates and 649 rows that do not exist in the schedule. A row counts
+        here if its code and description line up, whatever its contents.
+        """
         return self.matched / self.export_rows if self.export_rows else 0.0
+
+    @property
+    def accuracy(self) -> float:
+        """Rows where every compared field agrees. The honest headline."""
+        return self.field_perfect / self.export_rows if self.export_rows else 0.0
 
     def counts(self) -> dict[str, int]:
         out: dict[str, int] = {}
@@ -99,8 +123,13 @@ class ReconcileReport:
             "chapter": self.chapter,
             "pdf_rows": self.pdf_rows,
             "export_rows": self.export_rows,
-            "matched": self.matched,
-            "row_accuracy": round(self.accuracy, 4),
+            "aligned": self.matched,
+            "field_perfect": self.field_perfect,
+            # The headline. "alignment" is reported beside it so the gap
+            # between "we found the row" and "the row is right" is visible
+            # rather than collapsed into one flattering number.
+            "accuracy": round(self.accuracy, 4),
+            "alignment": round(self.alignment, 4),
             "passed": self.passed,
             "counts": self.counts(),
             "mismatches": [asdict(m) for m in self.mismatches[:200]],
@@ -151,7 +180,10 @@ def reconcile(parsed: list[ParsedRow], expected: list[dict], chapter: str) -> Re
     for tag, i1, i2, j1, j2 in SequenceMatcher(a=left, b=right, autojunk=False).get_opcodes():
         if tag == "equal":
             for p, e in zip(parsed[i1:i2], expected[j1:j2], strict=True):
-                report.mismatches.extend(_compare_fields(p, e))
+                wrong = _compare_fields(p, e)
+                report.mismatches.extend(wrong)
+                if not wrong:
+                    report.field_perfect += 1
             report.matched += i2 - i1
             continue
         for e in expected[j1:j2]:

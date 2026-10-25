@@ -117,8 +117,8 @@ def schedule_reconcile(chapter: str = "61") -> None:
     path = report.write(settings.reports_dir / f"reconcile-ch{chapter.zfill(2)}.json")
 
     console.print(
-        f"chapter {chapter}: {report.matched}/{report.export_rows} rows matched "
-        f"({report.accuracy:.2%})"
+        f"chapter {chapter}: {report.field_perfect}/{report.export_rows} rows correct "
+        f"({report.accuracy:.2%}); {report.alignment:.2%} aligned"
     )
     if report.passed:
         console.print("[green]parse matches the published schedule exactly[/green]")

@@ -6,8 +6,8 @@ it, and escalate rather than guess when the nomenclature is genuinely ambiguous.
 Scored against real binding rulings issued by US Customs, so the ground truth is an authority's,
 not the author's.
 
-> **Status: week 2 of 4, in progress.** The schedule is parsed from the PDF and reconciles against
-> the published export at **99.84%**. The vector-only baseline is measured and published below;
+> **Status: week 2 of 4, in progress.** The schedule is parsed from the PDF; **86.48%** of rows
+> agree with the published export on every field. The vector-only baseline is measured below;
 > it is the floor every later component has to beat, and CI fails the build if it drops.
 
 ## The problem
@@ -125,8 +125,24 @@ The PDF is the source, because most jurisdictions publish nothing else. The expo
 **oracle**: it carries the same lines with an explicit `indent`, so every parsed row can be
 checked against it — same code, same depth, same text, same rates.
 
-Across all 4,534 pages: **35,703 of 35,805 rows reconcile exactly — 99.72%**. Chapter 61, the
-chapter the running example lives in, is at 100.00%, and that is enforced in CI.
+Across all 4,534 pages, two numbers are reported, and the gap between them is the point:
+
+| | |
+| --- | ---: |
+| rows **found** - code and description align | 99.84% |
+| rows **correct** - every compared field agrees | **86.48%** |
+
+The first was published on its own as "row accuracy" for two weeks. It counts a row as matched
+when it lines up with its counterpart, whatever its contents, so it sat at 99.84% while the same
+report recorded 2,163 wrong general rates, 1,652 wrong Column 2 rates and 576 rows that do not
+exist in the schedule at all. The comparison also stripped periods from both sides before
+checking, which made 2,296 rows reading `No` for `No.` invisible by construction - a check
+deleting the characters it exists to compare.
+
+Both numbers are now published. Chapter 61, where the running example lives, is at 100% on the
+field-level measure, and that is what CI enforces. Chapter 99 is at 34.93%: its subchapters use
+a rate layout the parser does not model, which is recorded under known limits below rather than
+averaged away.
 
 The hierarchy is encoded in horizontal position alone. Four things make that harder than it
 sounds, each found by the reconciliation rather than by reading the file:

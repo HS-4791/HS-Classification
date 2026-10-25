@@ -49,24 +49,26 @@ def main() -> int:
             continue
         report = reconcile(by_chapter[chapter], expected, chapter)
         summary[chapter] = report.to_dict()["counts"] | {
-            "row_accuracy": round(report.accuracy, 4),
+            "accuracy": round(report.accuracy, 4),
+            "alignment": round(report.alignment, 4),
             "pdf_rows": report.pdf_rows,
             "export_rows": report.export_rows,
         }
-        total_matched += report.matched
+        total_matched += report.field_perfect
         total_expected += report.export_rows
 
     (ROOT / "reports" / "pdf-reconciliation.json").write_text(
         json.dumps({"revision": REVISION, "total_matched": total_matched,
                     "total_export_rows": total_expected,
-                    "row_accuracy": round(total_matched / total_expected, 4),
+                    "accuracy": round(total_matched / total_expected, 4),
                     "by_chapter": summary}, indent=2),
         encoding="utf-8",
     )
-    print(f"overall: {total_matched}/{total_expected} = {total_matched/total_expected:.2%}")
-    worst = sorted(summary.items(), key=lambda kv: kv[1]["row_accuracy"])[:12]
+    print(f"overall field-perfect: {total_matched}/{total_expected} = "
+          f"{total_matched/total_expected:.2%}")
+    worst = sorted(summary.items(), key=lambda kv: kv[1]["accuracy"])[:12]
     for chapter, s in worst:
-        print(f"  ch {chapter}: {s['row_accuracy']:.2%}  {s}")
+        print(f"  ch {chapter}: {s['accuracy']:.2%}  {s}")
     return 0
 
 
