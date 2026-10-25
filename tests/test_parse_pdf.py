@@ -194,3 +194,26 @@ def test_a_body_sized_footnote_marker_does_not_eat_the_suffix():
     codes = {r.full_code for r in parse_pdf(FULL_REVISION, pages=range(3177, 3179))}
     assert "9802.00.60.00" in codes
     assert "9802.00.60" not in codes
+
+
+@needs_full_pdf
+def test_a_deeper_line_is_a_new_row_not_a_continuation():
+    """A wrap sits at its row's own depth; a line further right is a new row.
+
+    Without that, "With automatic tool changers" (indent 3) swallowed
+    "Vertical-spindle machines with a Y-axis travel of--" (indent 4) on page
+    2803 - deleting the deeper row and corrupting the shallower description.
+    """
+    rows = parse_pdf(FULL_REVISION, pages=range(2802, 2804))
+    descriptions = [r.description for r in rows]
+    assert "With automatic tool changers" in descriptions
+    assert any(d.startswith("Vertical-spindle machines") for d in descriptions)
+
+
+@needs_full_pdf
+def test_a_centred_subchapter_heading_is_not_on_the_indent_grid():
+    """Its x comes from the length of its own title, so the computed level
+    ranged from 0 to 5. The export treats all 33 as one level."""
+    rows = parse_pdf(FULL_REVISION, pages=range(1388, 1390))
+    heading = next(r for r in rows if r.description.startswith("I. CHEMICAL"))
+    assert heading.indent == 1

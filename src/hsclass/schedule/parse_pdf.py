@@ -69,6 +69,11 @@ DOT_LEADER_RE = re.compile(r"\.{2,}")
 #: A reference to a footnote ("1/"), not part of the article description.
 FOOTNOTE_RE = re.compile(r"^\d+/$")
 
+#: A centred Roman-numeral sub-chapter heading: "I. CHEMICAL ELEMENTS".
+SUBCHAPTER_RE = re.compile(r"^[IVXL]+\.\s")
+#: The level the schedule treats them as, and the export agrees - 31 of 33.
+SUBCHAPTER_INDENT = 1
+
 #: The statistical-suffix column heading, which appears on every table page
 #: and nowhere else. "Subheading" is no good as a marker: the Section and
 #: Chapter notes are headed "Subheading Notes", and those pages also quote
@@ -415,8 +420,25 @@ def parse_page(page, section: str | None = None) -> tuple[list[ParsedRow], str |
             and not suffix
             and line_indent == current.indent
         )
+        # A wrapped line sits at its row's own depth, never deeper: the
+        # schedule indents a continuation to the same x as the first line.
+        # A line further right is a new, more specific row - which is how
+        # "With automatic tool changers" (indent 3) came to swallow
+        # "Vertical-spindle machines with a Y-axis travel of--" (indent 4)
+        # on page 2803, deleting the deeper row and corrupting the shallower
+        # one's description. Six rows were lost this way.
+        # A centred heading carries no depth in its x at all, and it wraps:
+        # "II. ALCOHOLS AND THEIR HALOGENATED, SULFONATED," continues on a
+        # second centred line whose position is wherever the remaining words
+        # happened to centre. Measuring that as a deeper indent splits one
+        # heading into two rows.
+        centred = current is not None and bool(SUBCHAPTER_RE.match(current.description))
         continues_row = (
-            current is not None and (current.open or resumes) and not code and not suffix
+            current is not None
+            and (current.open or resumes)
+            and not code
+            and not suffix
+            and (centred or line_indent < 0 or line_indent <= current.indent)
         )
 
         if continues_row and description:
@@ -452,7 +474,13 @@ def parse_page(page, section: str | None = None) -> tuple[list[ParsedRow], str |
             # extends is the coded line above it.
             htsno=code if CODE_RE.match(code) else (base_code if SUFFIX_RE.match(suffix) else ""),
             suffix=suffix if SUFFIX_RE.match(suffix) else "",
-            indent=line_indent if line_indent >= 0 else 0,
+            # A centred sub-chapter heading is not on the indent grid at all -
+            # its x position comes from the length of its own title, so
+            # "I. CHEMICAL ELEMENTS" and "VI. MISCELLANEOUS" measured as
+            # indent 4 and 5. The schedule treats all 33 of them as one
+            # level, and the published export agrees: 31 at indent 1.
+            indent=SUBCHAPTER_INDENT if SUBCHAPTER_RE.match(description)
+            else (line_indent if line_indent >= 0 else 0),
             description=description,
             units=units,
             general=general,

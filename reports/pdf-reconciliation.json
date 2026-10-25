@@ -1,8 +1,8 @@
 {
   "revision": "2026HTSRev21",
-  "total_matched": 30972,
+  "total_matched": 31006,
   "total_export_rows": 35805,
-  "accuracy": 0.865,
+  "accuracy": 0.866,
   "by_chapter": {
     "01": {
       "field:units": 23,
@@ -173,28 +173,25 @@
       "export_rows": 143
     },
     "27": {
-      "field:indent": 1,
       "field:units": 1,
-      "accuracy": 0.9908,
+      "accuracy": 0.9954,
       "alignment": 1.0,
       "pdf_rows": 218,
       "export_rows": 218
     },
     "28": {
-      "field:indent": 4,
       "field:units": 8,
-      "accuracy": 0.976,
+      "accuracy": 0.984,
       "alignment": 1.0,
       "pdf_rows": 501,
       "export_rows": 501
     },
     "29": {
-      "extra": 10,
-      "field:indent": 8,
-      "missing": 12,
-      "accuracy": 0.9892,
-      "alignment": 0.9935,
-      "pdf_rows": 1857,
+      "extra": 8,
+      "missing": 8,
+      "accuracy": 0.9957,
+      "alignment": 0.9957,
+      "pdf_rows": 1859,
       "export_rows": 1859
     },
     "30": {
@@ -260,9 +257,8 @@
     },
     "39": {
       "extra": 1,
-      "field:indent": 1,
       "field:units": 32,
-      "accuracy": 0.9343,
+      "accuracy": 0.9363,
       "alignment": 1.0,
       "pdf_rows": 503,
       "export_rows": 502
@@ -413,19 +409,15 @@
       "export_rows": 1345
     },
     "62": {
-      "extra": 1,
-      "field:indent": 1,
       "field:units": 162,
-      "missing": 2,
-      "accuracy": 0.921,
-      "alignment": 0.999,
-      "pdf_rows": 2088,
+      "accuracy": 0.9225,
+      "alignment": 1.0,
+      "pdf_rows": 2089,
       "export_rows": 2089
     },
     "63": {
-      "field:indent": 2,
       "field:units": 24,
-      "accuracy": 0.931,
+      "accuracy": 0.9363,
       "alignment": 1.0,
       "pdf_rows": 377,
       "export_rows": 377
@@ -468,36 +460,32 @@
     },
     "69": {
       "extra": 1,
-      "field:indent": 1,
       "field:other": 1,
       "field:units": 20,
       "missing": 1,
-      "accuracy": 0.891,
+      "accuracy": 0.8957,
       "alignment": 0.9953,
       "pdf_rows": 211,
       "export_rows": 211
     },
     "70": {
       "extra": 1,
-      "field:indent": 1,
       "field:units": 65,
       "missing": 1,
-      "accuracy": 0.8607,
+      "accuracy": 0.8628,
       "alignment": 0.9979,
       "pdf_rows": 481,
       "export_rows": 481
     },
     "71": {
-      "field:indent": 2,
       "field:units": 11,
-      "accuracy": 0.9458,
+      "accuracy": 0.9542,
       "alignment": 1.0,
       "pdf_rows": 240,
       "export_rows": 240
     },
     "72": {
-      "field:indent": 3,
-      "accuracy": 0.9968,
+      "accuracy": 1.0,
       "alignment": 1.0,
       "pdf_rows": 951,
       "export_rows": 951
@@ -568,12 +556,12 @@
       "export_rows": 143
     },
     "84": {
-      "extra": 3,
+      "extra": 2,
       "field:units": 424,
-      "missing": 4,
-      "accuracy": 0.8414,
-      "alignment": 0.9985,
-      "pdf_rows": 2698,
+      "missing": 2,
+      "accuracy": 0.8422,
+      "alignment": 0.9993,
+      "pdf_rows": 2699,
       "export_rows": 2699
     },
     "85": {
@@ -621,12 +609,10 @@
       "export_rows": 671
     },
     "91": {
-      "extra": 1,
       "field:units": 70,
-      "missing": 2,
-      "accuracy": 0.7707,
-      "alignment": 0.9936,
-      "pdf_rows": 313,
+      "accuracy": 0.7771,
+      "alignment": 1.0,
+      "pdf_rows": 314,
       "export_rows": 314
     },
     "92": {
