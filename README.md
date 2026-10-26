@@ -47,9 +47,41 @@ Four stages. **Only stage 3 decides.**
 | 3 · **Adjudicate** | **GRI rules 1–4 in order, rule 6 at subheading level, over the notes** | **yes — no model in it** |
 | 4 · Explain | writes the reasoning from a decision already made, or escalates | no — model |
 
-Stages 1 and 2 are allowed to be wrong, because stage 3 checks them against the rules. Stage 4
-writes the explanation from a decision already made, which is why it cannot invent a
+Stage 4 writes the explanation from a decision already made, which is why it cannot invent a
 justification for an answer the rules did not reach.
+
+### What "only stage 3 decides" does and does not mean
+
+This was stated here as "stages 1 and 2 are allowed to be wrong, because stage 3 checks them
+against the rules", and that is too strong. A cold read of the reranker caught it.
+
+What holds, and is asserted as a property rather than prose: **stage 3 is deterministic and
+auditable.** The same candidates always produce the same decision and the same rule path.
+Every branch that returns a code either has a single candidate or picks by a rule that reads
+the whole set, so no reordering can change the answer — verified by exhausting all 120
+permutations of the real top-5 on 30 cases, 3,600 adjudications, zero violations.
+
+What does not hold is that stage 3 *checks* stage 2. It checks the candidates it is **given**.
+It cannot know whether the right provision was ever proposed, and the adjudicator sees only the
+first five distinct codes the proposer ranked. So stage 2 does not merely risk being wrong — it
+bounds what stage 3 is able to decide, and a probabilistic reranker changes that set rather than
+only its order. Measured with the free reranker on 500 cases, the top-5 set changed on 88.4%,
+the answer-or-escalate outcome flipped on 7, and the decided code differed on 3 of the 5 both
+configurations answered.
+
+The sharpest case: a women's coat of 70% polyester and 30% wool. Reranking admitted a chapter 64
+footwear line into a set of chapter 62 coat lines; the engine's condition rule then correctly
+eliminated all four candidates requiring 36% wool or more, leaving the footwear line — which
+states no threshold at all — as the only survivor, and decided the coat was
+**6405.20.6060, "Other footwear, with soles and uppers of wool felt"**, under GRI 1 with a
+citation attached.
+
+Two things follow. That specific route is closed: a lone survivor must now share a heading with
+something that was eliminated, because a provision in another heading was never competing on
+those terms. And the general property is now stated as what it is — the refusal is what contains
+the damage, not the determinism. 97.5% of cases escalate rather than answer, and a deterministic
+wrong answer is worse than an escalation precisely because it carries a rule path that looks
+like reasoning.
 
 The shared knowledge layer holds the nomenclature graph (serving stage 2's traversal) and the
 notes and GRI preloaded (serving stage 3's evaluation).

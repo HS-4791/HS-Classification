@@ -1,0 +1,37 @@
+{
+  "revision": "2026HTSRev21",
+  "configurations": {
+    "no-reranker": {
+      "test-200": {
+        "top1@6": 0.15,
+        "top5@6": 0.225,
+        "top1@10": 0.030456852791878174,
+        "ms_per_classification": 16.3
+      }
+    },
+    "lexical": {
+      "test-200": {
+        "top1@6": 0.15,
+        "top5@6": 0.23,
+        "top1@10": 0.03553299492385787,
+        "ms_per_classification": 15.4
+      }
+    },
+    "cross-encoder-50": {
+      "test-200": {
+        "top1@6": 0.195,
+        "top5@6": 0.26,
+        "top1@10": 0.06091370558375635,
+        "ms_per_classification": 1653.7
+      }
+    },
+    "cross-encoder-100": {
+      "test-200": {
+        "top1@6": 0.2,
+        "top5@6": 0.26,
+        "top1@10": 0.06598984771573604,
+        "ms_per_classification": 2620.3
+      }
+    }
+  }
+}

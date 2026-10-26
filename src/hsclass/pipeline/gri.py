@@ -247,17 +247,31 @@ class GRIEngine:
         means the facts or the reading are wrong rather than the goods being
         unclassifiable.
 
-        The same discipline applies to the survivor, which is the half this
-        engine got wrong once. A women's cardigan of 53 percent rayon and 47
-        percent wool had its "85 percent or more by weight of wool" siblings
-        correctly eliminated, and what was left standing was "Containing 30
-        percent or more by weight of silk or silk waste" - kept only because
-        the goods say nothing about silk, so the condition could not be
-        tested. Surviving by ignorance is not qualifying, and deciding on it
-        produced a confident wrong answer. A lone survivor therefore has to
-        be positively consistent: it must state no condition at all, or state
-        only conditions that were tested and held. Otherwise the elimination
-        is set aside and the ordinary rules run on every candidate.
+        The same discipline applies to the survivor, and it took two goes to
+        get right. A women's cardigan of 53 percent rayon and 47 percent wool
+        had its "85 percent or more by weight of wool" siblings correctly
+        eliminated, and what was left standing was "Containing 30 percent or
+        more by weight of silk or silk waste" - kept only because the goods
+        say nothing about silk, so the condition could not be tested.
+        Surviving by *ignorance* is not qualifying.
+
+        Surviving by *silence* is not either, which the first fix missed. A
+        women's coat of 70 percent polyester and 30 percent wool had four
+        chapter 62 candidates each requiring 36 percent wool or more, all
+        four correctly eliminated - and the fifth candidate was 6405.20.6060,
+        "Other footwear - with soles and uppers of wool felt". It states no
+        threshold at all, so it was neither failed nor untested, and the
+        engine decided a coat was footwear under GRI 1 with a citation
+        attached. A provision that simply has no condition is not thereby the
+        answer.
+
+        So the elimination may only decide between provisions that were
+        actually competing on these terms: the lone survivor has to share a
+        **heading** with something that was eliminated. That is the GRI 6
+        comparison this rule is for - sibling subheadings of one heading,
+        where a threshold distinguishes the goods. A survivor from another
+        heading was never in the same contest, and the honest outcome is to
+        set the elimination aside and let the ordinary rules run.
         """
         if not facts.materials:
             return candidates, []
@@ -276,8 +290,10 @@ class GRIEngine:
             kept.append(code)
         if not failed or not kept:
             return candidates, []
-        if len(set(kept)) == 1 and kept[0] in untested:
-            return candidates, []
+        if len(set(kept)) == 1:
+            eliminated = {entry.split(":")[0][:4] for entry in failed}
+            if kept[0] in untested or kept[0][:4] not in eliminated:
+                return candidates, []
         return kept, failed
 
     # --------------------------------------------------- Section XI Note 2(A)
@@ -394,8 +410,16 @@ class GRIEngine:
         return decision
 
     def _notes_for(self, candidates: list[str], facts: Facts) -> list[str]:
+        """Notes in scope, cited in chapter order rather than candidate order.
+
+        Taking the chapters as they happen to arrive made the citation order
+        depend on how the proposer ranked its candidates: the same decision,
+        with the same notes, would name a different authority first. Week 4
+        scores explanations against these traces, so the order has to come
+        from the nomenclature and not from the retrieval stage.
+        """
         notes: list[str] = []
-        for chapter in dict.fromkeys(code[:2] for code in candidates):
+        for chapter in sorted({code[:2] for code in candidates}):
             notes.extend(self._excluded(chapter, facts))
         return notes
 

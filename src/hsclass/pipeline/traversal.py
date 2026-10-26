@@ -18,7 +18,7 @@ apparel can be answered with a machine part.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -242,13 +242,17 @@ class HierarchicalClassifier:
 
     def __init__(self, levels: LevelIndex, embedder: Embedder, k: int = 5,
                  beam: int = DEFAULT_BEAM, fuse_levels: tuple[int, ...] = DEFAULT_FUSE_LEVELS,
-                 per_heading: int = DEFAULT_PER_HEADING) -> None:
+                 per_heading: int = DEFAULT_PER_HEADING,
+                 reranker: Callable[[str, list[Walk]], list[Walk]] | None = None) -> None:
         self.levels = levels
         self.embedder = embedder
         self.k = k
         self.beam = beam
         self.fuse_levels = fuse_levels
         self.per_heading = per_heading
+        #: Reorders the finished pool. Optional because it is the single
+        #: most expensive thing in the pipeline - see ``pipeline/rerank.py``.
+        self.reranker = reranker
 
     def walks(self, description: str) -> list[Walk]:
         query = self.embedder.encode([description])[0]
@@ -321,6 +325,11 @@ class HierarchicalClassifier:
 
     def classify(self, description: str) -> tuple[list[str], list[Walk]]:
         walks = self.walks(description)
+        if self.reranker is not None:
+            # After the walk, not inside it: reranking reorders the pool and
+            # must not change which candidates the descent produced, or the
+            # funnel that measures the descent would be measuring this too.
+            walks = self.reranker(description, walks)
         ranked: list[str] = []
         for walk in walks:
             if walk.code and walk.code not in ranked:

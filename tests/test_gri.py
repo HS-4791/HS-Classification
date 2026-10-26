@@ -314,3 +314,104 @@ def test_an_untestable_condition_never_removes_a_candidate(engine):
     facts = Facts(description="a cotton suit", materials={"cotton": 100.0})
     decision = engine.adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
     assert decision.conditions_applied == []
+
+
+# ------------------------------- what reranking stage 2 can and cannot change
+
+def test_the_decision_does_not_depend_on_the_order_of_the_candidates(engine):
+    """The engine is order-invariant for a **fixed** candidate set.
+
+    Every branch that returns a code either has one candidate to return
+    (``candidates[0]`` after a length check) or picks by a rule that reads
+    the whole set (``max`` for the numerical-order tie-break).
+
+    Read what this does and does not establish. It was first written down as
+    proof that "a probabilistic reranker may reorder what the adjudicator
+    sees without being able to change what it decides", and that does not
+    follow. The adjudicator never receives the pool - it receives
+    ``classify()``'s first ``k`` distinct codes, taken after reranking, so a
+    reranker changes the *set* and not only its order. Measured, the free
+    reranker changed the top-5 set on 88.4% of 500 cases and the decided
+    code on 3 of the 5 both configurations answered. See
+    ``pipeline/rerank.py``.
+
+    What the invariant below is good for is narrower and still worth having:
+    the engine cannot be made to answer differently by presenting the same
+    provisions in a different order, so its decisions are reproducible and
+    its rule paths auditable.
+    """
+    from itertools import permutations
+
+    facts = Facts(description="a knitted shirt of 60% cotton and 40% polyester",
+                  materials={"cotton": 60.0, "polyester": 40.0})
+    decisions = {
+        engine.adjudicate(facts, list(order), TEXTS).code
+        for order in permutations([COTTON, MAN_MADE])
+    }
+    assert len(decisions) == 1
+
+    # And with a candidate set the rules cannot settle, every ordering still
+    # escalates - the shortlist differs, the outcome does not.
+    unsettled = Facts(description="a steel bracket", materials={})
+    outcomes = {
+        (d.code, d.escalated)
+        for order in permutations([COTTON, MAN_MADE, "7326908688"])
+        for d in [engine.adjudicate(unsettled, list(order), TEXTS)]
+    }
+    assert outcomes == {(None, True)}
+
+
+def test_the_escalation_shortlist_is_what_reranking_improves(engine):
+    """The shortlist *is* order-dependent, and that is the point.
+
+    97.5% of cases escalate, so the ranked shortlist handed to a human is
+    the system's main output. ``top5@6`` scores it. A reranker that cannot
+    move top-1 can still move this.
+    """
+    facts = Facts(description="a steel bracket", materials={})
+    first = engine.adjudicate(facts, [COTTON, MAN_MADE], TEXTS)
+    second = engine.adjudicate(facts, [MAN_MADE, COTTON], TEXTS)
+    assert first.escalated and second.escalated
+    assert first.shortlist != second.shortlist
+
+
+def test_a_survivor_from_another_heading_does_not_decide(engine):
+    """The second half of "surviving by ignorance is not qualifying".
+
+    A women's coat of 70% polyester and 30% wool had four chapter 62
+    candidates each requiring 36 percent wool or more. All four were
+    correctly eliminated - and the survivor was 6405.20.6060, "Other
+    footwear, with soles and uppers of wool felt", which states no threshold
+    at all. Neither failed nor untested, it won, and the engine decided a
+    coat was footwear under GRI 1 with a citation attached.
+
+    A provision that merely has no condition was never competing on these
+    terms. The elimination has to be between siblings of one heading, which
+    is the GRI 6 comparison this rule exists for.
+    """
+    coat = "6202401510"
+    footwear = "6405206060"
+    texts = {
+        coat: "Chapter 62 - Women's overcoats - Containing 36 percent or more by "
+              "weight of wool or fine animal hair",
+        footwear: "Chapter 64 - Other footwear - With soles and uppers of wool felt",
+    }
+    facts = Facts(description="a women's knee-length coat of 70% polyester and 30% wool",
+                  materials={"polyester": 70.0, "wool": 30.0})
+    decision = engine.adjudicate(facts, [coat, footwear], texts)
+    assert decision.code != footwear
+    assert decision.conditions_applied == []
+
+
+def test_notes_are_cited_in_chapter_order_not_candidate_order(engine):
+    """The trace's first authority must not depend on how retrieval ranked.
+
+    Week 4 scores explanations against these traces, so the same decision
+    over the same notes has to name them in the same order whichever way
+    the proposer happened to sort its candidates.
+    """
+    facts = Facts(description="woven fabrics laminated with plastics of chapter 39",
+                  materials={})
+    forward = engine.adjudicate(facts, [COTTON, "3921905050"], TEXTS)
+    backward = engine.adjudicate(facts, ["3921905050", COTTON], TEXTS)
+    assert forward.notes_cited == backward.notes_cited
