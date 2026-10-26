@@ -28,6 +28,7 @@ from hsclass.pipeline.traversal import (  # noqa: E402
 )
 from hsclass.retrieval.embedder import get_embedder  # noqa: E402
 from hsclass.retrieval.index import VectorIndex  # noqa: E402
+from hsclass.retrieval.lexical import LexicalIndex  # noqa: E402
 from hsclass.schedule.exclusions import build_exclusion_graph  # noqa: E402
 from hsclass.schedule.models import build_from_export, load_export  # noqa: E402
 from hsclass.schedule.notes import Note  # noqa: E402
@@ -77,10 +78,18 @@ def main() -> int:
     print(f"{len(notes)} provisions, {len(texts)} candidate texts for the rules", flush=True)
 
     traversal = HierarchicalClassifier(LevelIndex(levelled), embedder, k=5)
+    # The lexical index is derived from the same candidates, so it needs no
+    # embedding pass and is built in under a second.
+    lexical = LexicalIndex.build(levelled.candidates)
+    hybrid = HierarchicalClassifier(LevelIndex(levelled, lexical), embedder, k=5)
+    print(f"lexical index {len(lexical)} documents, {len(lexical.postings)} terms",
+          flush=True)
     configurations = {
         "1-vector-only": VectorOnlyClassifier(flat, embedder, k=5),
         "2-hierarchical": traversal,
         "3-gri-adjudicated": AdjudicatedClassifier(traversal, engine, texts),
+        "4-hybrid-retrieval": hybrid,
+        "5-hybrid-adjudicated": AdjudicatedClassifier(hybrid, engine, texts),
     }
     sets = {"test-200": official, "heldout-2000": held_out}
 

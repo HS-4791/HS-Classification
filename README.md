@@ -220,12 +220,20 @@ nothing is a finding, not something to hide.
 | Configuration | top-1 @ 6 (test / held-out) | top-5 @ 6 | top-1 @ 10 | Δ top-1 @ 6 |
 | --- | ---: | ---: | ---: | ---: |
 | 1 · vector retrieval only | 14.50% / 14.00% | 28.00% / 30.10% | 6.09% / 4.55% | — |
-| 2 · + hierarchical traversal | 14.00% / 13.55% | 22.00% / 24.25% | 3.05% / 2.78% | **−0.50 / −0.45** |
-| 3 · + GRI engine adjudicating | 1.50% / 0.25% | 1.50% / 0.25% | 0% / 0% | **−13.00 / −13.75** |
+| 2 · + hierarchical traversal | 13.50% / 13.50% | 21.00% / 24.55% | 2.54% / 2.88% | **−1.00 / −0.50** |
+| 3 · + GRI engine adjudicating | 1.50% / 0.35% | 1.50% / 0.35% | 0% / 0% | **−13.00 / −13.65** |
+| 4 · + hybrid dense/lexical retrieval | 15.00% / 13.75% | 22.50% / 24.70% | 3.05% / 2.98% | **+0.50 / −0.25** |
+| 5 · hybrid + GRI engine | 1.50% / 0.35% | 1.50% / 0.35% | 0% / 0% | **−13.00 / −13.65** |
+
+Configurations 3 and 5 answer 5 of 200 and 5 of 200 on the test split; the coverage pair is
+below, and five decided cases is too small to rank 3 against 5.
 
 **Hierarchical traversal does not improve accuracy, and the honest reading is that it costs a
-little.** Top-1 is a wash within noise; top-5 is clearly worse. Its justification is not
-accuracy, and the ablation is what makes that claim checkable rather than rhetorical:
+little.** Top-1 is a wash within noise; top-5 is clearly worse. Adding hybrid retrieval (4)
+recovers top-1 on the test split and pushes it half a point past the flat floor, but top-5
+stays well behind it — 22.50% against 28.00% — so the overall reading does not change. Its
+justification is not accuracy, and the ablation is what makes that claim checkable rather than
+rhetorical:
 
 - **It is legally required.** GRI 6 states that only subheadings at the same level are
   comparable. Flat search weighs a six-digit subheading in one heading against a six-digit
@@ -262,10 +270,11 @@ matters is coverage against accuracy on the slice the system actually answered:
 
 | | Decided | Accuracy on those | If those had been forced |
 | --- | ---: | ---: | ---: |
-| test split (n=200) | 5 cases — 2.50% | 3 / 5 = 60% | 14.36% |
-| held-out (n=2,000) | 20 cases — 1.00% | 5 / 20 = 25% | 13.54% |
+| test split (n=200) | 5 cases — 2.50% | 3 / 5 = 60% | 13.85% |
+| held-out (n=2,000) | 22 cases — 1.10% | 7 / 22 = 31.8% | 13.45% |
+| held-out, on hybrid retrieval | 24 cases — 1.20% | 7 / 24 = 29.2% | 13.66% |
 
-**Twenty-five decided cases is too small to claim much**, though both slices sit above the 14%
+**Twenty-seven decided cases is too small to claim much**, though both slices sit above the 14%
 baseline. What the ablation does establish is *why* coverage is so narrow, and that is measured
 rather than guessed:
 
@@ -344,6 +353,137 @@ accuracy return to the baseline above exactly, and the judgement oracle drops fr
 Published baselines this will be scored beside: arXiv `2509.18400` (ATLAS), `2412.14179`
 (independent benchmark), `2605.14857` (deterministic agentic workflow).
 
+## Ablations 4 and 5: hybrid retrieval, and a finding that was retracted
+
+Retrieval recall was the obvious thing to fix next. Heading recall@5 was 40.0%, the rule engine
+was starved of candidates, and one held-out failure had the walk proposing chapter 51 *woven
+fabrics* for a knitted cardigan. Everything in this section is produced by
+`scripts/measure_retrieval.py`, which imports what the pipeline imports.
+
+### Chapter routing: refuted by its own numbers
+
+The first instinct is to predict the chapter and then search inside it. It does not work, and
+the measurement says why in one line: **the chapter is not an easier decision than the
+heading.**
+
+| | |
+| --- | ---: |
+| gold chapter already present in the beam | 98.5% |
+| heading misses whose chapter *was* present | 40 of 43 |
+| chapter top-1 accuracy | 47.0% |
+| heading recall@5, restricted to the top 3 chapters | 42.0% (from 40.0%) |
+
+Knowing the chapter would be worth a lot — heading recall@5 inside the gold chapter is 66.0% —
+but that figure needs an oracle. Predicting the chapter is 47% accurate, which is no better than
+the problem it was meant to simplify. No routing stage can help.
+
+### Hybrid dense/lexical retrieval: kept
+
+| heading recall (test / held-out) | @5 | @20 | @50 |
+| --- | ---: | ---: | ---: |
+| dense | 40.0% / 38.6% | 66.5% / 61.8% | 78.5% / 77.2% |
+| BM25, a heading's own text only | 18.5% / 23.5% | 28.0% / 34.8% | 39.5% / 42.6% |
+| BM25 with descendant vocabulary | 36.5% / 37.3% | 52.0% / 57.5% | 64.0% / 67.2% |
+| **fused, reciprocal rank** | **49.0% / 49.4%** | **68.5% / 71.7%** | **83.5% / 82.5%** |
+
+**A heading's own text is too short to search lexically** — 16 tokens of legal drafting, and
+BM25 over it recalls 18.5%. Giving each provision the vocabulary of everything beneath it takes
+the same method to 36.5%, because the schedule names goods in the statistical breakouts rather
+than in the heading. Fused with the dense ranking it beats both, by nine points at five.
+
+Rank fusion rather than a weighted sum: cosine and BM25 are different scales with different
+spreads, and any weighting between them would have to be fitted — on these sets, which is where
+that goes wrong.
+
+### The retraction
+
+This section first reported that **lexical fusion helps only at the heading level and the damage
+grows with depth**, on these figures: top1@6 of 14.50% fusing the heading, against 11.00% adding
+the tariff line and 6.50% fusing every level. The explanation offered was that a deep sibling
+set is a handful of near-identical lines, so BM25 over it is noise. The gain was also quoted
+against a dense baseline of 14.00% measured *before* per-heading pruning landed — comparing two
+code versions, which is the same discipline the CI gate enforces across schedule revisions.
+
+That finding was wrong, and a subagent cold-read of the two files found why. Walks were sorted
+by the score each level was *selected* by — which, once fusion existed, was a rank-fusion value
+(about 0.016 to 0.033) at a fused level and a cosine (about 0.4 to 0.8) everywhere else. Sorting
+mixed the two directly. With fusion at the heading and the tariff line, 15% of queries produced
+a list where every fused-level walk sorted below every unfused one regardless of merit; fusing
+all four levels gave 91% of walks a duplicate score, because RRF's maximum is `2/(k+1)` whatever
+the sibling set's size. The deeper the fusion, the more of the ranking the bug destroyed — which
+is exactly the shape of a component that gets worse with depth.
+
+Fusion now decides *which* candidates survive a level and similarity ranks the survivors. Those
+are separate jobs, and only the second needs one comparable scale. Re-measured:
+
+| levels fused | test top1@6 / top5@6 | held-out top1@6 / top5@6 |
+| --- | ---: | ---: |
+| none, dense only | 13.50% / 21.00% | 13.50% / 24.55% |
+| heading | 14.50% / 22.00% | 13.75% / 24.55% |
+| **heading + subheading** | **15.00% / 22.50%** | **13.75% / 24.70%** |
+| heading + tariff line | 14.50% / 22.00% | 13.75% / 24.45% |
+| every level | 15.00% / 22.50% | 13.75% / 24.70% |
+
+There is no deep-level penalty. Fusing every level is tied for best, and identical to fusing
+heading and subheading on all four figures — so fusion at eight and ten digits changes nothing,
+which matches the vocabulary: 48.2% of ten-digit provisions share an identical bag of terms with
+another provision, and 5,488 of 20,280 reduce to no terms at all. The shipped default is
+`(4, 6)`: the cheaper of two equal configurations.
+
+**The lesson is the one worth keeping.** A bug that degrades a configuration is
+indistinguishable from a configuration that does not work, and the plausible mechanism offered
+for it made the result easier to believe rather than harder. The number was reproducible, the
+explanation was sound, and both were wrong.
+
+### What still limits accuracy, and it is not recall
+
+| | test split | held-out 2,000 |
+| --- | ---: | ---: |
+| gold heading retrieved into the beam | 83.5% | 82.5% |
+| gold heading still standing after the descent | 83.5% | 82.5% |
+| gold subheading in the candidate pool | 46.5% | 46.3% |
+| gold subheading in the final top 5 | 22.0% | 24.6% |
+| **when it is in the pool at all, ranked within 5** | **47.3%** | **53.0%** |
+
+The last row is the finding, and it survived the retraction. The pool holds the right subheading
+twice as often as the output does, at a median rank of 7 on the test split. **Retrieval recall
+is not the binding constraint on accuracy; the ranking of what has already been retrieved is.**
+Nine points of heading recall@5 converted to 1.5 points of top-1 — three cases in 200. A
+reranker is the next real lever, and these numbers are the argument for it.
+
+### Why the per-heading beam is kept although it gains nothing
+
+Rows one and two of that table are now equal, and they were not. A single global beam of 50,
+shared across 50 expanded headings, let one heading's subheadings evict another heading's entire
+subtree: 83.5% of gold headings were retrieved and only 65.0% were still alive at the bottom.
+Pruning within each heading keeps all of them — the two rows match exactly, which is the claim
+tested rather than asserted.
+
+It is worth being careful about the reason. Retrieval is stage 2 and is not adjudicating, so
+this is **not** a GRI 6 violation — nothing is being classified yet. But ranking one heading's
+subheading against another's is the operation traversal was adopted here to avoid, and the
+global beam quietly reintroduced it inside the walk. It is a wash on accuracy. It is kept for
+the recall it stops discarding and for consistency with the architecture's own rationale, not
+for a gain it does not deliver.
+
+### What hybrid retrieval cannot do
+
+Two limits, both counted rather than asserted.
+
+**Vocabulary the schedule does not contain cannot be indexed.** The held-out cardigan is the
+honest case: "a women's cardigan made of 53% rayon and 47% wool" belongs in heading 6110, which
+reads "Sweaters, pullovers, sweatshirts, waistcoats (vests) and **similar articles**, knitted or
+crocheted". The word *cardigan* appears nowhere in the nomenclature — not in 6110, not in any
+line beneath it, nowhere in the schedule. Knowing a cardigan is a similar article to a sweater
+is world knowledge, and supplying it is stage 1's job.
+
+**Vocabulary the tokeniser collapses cannot be distinguished.** "m-Xylene", "o-Xylene" and
+"p-Xylene" all reduce to a single term, *xylene*, and that prefix is the entire legal
+distinction between 2902.41, .42 and .43. Seventy provisions carry such a prefix and collapse
+into thirteen collisions. Two descriptions differing only by an isomer therefore produce
+byte-identical BM25 rankings, and contribute the same vote to provisions at different duty
+rates.
+
 ## Running it
 
 ```bash
@@ -365,6 +505,19 @@ verifies every checksum; `check` runs lint, tests and tree validation.
 hsclass schedule show 6109.10.00
 ```
 
+Every number in the retrieval section is produced by one script, and that is deliberate — the
+first version of those figures came from a prototype whose BM25 documents differed slightly
+from the committed ones, so the published table could not be reproduced from the code it
+described. A cold read caught it by re-running. The script imports what the pipeline imports:
+
+```bash
+python scripts/measure_retrieval.py
+```
+
+```bash
+python scripts/run_ablations.py
+```
+
 ## Production concerns, built in from week 1
 
 - **Tracing** — every classification is reconstructable after the fact: candidates considered,
@@ -384,8 +537,11 @@ src/hsclass/
   obs/               tracing and the cost ledger
   schedule/parse_pdf.py  the PDF parser: x-positions back into levels
   schedule/reconcile.py  row-by-row check against the published export
-  retrieval/         embedding backends and the index        (week 1, next)
-  pipeline/          the four stages                         (weeks 2-3)
+  retrieval/         embedding backends and the dense index
+  retrieval/lexical.py   BM25 over descendant vocabulary, and rank fusion
+  pipeline/          the four stages
+  pipeline/gri.py        the deterministic adjudicator
+  pipeline/conditions.py provision thresholds as evaluable arithmetic
 scripts/             fetch the pinned release, the CI regression gate
 data/manifests/      committed: checksums and expected tree shape
 data/raw/            gitignored: reproducible via scripts/fetch_schedule.py

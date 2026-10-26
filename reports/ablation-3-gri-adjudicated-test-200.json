@@ -16,7 +16,7 @@
     "escalation_rate": 0.975,
     "covered_n": 5.0,
     "accuracy_on_covered@6": 0.6,
-    "accuracy_if_forced@6": 0.1436
+    "accuracy_if_forced@6": 0.1385
   },
   "per_chapter": {
     "29": {
