@@ -7,11 +7,19 @@ reports and with latency beside them - a reranker that adds two points of
 top-5 for a second a query is a different proposition from one that adds two
 points for free, and only reporting both lets anyone tell which this is.
 
-Usage: ``python scripts/measure_rerank.py [SET] [CONFIG,CONFIG...]``, where
-SET is ``test-200``, ``heldout-2000`` or ``both``. The cross-encoder runs at
-roughly 1.7 seconds a classification at depth 50, so the held-out 2,000
-takes about an hour per cross-encoder configuration - hence the filter, and
-hence running the depth sweep on the test split only.
+Usage: ``python scripts/measure_rerank.py [SET] [CONFIG,...] [STAGE,...]``,
+where SET is ``test-200``, ``heldout-2000`` or ``both`` and STAGE is
+``proposer``, ``adjudicated`` or both.
+
+The filters are there because this script is expensive in two ways that are
+easy to overlook. The cross-encoder runs at roughly 1.9 seconds a
+classification at depth 50, so the held-out 2,000 takes about an hour per
+configuration per stage. And loading it takes the process from 472MB to
+**2.7GB** of working set - ONNX reserves its arena within the first twenty
+classifications and then holds it flat - so on a 16GB machine two of these
+runs at once do not fit, and the second dies with ``bad allocation`` from
+somewhere deep in onnxruntime rather than anything that names memory. Run
+one at a time.
 """
 
 from __future__ import annotations
@@ -107,6 +115,8 @@ def main() -> int:
             "proposer": proposer,
             "adjudicated": AdjudicatedClassifier(proposer, engine, texts),
         }
+        if len(sys.argv) > 3:
+            stages = {name: stages[name] for name in sys.argv[3].split(",")}
         for stage, classifier in stages.items():
             for name, examples in sets.items():
                 clock = time.time()

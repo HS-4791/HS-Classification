@@ -516,6 +516,134 @@ into thirteen collisions. Two descriptions differing only by an isomer therefore
 byte-identical BM25 rankings, and contribute the same vote to provisions at different duty
 rates.
 
+## Reranking: the largest accuracy gain in the project, and it buys nothing
+
+The funnel said the ranking of what retrieval had already found was the binding constraint: the
+candidate pool held the right subheading for 47.0% of test cases and the output surfaced it for
+22.0%. A cross-encoder over the pool closes much of that gap, and changes the adjudicated
+system not at all. Both halves are the result. Everything here comes from
+`scripts/measure_rerank.py`.
+
+### What it buys, by stage
+
+| test split (n=200) | top1@6 | top5@6 | decided | right on decided | per query |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| **proposer**, no reranker | 15.00% | 22.50% | — | — | 16ms |
+| **proposer**, cross-encoder | **19.50%** | **26.00%** | — | — | 1,948ms |
+| **adjudicated**, no reranker | 1.50% | 1.50% | 5 of 200 | 3/5 = 60.0% | 30ms |
+| **adjudicated**, cross-encoder | 1.50% | 1.50% | 5 of 200 | 3/5 = 60.0% | 1,810ms |
+
+**+4.5 points of top-1 on the proposer, and nothing whatever on the adjudicated system.** Not a
+regression, not noise — the same five cases, the same three correct, verified case by case
+rather than inferred from matching totals.
+
+That is not a contradiction, it is what the escalation rate means. The adjudicated system
+answers 2.5% of cases and declines the rest, and whether the GRI resolve a case does not depend
+on how the five candidates are *ordered*. So reranking improves the ranked shortlist handed to a
+human on the 97.5% that escalate, which is the system's actual output, and leaves the rules'
+decisions untouched. For a stage-2 component that is the behaviour you want. It is also the
+reason the proposer number must never be quoted on its own.
+
+### It is not adopted, and the cost is why
+
+`HierarchicalClassifier` takes `reranker=None` by default and nothing in the shipped pipeline
+passes one. On this evidence that stays, because the price is not only latency:
+
+- **A hundred times slower.** 16ms to 1,948ms on the proposer, 30ms to 1,810ms adjudicated. And
+  the figure is sensitive to memory headroom rather than being a constant: the same adjudicated
+  work measured **3,188ms** while another process held its own ONNX arena, so quoting a single
+  number for it would be quoting whichever run suited the argument.
+- **Six times the memory.** 472MB to **2.7GB** of working set. ONNX reserves its arena inside
+  the first twenty classifications and holds it flat, so this is a floor, not a leak. On a 16GB
+  machine two evaluation runs do not fit, and the second dies with `bad allocation` from inside
+  onnxruntime — an error that names memory nowhere, and which cost an hour to diagnose through
+  two wrong hypotheses (unbounded document length, then a leak) before the instrumentation was
+  working.
+
+A cost ceiling counting API tokens would see none of this. That is now the argument for wiring
+the tracing and cost ledger in.
+
+### A bigger reranker is not a better one
+
+Four models screened on 30 cases, scoring "gold within the top five" among cases whose gold was
+in the pool:
+
+| | gold in top 5 | per case |
+| --- | ---: | ---: |
+| no reranker | 43.3% | 0ms |
+| `jinaai/jina-reranker-v1-turbo-en` | 60.0% | 4,509ms |
+| **`Xenova/ms-marco-MiniLM-L-6-v2`** | **60.0%** | **4,591ms** |
+| `Xenova/ms-marco-MiniLM-L-12-v2` | 53.3% | 6,201ms |
+| `BAAI/bge-reranker-base` | **40.0%** | 34,029ms |
+
+`bge-reranker-base` is the strongest of the four on general benchmarks and scores **below having
+no reranker at all**, at seven times the cost of the cheapest. These documents are terse legal
+nomenclature, not the web prose the models were trained on, so reranking quality does not
+transfer from a leaderboard and had to be measured. MiniLM-L-6 is chosen for being tied best and
+cheapest.
+
+### How deep to rerank
+
+The pool averages 212 walks and the tail is nearly empty of right answers. Of the cases whose
+gold subheading is in the pool at all, the share reachable within the first N by cosine:
+
+| N | reachable | cost |
+| ---: | ---: | ---: |
+| 10 | 56.4% | ~880ms |
+| 30 | 76.6% | ~1,270ms |
+| **50** | **89.4%** | **1,948ms, measured** |
+| 100 | 95.7% | 2,620ms, measured |
+| 212, the whole pool | 100% | ~4,780ms |
+
+Two measured points fit 19.3ms per pair plus about 670ms of fixed overhead per call. Depth 50 is
+chosen on cost: the whole pool is 2.9 times the budget for the last 10.6% of reachability, and
+depth 100 measured +0.50 top1@6 — one case in 200, which this sample cannot separate from noise.
+
+### The free reranker is worse than nothing, and it took 2,000 cases to say so
+
+`LexicalReranker` fuses each line's cosine with BM25 over that line's own document, for about a
+millisecond. Three sample sizes gave three different answers:
+
+| | verdict |
+| --- | --- |
+| 30-case screen | +10 points — "closes two thirds of the gap" |
+| 200-case test split | neutral — +0.00 top1@6, +0.50 top5@6 |
+| held-out 2,000 | **harmful — −1.75 top5@6**, 35 cases |
+| adjudicated, test split | **harmful** — decided 5 → 7 while right on decided fell 3/5 → 1/7 |
+
+It is kept in the tree as the control, labelled measured-harmful, because a reranker costing a
+hundred times as much has to be compared against the free attempt rather than against the
+baseline. Why it churns without being more right: 47.1% of a 212-walk pool scores exactly zero
+on BM25, so a single shared term lifts a walk past the entire rank-fusion spread of the top 50
+cosine positions. The top-5 set changed on 88.4% of 500 cases.
+
+### What reranking exposed, which was worth more than the reranking
+
+Listing the five decided cases instead of comparing the totals is what found this, and the
+totals were identical — 5 decided, 60% correct, with and without.
+
+A woman's 100% nylon lace knit dress with a 100% polyester slip was classified
+**`6405.20.6060`, "Other footwear, with soles and uppers of wool felt"**, citing
+`Section XI Note 2(A)`, in the shipped configuration with no reranker involved. Note 2(A)
+governs chapters 50 to 63 and cannot place goods in chapter 64 at all. The two "100%" figures
+tie, so the rule reached its "last in numerical order" tie-break, and `max` over a candidate set
+spanning chapters returned the footwear line.
+
+`_textile_material_rule` now considers only candidates inside Section XI. The dress decides
+`6108.29.1000` — women's slips and night dresses — which is still wrong against a gold of
+`6114.90.1030`, but is a garment rather than footwear. **No metric moved**: the case was wrong
+before and is wrong now, so coverage and accuracy are unchanged to the decimal. The improvement
+is in the quality of the failure, which nothing the project measures can see.
+
+Two uncomfortable things about it. It is the same error class as the condition-rule defect fixed
+the day before — a rule eliminating or selecting across chapters it has no authority over — and
+after fixing that path, the other path was never checked for the same flaw. And the candidate
+set for that dress was
+`6405203060, 5512110030, 5804299010, 6405206060, 6108291000`: two footwear lines, a woven
+fabric, a lace trim, and one plausible garment. The rules picked the only sensible candidate
+offered. The engine behaved correctly on input it should never have been given, which is the
+case for fixing stage 1 and stage 2 before polishing stage 3 further.
+
 ## Running it
 
 ```bash
@@ -549,6 +677,14 @@ python scripts/measure_retrieval.py
 ```bash
 python scripts/run_ablations.py
 ```
+
+```bash
+python scripts/measure_rerank.py test-200 cross-encoder-50
+```
+
+The reranker takes the process from 472MB to 2.7GB of working set, so run one of these at a
+time — two together do not fit on a 16GB machine, and the second dies with `bad allocation`
+from inside onnxruntime, which names memory nowhere.
 
 ## Production concerns, built in from week 1
 

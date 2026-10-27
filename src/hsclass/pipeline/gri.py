@@ -319,9 +319,20 @@ class GRIEngine:
         """
         if not facts.is_mixture:
             return None
-        chapters = {code[:2] for code in candidates}
-        if not chapters & SECTION_XI_CHAPTERS:
+
+        # A Section XI note can only classify within Section XI. Applying the
+        # test to every candidate let it place goods outside the section
+        # entirely: a woman's 100% nylon lace dress with a 100% polyester
+        # slip ties at 100, so the rule reached its "last in numerical order"
+        # tie-break, and ``max`` over a candidate set spanning chapters
+        # returned 6405.20.6060 - "Other footwear, with soles and uppers of
+        # wool felt" - citing a textile note to put a dress in chapter 64.
+        # The note governs chapters 50 to 63 and nothing else, so the
+        # candidates it may choose between are only those.
+        within = [code for code in candidates if code[:2] in SECTION_XI_CHAPTERS]
+        if not within:
             return None
+        chapters = {code[:2] for code in within}
 
         cited = ["Section XI Note 2(A)"]
         if chapters & SUBHEADING_NOTE_2A_CHAPTERS:
@@ -331,14 +342,14 @@ class GRIEngine:
 
         predominant = facts.predominant()
         if predominant is not None:
-            matching = _matching(candidates, [predominant[0]], texts)
+            matching = _matching(within, [predominant[0]], texts)
             if len(matching) != 1:
                 return None
             return matching[0], cited, "the material predominating by weight decides the subheading"
 
         heaviest = max(facts.materials.values())
         tied = [m for m, share in facts.materials.items() if share == heaviest]
-        matching = _matching(candidates, tied, texts)
+        matching = _matching(within, tied, texts)
         if len(matching) < 2:
             return None
         return (

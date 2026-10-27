@@ -10,26 +10,32 @@ Two rerankers live here because the expensive one has to beat the free one,
 not the baseline. The result on the 200-case test split, which is the number
 that decides it:
 
+Proposer metrics, test split then held-out 2,000:
+
 | | top1@6 | top5@6 | cost per case |
 | --- | ---: | ---: | ---: |
-| no reranker | 15.00% | 22.50% | 16ms |
-| ``LexicalReranker`` | 15.00% | 23.00% | 15ms |
-| ``CrossEncoderReranker`` (MiniLM-L-6, depth 50) | **19.50%** | **26.00%** | 1,654ms |
+| no reranker | 15.00% / 13.75% | 22.50% / 24.70% | 16ms |
+| ``LexicalReranker`` | 15.00% / 13.90% | 23.00% / **22.95%** | 15ms |
+| ``CrossEncoderReranker`` (MiniLM-L-6, depth 50) | **19.50%** | **26.00%** | 1,948ms |
 
-**The free reranker is worth nothing, and that is a finding.** It adds 0.00
-points of top1@6 and 0.50 of top5@6 - one case in 200. It is kept because a
-reranker costing a hundred times as much has to be compared against it
-rather than against the baseline, and because deleting the control would
-make the cross-encoder's gain look like the only option.
+**The free reranker is worse than nothing, and it took the larger set to say
+so.** On 200 cases it looked harmless - 0.00 points of top1@6 and +0.50 of
+top5@6, one case. On 2,000 it costs **1.75 points of top5@6**, which is 35
+cases, and adjudicated it is worse still: it raised the number of cases the
+engine answered from 5 to 7 while accuracy on those fell from 3 of 5 to 1 of
+7. It is kept as the control, not as an option: a reranker costing a hundred
+times as much has to be compared against the free attempt rather than
+against the baseline, and deleting the comparison would make the expensive
+one look like the only idea anybody had.
 
-It also earns its place as a cautionary number. A 30-case screen had it at
-53.3% against a 43.3% baseline, on a different metric (gold within the top
-five, among cases whose gold was in the pool), and that looked like closing
-two thirds of the gap. Three cases. The honest reading of why it churns
-without helping: 47.1% of a 212-walk pool scores exactly zero on BM25, so
-one shared term lifts a walk past the entire rank-fusion spread of the top
-50 cosine positions. It reorders constantly without being more right - the
-top-5 set changed on 88.4% of 500 cases.
+It also earns its place as a cautionary number, twice over. A 30-case screen
+had it at 53.3% against a 43.3% baseline, on a different metric (gold within
+the top five, among cases whose gold was in the pool), which looked like
+closing two thirds of the gap on three cases. Then 200 cases said neutral.
+Only 2,000 said harmful. The honest reading of why it churns without being
+more right: 47.1% of a 212-walk pool scores exactly zero on BM25, so one
+shared term lifts a walk past the entire rank-fusion spread of the top 50
+cosine positions. The top-5 set changed on 88.4% of 500 cases.
 
 **A bigger reranker is not a better one.** On the same screen,
 ``bge-reranker-base`` - the strongest of four on general benchmarks - scored
@@ -114,6 +120,11 @@ class LexicalReranker:
     Free, in the sense that both numbers are already computed or cheap: the
     cosine is carried on the walk and the BM25 scores come from the index
     the retrieval stage already built.
+
+    **Measured harmful - kept as the control, not for use.** It costs 1.75
+    points of top5@6 on the held-out 2,000 and makes the adjudicated system
+    answer more cases less accurately. See the module docstring for the
+    numbers and for why the comparison is still worth keeping in the tree.
     """
 
     def __init__(self, lexical: LexicalIndex, candidates: list[Candidate]) -> None:

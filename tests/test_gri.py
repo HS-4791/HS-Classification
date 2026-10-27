@@ -415,3 +415,30 @@ def test_notes_are_cited_in_chapter_order_not_candidate_order(engine):
     forward = engine.adjudicate(facts, [COTTON, "3921905050"], TEXTS)
     backward = engine.adjudicate(facts, ["3921905050", COTTON], TEXTS)
     assert forward.notes_cited == backward.notes_cited
+
+
+def test_a_section_xi_note_cannot_classify_outside_section_xi(engine):
+    """Note 2(A) governs chapters 50 to 63. It cannot reach chapter 64.
+
+    A woman's 100% nylon lace dress with a 100% polyester slip gives two
+    materials tied at 100, so the rule reaches its "last in numerical order"
+    tie-break - and ``max`` over a candidate set spanning chapters returned
+    6405.20.6060, "Other footwear, with soles and uppers of wool felt". The
+    engine cited a textile note to put a dress in chapter 64, in the shipped
+    configuration with no reranker involved.
+    """
+    dress = "6114901030"
+    footwear = "6405206060"
+    texts = {
+        dress: "Section XI - Chapter 61 - Other garments, knitted - Of other textile "
+               "materials - of nylon and polyester",
+        footwear: "Section XII - Chapter 64 - Other footwear - With uppers of textile "
+                  "materials - of nylon",
+    }
+    facts = Facts(description="a woman's 100% nylon lace knit dress with a 100% polyester slip",
+                  materials={"nylon": 100.0, "polyester": 100.0})
+    decision = engine.adjudicate(facts, [dress, footwear], texts)
+    assert decision.code != footwear
+    # And with nothing inside Section XI to choose between, the note does not fire.
+    only_outside = engine.adjudicate(facts, [footwear], {footwear: texts[footwear]})
+    assert "Section XI Note 2(A)" not in only_outside.rule_path
