@@ -26,6 +26,15 @@ class Settings(BaseSettings):
 
     cost_ceiling_usd_per_request: float = 0.05
 
+    #: A per-request wall-clock budget, enforced the way the dollar ceiling
+    #: is. It exists because the dollar ceiling cannot see this pipeline's
+    #: real costs: the cross-encoder reranker spends no tokens at all and
+    #: takes a classification from 16ms to about 1,900ms. Unset by default,
+    #: because a budget that trips in an evaluation run is worse than none -
+    #: it turns a slow configuration into a crashed one. Set it where a
+    #: request is answering somebody.
+    latency_budget_ms: float | None = None
+
     anthropic_api_key: str | None = None
     openai_api_key: str | None = None
 

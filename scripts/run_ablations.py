@@ -31,7 +31,7 @@ from hsclass.retrieval.index import VectorIndex  # noqa: E402
 from hsclass.retrieval.lexical import LexicalIndex  # noqa: E402
 from hsclass.schedule.exclusions import build_exclusion_graph  # noqa: E402
 from hsclass.schedule.models import build_from_export, load_export  # noqa: E402
-from hsclass.schedule.notes import Note  # noqa: E402
+from hsclass.schedule.notes import load_notes  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 ATLAS = ROOT / "data" / "raw" / "atlas"
@@ -67,12 +67,7 @@ def main() -> int:
     train, _ = load_split(ATLAS / "train.jsonl")
     held_out = random.Random(SEED).sample(train, min(HELD_OUT_SIZE, len(train)))
 
-    notes_path = settings.processed_dir / "notes.json"
-    raw_notes = json.loads(notes_path.read_text(encoding="utf-8"))
-    notes = [
-        Note(**{k: v for k, v in n.items() if k in Note.__dataclass_fields__})
-        for n in raw_notes
-    ]
+    notes = load_notes(settings.processed_dir / "notes.json")
     engine = GRIEngine(build_exclusion_graph(notes))
     texts = {c.code: c.text for c in levelled.candidates}
     print(f"{len(notes)} provisions, {len(texts)} candidate texts for the rules", flush=True)

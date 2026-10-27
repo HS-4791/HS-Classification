@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from hsclass.obs.cost import CostLedger
+from hsclass.obs.resources import ResourceGauge
 
 
 @dataclass
@@ -37,6 +38,11 @@ class Trace:
     stages: list[Stage] = field(default_factory=list)
     decision: dict | None = None
     ledger: CostLedger | None = None
+    #: Process-level readings taken alongside this request. Deliberately not
+    #: part of ``cost``: the memory is an arena the process holds for its
+    #: lifetime, and charging it to one request would be a fiction. See
+    #: ``obs/resources.py``.
+    resources: ResourceGauge | None = None
     started_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     _t0: float = field(default_factory=time.perf_counter, repr=False)
 
@@ -81,6 +87,7 @@ class Trace:
             "stages": [s.to_dict() for s in self.stages],
             "decision": self.decision,
             "cost": self.ledger.summary() if self.ledger else None,
+            "resources": self.resources.to_dict() if self.resources else None,
         }
 
 
@@ -102,6 +109,14 @@ def trace(
     try:
         yield t
     finally:
+        # Sampled here rather than by the caller, because the caller sets it
+        # after the last stage and a request that blew its budget never gets
+        # there: every trace of a breach recorded
+        # "process_working_set_mb": null, so the gauge was present only in
+        # the traces that did not need it. A breach because the machine went
+        # into swap is exactly when the reading is worth having.
+        if t.resources is None:
+            t.resources = ResourceGauge.sample()
         if sink is not None:
             sink.parent.mkdir(parents=True, exist_ok=True)
             with sink.open("a", encoding="utf-8") as fh:

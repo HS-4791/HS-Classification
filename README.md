@@ -686,11 +686,125 @@ The reranker takes the process from 472MB to 2.7GB of working set, so run one of
 time — two together do not fit on a 16GB machine, and the second dies with `bad allocation`
 from inside onnxruntime, which names memory nowhere.
 
-## Production concerns, built in from week 1
+## Observability: the costs that are not tokens
+
+Every classification can now emit a trace an auditor can reconstruct it from, and the budget is
+enforced rather than configured. This existed as two unused modules from week 1; wiring it in
+was prompted by a failure that a dollar ceiling could not have seen.
+
+### Why a cost ledger denominated in dollars was not enough
+
+Adding the cross-encoder reranker changed the pipeline's cost like this:
+
+| | without | with |
+| --- | ---: | ---: |
+| tokens spent | 0 | 0 |
+| dollars spent | $0.00 | $0.00 |
+| per classification | 16ms | ~1,900ms |
+| process working set | 472MB | **2.7GB** |
+
+The ledger priced the first two rows and was blind to the other two. The failure that followed
+was real rather than hypothetical: two evaluation runs at once exhausted a 16GB machine and the
+second died inside onnxruntime with `bad allocation`, naming neither memory nor the component
+responsible. Diagnosing it took two wrong hypotheses and a memory probe that was itself broken
+and returning zeros.
+
+So `obs/resources.py` adds the two measurements that would have caught it, and keeps an
+asymmetry between them that is the point of the module rather than a wrinkle in it:
+
+- **Latency is attributable to a request, so it is checked.** `latency_budget_ms` raises
+  `LatencyBudgetExceeded` naming the stage — "slow" is not actionable, "slow in propose" is. It
+  is **unset by default**, because a budget that trips during an evaluation turns a slow
+  configuration into a crashed one.
+
+  "Checked" rather than "enforced", because the check runs at each stage *boundary*. Measured
+  with a proposer sleeping 400ms under a 50ms budget, it raises after 401ms of real wall time:
+  the breach is detected once the cost is fully paid. What it genuinely buys is the remaining
+  stages — with a cross-encoder spending 1,900ms in propose, adjudication is skipped — plus a
+  loud typed error naming the stage instead of a silent p99. What it cannot do is interrupt a
+  running stage, so a hung `onnxruntime` call hangs forever and the budget never fires, and it
+  cannot bound a request below its slowest single stage. The dollar ceiling has the same shape:
+  `CostLedger.record` appends and *then* checks. Both are detectors.
+- **Memory is not attributable, so it is never enforced.** The 2.7GB is an arena ONNX reserves
+  within the first twenty classifications and then holds flat for the life of the process.
+  Charging it to whichever request triggered the reservation would be a fiction; charging every
+  request a share would be another. It is recorded as a process-level gauge, named
+  `process_working_set_mb` so the scope is unmistakable where it is read, and there is
+  deliberately no `Budget.memory_mb` — a per-request memory ceiling over a process-wide arena
+  would fail on the first request and pass for every one after.
+
+### What a trace contains
+
+```bash
+hsclass classify "a women's blouse of 70 percent silk and 30 percent cotton"
+```
+
+One JSON line per classification, carrying the schedule revision, the input, each stage with its
+own duration, the decision with its rule path and cited notes, the token ledger, and the
+process gauge. Stage 4, explanation, is **absent rather than empty**: a stage that always reports
+nothing reads as a stage that ran and found nothing to say.
+
+Measured on the test split:
+
+| | |
+| --- | ---: |
+| traces written | 200 of 200 cases |
+| traces with all three stages timed | 200 |
+| overhead, median of four alternating rounds | **+1.74ms (+6.5%)** |
+| decisions changed by tracing | **0** |
+
+**The overhead number is weaker than it looks, and the honest statement is a bound.** Tracing's
+directly measured cost is **0.54ms** per request, 98% of it the file append (0.53ms; a held
+handle is over a hundred times cheaper). The end-to-end A/B over four alternating rounds of 200
+cases puts the median at **+1.6ms (+6%)** on a 26ms baseline. Those two do not reconcile, and an
+independent re-measurement reproduced both the 1.6ms and the gap — one of its four rounds came
+out **negative** (−0.76ms), and the spread on the untraced arm was 3.2ms, twice the effect being
+measured. So: tracing costs under about 3ms per request, probably well under; the component
+figure is the one with a mechanism behind it, and the A/B cannot resolve it further on this
+machine.
+
+That is a correction to an earlier draft of this section, which reported +1.74ms with "a
+consistent sign in every round". The sign is not consistent, and the first attempt at this
+measurement was worse still: a single sequential A/B gave **+4.48ms (+17.4%)**. Each round of
+this is the same lesson — an A/B whose effect is smaller than its noise reports the noise — and
+publishing 1.74ms as the answer after criticising 4.48ms for exactly that reason was the same
+mistake one step quieter.
+
+Either way it misses the 5% budget set before building, against a 27ms denominator that is the
+cheapest configuration the project has; against a reranked request it is 0.09%. The dominant
+cost is the per-request file open-append-close, and it is kept deliberately: a trace buffered in
+memory is lost exactly when the process dies, which is when it is most worth having.
+`test_the_trace_is_written_even_when_the_request_fails` is what holds that trade.
+
+### Reading one back
+
+The stages were timed at **0.0ms each** in the first version, because the work happened before
+the stage's context manager opened and the timed block wrapped only the bookkeeping. That was
+found by reading a trace back rather than by the tests, which checked that stages were present.
+A duration of zero is not a missing measurement — it reads as a fast stage, which is a wrong one,
+and it would have been wrong about `propose`, the stage that costs 1.9 seconds with a reranker
+attached.
+
+Reading that same trace back also showed `Section XI Note 1(c)` cited twice, because a Section
+note excludes goods from several chapters and the shortlist spanned two of them. In a trace that
+reads as an officer relying on an authority twice over. Citations are now deduplicated.
+
+## Production concerns
 
 - **Tracing** — every classification is reconstructable after the fact: candidates considered,
-  rules fired, notes consulted, schedule version, cost and latency, written as one JSON line.
-- **A cost ceiling per request**, enforced, raising rather than overspending.
+  rules fired, notes consulted, schedule version, per-stage timings, token cost and a
+  process-level resource gauge, written as one JSON line. Built in week 1 and **connected to
+  nothing until week 3**, which this heading used to obscure by claiming it was built in from
+  the start: the modules were, the wiring was not, and an unused tracer is not observability.
+- **A cost ceiling per request** — built, unit-tested, and **with no call site in the pipeline**,
+  because stages 1 to 4 currently make no model calls at all. Every trace records
+  `"total_usd": 0`. Saying so is the finding rather than an embarrassment: a ledger that cannot
+  fire is exactly why latency and memory had to be measured instead.
+- **A latency budget per request**, checked at each stage boundary and naming the stage that
+  blew it. Unset by default — see the observability section for what it can and cannot do.
+- **A known gap**: the incident that motivated all of this was a *process*-level condition — two
+  runs, 16GB, an ONNX arena each. Nothing here checks available memory before loading a model,
+  which is where that check belongs and where it does not yet exist.
 - **Schedule versioning** — stamped on every trace and report; a code without one is unusable.
 - **Evals gated in CI** — `scripts/check_regression.py` fails the build when a metric falls below
   the committed floor, and refuses to compare across schedule versions.
@@ -702,7 +816,8 @@ src/hsclass/
   config.py          pinned revision, paths, cost ceiling
   schedule/          tree model, export builder, validators
   eval/              metrics (6 vs 10 digit, coverage, per-chapter), runner
-  obs/               tracing and the cost ledger
+  obs/               tracing, the cost ledger and the resource gauge
+  obs/resources.py       the latency budget, and why memory is not budgeted
   schedule/parse_pdf.py  the PDF parser: x-positions back into levels
   schedule/reconcile.py  row-by-row check against the published export
   retrieval/         embedding backends and the dense index

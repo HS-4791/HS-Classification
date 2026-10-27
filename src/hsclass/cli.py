@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import typer
 from rich.console import Console
@@ -38,6 +39,77 @@ def _tree(source: str = "pdf"):
     return settings, build_from_export(load_export(path), settings.require_revision())
 
 
+@app.command("classify")
+def classify(
+    description: str,
+    trace_to: str = typer.Option("", help="Where to append the trace; defaults to traces/"),
+    budget_ms: float = typer.Option(
+        -1.0, help="Per-request latency budget in ms; omit to use LATENCY_BUDGET_MS"
+    ),
+) -> None:
+    """Classify one description and write a reconstructable trace.
+
+    This is the only place the whole pipeline runs as a pipeline rather than
+    as an evaluation, which is why tracing is wired here: a trace nobody ever
+    reads is not observability, and the eval scripts deliberately leave it
+    off so that 2,200 cases do not write 2,200 files.
+    """
+    from hsclass.obs.resources import Budget
+    from hsclass.pipeline.adjudicated import AdjudicatedClassifier
+    from hsclass.pipeline.gri import GRIEngine
+    from hsclass.pipeline.traversal import HierarchicalClassifier, LevelIndex
+    from hsclass.retrieval.embedder import get_embedder
+    from hsclass.retrieval.index import VectorIndex
+    from hsclass.retrieval.lexical import LexicalIndex
+    from hsclass.schedule.exclusions import build_exclusion_graph
+    from hsclass.schedule.notes import load_notes
+
+    settings = get_settings()
+    revision = settings.require_revision()
+    index_dir = settings.processed_dir / "index-levels"
+    if not (index_dir / "vectors.npy").exists():
+        raise typer.BadParameter(f"missing {index_dir}; run scripts/run_ablations.py once")
+
+    levelled = VectorIndex.load(index_dir)
+    lexical = LexicalIndex.build(levelled.candidates)
+    notes_path = settings.processed_dir / "notes.json"
+    if not notes_path.exists():
+        raise typer.BadParameter(
+            f"missing {notes_path}; run `python scripts/extract_notes.py` first"
+        )
+    notes = load_notes(notes_path)
+    proposer = HierarchicalClassifier(LevelIndex(levelled, lexical),
+                                      get_embedder(settings.embedding_backend,
+                                                   settings.embedding_model), k=5)
+    sink = Path(trace_to) if trace_to else settings.traces_dir / f"{revision}.jsonl"
+    # ``None`` is the only value meaning "no budget", and 0 is a real budget
+    # of zero. ``budget_ms or settings.latency_budget_ms`` made a configured
+    # budget impossible to override from the command line, and
+    # LATENCY_BUDGET_MS=0 - the natural way to write "off" - failed every
+    # request at stage 1 while ``hsclass config`` reported "unset".
+    budget = Budget(
+        usd=settings.cost_ceiling_usd_per_request,
+        latency_ms=settings.latency_budget_ms if budget_ms < 0 else budget_ms,
+    )
+    classifier = AdjudicatedClassifier(
+        proposer, GRIEngine(build_exclusion_graph(notes)),
+        {c.code: c.text for c in levelled.candidates},
+        schedule_version=revision, sink=sink, budget=budget,
+    )
+
+    decision, candidates = classifier.decide(description)
+    if decision.code is not None:
+        console.print(f"[green]{decision.code}[/green]  {decision.reason}")
+    else:
+        console.print("[yellow]escalated[/yellow] - the rules do not settle this")
+        console.print(f"reason: {decision.reason}")
+    console.print(f"rules evaluated: {' -> '.join(decision.rule_path)}")
+    if decision.notes_cited:
+        console.print(f"notes cited: {', '.join(decision.notes_cited)}")
+    console.print(f"shortlist: {', '.join(decision.shortlist or candidates[:5])}")
+    console.print(f"[dim]trace appended to {sink}[/dim]")
+
+
 @app.command("config")
 def show_config() -> None:
     """Print the active configuration and the pinned schedule version."""
@@ -47,6 +119,12 @@ def show_config() -> None:
     table.add_row("llm_model", s.llm_model)
     table.add_row("embedding", f"{s.embedding_backend} / {s.embedding_model}")
     table.add_row("cost ceiling", f"${s.cost_ceiling_usd_per_request:.4f} per request")
+    table.add_row(
+        "latency budget",
+        f"{s.latency_budget_ms:.0f}ms per request"
+        if s.latency_budget_ms is not None
+        else "unset",
+    )
     table.add_row("anthropic key", "set" if s.anthropic_api_key else "unset")
     console.print(table)
 

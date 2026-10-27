@@ -432,7 +432,11 @@ class GRIEngine:
         notes: list[str] = []
         for chapter in sorted({code[:2] for code in candidates}):
             notes.extend(self._excluded(chapter, facts))
-        return notes
+        # One citation per note. A Section note excludes goods from several
+        # chapters, so a shortlist spanning chapters 61 and 62 cited
+        # "Section XI Note 1(c)" twice - reading, in a trace, as though the
+        # officer had relied on it twice over.
+        return list(dict.fromkeys(notes))
 
     def _walk(self, facts: Facts, candidates: list[str], texts: dict[str, str]) -> Decision:
         """Walk the rules in order, stopping at the first that resolves.

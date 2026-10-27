@@ -43,7 +43,7 @@ from hsclass.retrieval.embedder import get_embedder  # noqa: E402
 from hsclass.retrieval.index import VectorIndex  # noqa: E402
 from hsclass.retrieval.lexical import LexicalIndex  # noqa: E402
 from hsclass.schedule.exclusions import build_exclusion_graph  # noqa: E402
-from hsclass.schedule.notes import Note  # noqa: E402
+from hsclass.schedule.notes import Note, load_notes  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 ATLAS = ROOT / "data" / "raw" / "atlas"
@@ -53,9 +53,7 @@ SEED = 20261017
 
 def _notes(settings) -> list[Note]:
     """The binding provisions the exclusion graph is built from."""
-    raw = json.loads((settings.processed_dir / "notes.json").read_text(encoding="utf-8"))
-    return [Note(**{k: v for k, v in n.items() if k in Note.__dataclass_fields__})
-            for n in raw]
+    return load_notes(settings.processed_dir / "notes.json")
 
 
 def main() -> int:

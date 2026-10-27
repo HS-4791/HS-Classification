@@ -307,3 +307,18 @@ def save_notes(notes: list[Note], path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps([n.to_dict() for n in notes], indent=1), encoding="utf-8")
     return path
+
+
+def load_notes(path: Path) -> list[Note]:
+    """Read the extracted provisions back, ignoring fields Note does not carry.
+
+    The filtering comprehension this replaces was copied into four call
+    sites - the CLI and three measurement scripts - each reconstructing the
+    same object from the same file. One of them drifting would mean the
+    engine being measured was not the engine being run.
+    """
+    raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    return [
+        Note(**{k: v for k, v in entry.items() if k in Note.__dataclass_fields__})
+        for entry in raw
+    ]
