@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -44,6 +45,9 @@ class EvalResult:
     scored: dict[str, int] = field(default_factory=dict)
     coverage: dict[str, float] = field(default_factory=dict)
     per_chapter: dict[str, dict] = field(default_factory=dict)
+    #: p50, p95 and p99 per classification. A mean would hide the tail, and
+    #: the tail is what a latency budget is set against.
+    latency: dict[str, float] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -53,6 +57,7 @@ class EvalResult:
             "metrics": {k: round(v, 4) for k, v in self.metrics.items()},
             "scored": self.scored,
             "coverage": {k: round(v, 4) for k, v in self.coverage.items()},
+            "latency_ms": {k: round(v, 2) for k, v in self.latency.items()},
             "per_chapter": self.per_chapter,
         }
 
@@ -71,6 +76,11 @@ class EvalResult:
         for key, value in self.coverage.items():
             shown = f"{value:.2%}" if "accuracy" in key or key.endswith("rate") else f"{value:g}"
             lines.append(f"| {key} | {shown} |")
+        if self.latency:
+            lines += ["", f"## Latency per classification (n = {self.n})", "",
+                      "| statistic | ms |", "| --- | ---: |"]
+            for key, value in self.latency.items():
+                lines.append(f"| {key} | {value:.1f} |")
         if self.per_chapter:
             worst = sorted(
                 (c for c in self.per_chapter.items() if c[1]["n"] >= 20),
@@ -82,6 +92,37 @@ class EvalResult:
                 for ch, d in worst:
                     lines.append(f"| {ch} | {d['n']} | {d['top1@6']:.2%} |")
         return "\n".join(lines) + "\n"
+
+
+def percentile(values: Sequence[float], fraction: float) -> float:
+    """Nearest-rank percentile, no interpolation and no numpy.
+
+    Nearest-rank because an interpolated p95 of 40 samples is a number that
+    exists in no run, and these are latencies somebody will compare against
+    a budget.
+    """
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    index = min(len(ordered) - 1, max(0, math.ceil(fraction * len(ordered)) - 1))
+    return ordered[index]
+
+
+def latency_summary(values: Sequence[float]) -> dict[str, float]:
+    """p50, p95, p99 and the mean, with the mean last for a reason."""
+    if not values:
+        return {}
+    # No sample count in here. It lived alongside the percentiles once, in
+    # a dict serialised as "latency_ms" under a table header that says every
+    # row is milliseconds - so n = 2000 rendered as a two-second statistic
+    # in the one table a reviewer reads for the latency story. The count is
+    # ``EvalResult.n``, which is the same number.
+    return {
+        "p50": percentile(values, 0.50),
+        "p95": percentile(values, 0.95),
+        "p99": percentile(values, 0.99),
+        "mean": sum(values) / len(values),
+    }
 
 
 def _hits(preds: Sequence[Prediction], n_digits: int, k: int) -> tuple[int, int]:

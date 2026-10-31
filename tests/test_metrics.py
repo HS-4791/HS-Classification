@@ -64,3 +64,54 @@ def test_per_chapter_breakdown():
 def test_empty_eval_does_not_divide_by_zero():
     r = evaluate([], name="t", revision="REV")
     assert r.metrics["top1@6"] == 0.0 and r.n == 0
+
+
+# ------------------------------------------------------- latency percentiles
+
+def test_the_percentile_is_a_value_that_actually_occurred():
+    """Nearest-rank, not interpolated.
+
+    An interpolated p95 of forty samples is a number no run produced, and
+    these get compared against a latency budget.
+    """
+    from hsclass.eval.metrics import percentile
+
+    values = [float(i) for i in range(1, 101)]
+    assert percentile(values, 0.50) == 50.0
+    assert percentile(values, 0.95) == 95.0
+    assert percentile(values, 0.99) == 99.0
+    assert percentile(values, 1.0) == 100.0
+    # Every answer is one of the inputs.
+    for fraction in (0.01, 0.37, 0.5, 0.95, 1.0):
+        assert percentile(values, fraction) in values
+
+
+def test_a_percentile_of_one_sample_is_that_sample():
+    from hsclass.eval.metrics import percentile
+
+    assert percentile([7.5], 0.95) == 7.5
+    assert percentile([], 0.95) == 0.0
+
+
+def test_the_summary_leads_with_the_tail_not_the_mean():
+    """The mean hides what a budget is set against.
+
+    One slow classification in twenty barely moves a mean and is exactly
+    what a p95 is for - and this pipeline's cross-encoder configuration has
+    a tail well above its mean, because the first classifications pay for an
+    ONNX arena.
+    """
+    from hsclass.eval.metrics import latency_summary
+
+    # Ninety fast, ten slow. One-in-twenty would not show at p95 and should
+    # not: with twenty samples, nineteen of them *are* the 95th percentile,
+    # so a single outlier is the top 5% that p95 excludes by definition.
+    values = [10.0] * 90 + [2000.0] * 10
+    summary = latency_summary(values)
+    assert summary["p50"] == 10.0
+    assert summary["p95"] == 2000.0
+    # The mean reads as though every request took about a fifth of a second,
+    # when nine in ten took ten milliseconds.
+    assert 200.0 < summary["mean"] < 220.0
+    assert "n" not in summary  # a count has no place in a millisecond table
+    assert latency_summary([]) == {}

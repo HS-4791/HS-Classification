@@ -438,7 +438,7 @@
           "signal_slice_cut_through_ties": true
         }
       },
-      "seconds": 5.9
+      "seconds": 11.0
     },
     "heldout-2000": {
       "n": 2000,
@@ -612,16 +612,16 @@
             "requested_coverage": 0.05,
             "coverage": 0.05,
             "n": 100,
-            "accuracy": 0.48,
-            "threshold": 0.047613,
+            "accuracy": 0.49,
+            "threshold": 0.047674,
             "widened_by_ties": false
           },
           {
             "requested_coverage": 0.1,
             "coverage": 0.1,
             "n": 200,
-            "accuracy": 0.405,
-            "threshold": 0.032228,
+            "accuracy": 0.41,
+            "threshold": 0.032377,
             "widened_by_ties": false
           },
           {
@@ -629,23 +629,23 @@
             "coverage": 0.25,
             "n": 500,
             "accuracy": 0.268,
-            "threshold": 0.016962,
+            "threshold": 0.016833,
             "widened_by_ties": false
           },
           {
             "requested_coverage": 0.5,
             "coverage": 0.5,
             "n": 1000,
-            "accuracy": 0.181,
-            "threshold": 0.00815,
+            "accuracy": 0.18,
+            "threshold": 0.008127,
             "widened_by_ties": false
           },
           {
             "requested_coverage": 0.75,
             "coverage": 0.75,
             "n": 1500,
-            "accuracy": 0.1547,
-            "threshold": 0.003335,
+            "accuracy": 0.154,
+            "threshold": 0.00335,
             "widened_by_ties": false
           },
           {
@@ -679,7 +679,7 @@
             "coverage": 0.05,
             "n": 100,
             "accuracy": 0.33,
-            "threshold": 0.776519,
+            "threshold": 0.776804,
             "widened_by_ties": false
           },
           {
@@ -695,7 +695,7 @@
             "coverage": 0.25,
             "n": 500,
             "accuracy": 0.256,
-            "threshold": 0.732442,
+            "threshold": 0.732499,
             "widened_by_ties": false
           },
           {
@@ -711,7 +711,7 @@
             "coverage": 0.75,
             "n": 1500,
             "accuracy": 0.1593,
-            "threshold": 0.675721,
+            "threshold": 0.67574,
             "widened_by_ties": false
           },
           {
@@ -726,56 +726,56 @@
         "top_heading_share_of_20": [
           {
             "requested_coverage": 0.01,
-            "coverage": 0.6265,
-            "n": 1253,
-            "accuracy": 0.1764,
+            "coverage": 0.6275,
+            "n": 1255,
+            "accuracy": 0.1761,
             "threshold": 0.25,
             "widened_by_ties": true
           },
           {
             "requested_coverage": 0.025,
-            "coverage": 0.6265,
-            "n": 1253,
-            "accuracy": 0.1764,
+            "coverage": 0.6275,
+            "n": 1255,
+            "accuracy": 0.1761,
             "threshold": 0.25,
             "widened_by_ties": true
           },
           {
             "requested_coverage": 0.05,
-            "coverage": 0.6265,
-            "n": 1253,
-            "accuracy": 0.1764,
+            "coverage": 0.6275,
+            "n": 1255,
+            "accuracy": 0.1761,
             "threshold": 0.25,
             "widened_by_ties": true
           },
           {
             "requested_coverage": 0.1,
-            "coverage": 0.6265,
-            "n": 1253,
-            "accuracy": 0.1764,
+            "coverage": 0.6275,
+            "n": 1255,
+            "accuracy": 0.1761,
             "threshold": 0.25,
             "widened_by_ties": true
           },
           {
             "requested_coverage": 0.25,
-            "coverage": 0.6265,
-            "n": 1253,
-            "accuracy": 0.1764,
+            "coverage": 0.6275,
+            "n": 1255,
+            "accuracy": 0.1761,
             "threshold": 0.25,
             "widened_by_ties": true
           },
           {
             "requested_coverage": 0.5,
-            "coverage": 0.6265,
-            "n": 1253,
-            "accuracy": 0.1764,
+            "coverage": 0.6275,
+            "n": 1255,
+            "accuracy": 0.1761,
             "threshold": 0.25,
             "widened_by_ties": true
           },
           {
             "requested_coverage": 0.75,
-            "coverage": 0.809,
-            "n": 1618,
+            "coverage": 0.8095,
+            "n": 1619,
             "accuracy": 0.1557,
             "threshold": 0.15,
             "widened_by_ties": true
@@ -808,9 +808,9 @@
           "widened_by_ties": true
         },
         "margin_to_second": {
-          "lift": 2.945,
-          "accuracy": 0.405,
-          "accuracy_95_low": 0.3394,
+          "lift": 2.982,
+          "accuracy": 0.41,
+          "accuracy_95_low": 0.3442,
           "coverage": 0.1,
           "n": 200,
           "widened_by_ties": false
@@ -824,11 +824,11 @@
           "widened_by_ties": false
         },
         "top_heading_share_of_20": {
-          "lift": 1.283,
-          "accuracy": 0.1764,
-          "accuracy_95_low": 0.1563,
-          "coverage": 0.6265,
-          "n": 1253,
+          "lift": 1.281,
+          "accuracy": 0.1761,
+          "accuracy_95_low": 0.156,
+          "coverage": 0.6275,
+          "n": 1255,
           "widened_by_ties": true
         }
       },
@@ -905,11 +905,11 @@
           "overlap": null,
           "expected_overlap_if_unrelated": 0.288,
           "rules_in_full_tier": 18,
-          "full_tier_n": 1253,
+          "full_tier_n": 1255,
           "signal_slice_cut_through_ties": true
         }
       },
-      "seconds": 60.7
+      "seconds": 120.9
     }
   }
 }

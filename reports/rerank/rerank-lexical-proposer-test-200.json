@@ -18,6 +18,12 @@
     "accuracy_on_covered@6": 0.15,
     "accuracy_if_forced@6": 0.0
   },
+  "latency_ms": {
+    "p50": 21.04,
+    "p95": 35.81,
+    "p99": 43.26,
+    "mean": 22.61
+  },
   "per_chapter": {
     "29": {
       "n": 14,

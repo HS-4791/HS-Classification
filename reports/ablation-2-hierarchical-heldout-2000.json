@@ -4,7 +4,7 @@
   "n": 2000,
   "metrics": {
     "top1@6": 0.135,
-    "top5@6": 0.2455,
+    "top5@6": 0.246,
     "top1@10": 0.0288
   },
   "scored": {
@@ -17,6 +17,13 @@
     "covered_n": 2000.0,
     "accuracy_on_covered@6": 0.135,
     "accuracy_if_forced@6": 0.0
+  },
+  "latency_ms": {
+    "p50": 17.63,
+    "p95": 28.73,
+    "p99": 34.67,
+    "mean": 18.58,
+    "n": 2000.0
   },
   "per_chapter": {
     "15": {

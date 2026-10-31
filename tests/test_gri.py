@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from hsclass.pipeline.gri import Decision, Facts, GRIEngine, extract_facts
+from hsclass.pipeline.gri import without as without_mechanisms
 from hsclass.schedule.exclusions import build_exclusion_graph
 from hsclass.schedule.notes import Note
 
@@ -442,3 +443,96 @@ def test_a_section_xi_note_cannot_classify_outside_section_xi(engine):
     # And with nothing inside Section XI to choose between, the note does not fire.
     only_outside = engine.adjudicate(facts, [footwear], {footwear: texts[footwear]})
     assert "Section XI Note 2(A)" not in only_outside.rule_path
+
+
+# ------------------------------------- mechanisms the ablations switch off
+
+def test_an_unknown_mechanism_is_refused(engine):
+    """A typo in an ablation config would otherwise silently measure the
+    full engine and report it as an ablation."""
+    with pytest.raises(ValueError, match="unknown mechanisms"):
+        GRIEngine(engine.exclusions, enabled=frozenset({"note_chain", "typo"}))
+
+    # And a subtraction, which is how the ablations are written. Set
+    # difference is silent: MECHANISMS - {"note-chain"} is MECHANISMS, so a
+    # hyphen for an underscore would measure the full engine and report it
+    # as an ablation - indistinguishable from the two rows that genuinely
+    # come out identical to the baseline.
+    with pytest.raises(ValueError, match="unknown mechanisms"):
+        without_mechanisms("note-chain")
+    assert without_mechanisms("note_chain") == frozenset({"note_2a", "conditions"})
+
+
+def test_switching_off_the_note_chain_removes_citations_not_decisions(engine):
+    """What the note-chain ablation can possibly show, stated as a test.
+
+    ``_excluded`` reports the exclusions in scope rather than acting on
+    them, deliberately - dropping a candidate on an unevaluated condition is
+    the confident-but-wrong behaviour the project exists to avoid. So the
+    note-chain contributes citations and nothing else, and its ablation row
+    belongs in the explanation scores rather than the accuracy table.
+    """
+    # The running example, so a decision *is* made and the invariance half
+    # of this test has something to compare. An earlier version used facts
+    # with no composition, where both configurations escalated and the
+    # assertion compared (None, ['GRI 1']) with itself.
+    facts = Facts(
+        description="a knitted shirt of 60% cotton and 40% polyester, laminated "
+                    "with plastics of chapter 39",
+        materials={"cotton": 60.0, "polyester": 40.0},
+    )
+    full = engine.adjudicate(facts, [COTTON, MAN_MADE], TEXTS)
+    stripped = GRIEngine(
+        engine.exclusions, enabled=without_mechanisms("note_chain")
+    ).adjudicate(facts, [COTTON, MAN_MADE], TEXTS)
+
+    assert full.code == COTTON and not full.escalated      # it decided
+    assert stripped.code == COTTON                          # and decided the same
+    assert stripped.rule_path == full.rule_path
+    # Only the exclusion citations go. Note 2(A)'s own citations stay,
+    # because note_chain governs the exclusion graph and not the note that
+    # actually decided this case.
+    assert [n for n in full.notes_cited if "Note 1" in n] != []
+    assert [n for n in stripped.notes_cited if "Note 1" in n] == []
+    assert "Section XI Note 2(A)" in stripped.notes_cited
+
+
+def test_switching_off_note_2a_changes_the_decision(engine):
+    """Unlike the note-chain, this one does decide things.
+
+    The running example: 60% cotton against 40% polyester is settled by the
+    predominant-weight test under GRI 1. Without it the case falls through
+    to GRI 3(b) and escalates.
+    """
+    facts = Facts(description="a knitted shirt of 60% cotton and 40% polyester",
+                  materials={"cotton": 60.0, "polyester": 40.0})
+    full = engine.adjudicate(facts, [COTTON, MAN_MADE], TEXTS)
+    stripped = GRIEngine(
+        engine.exclusions, enabled=without_mechanisms("note_2a")
+    ).adjudicate(facts, [COTTON, MAN_MADE], TEXTS)
+
+    assert full.code == COTTON and not full.escalated
+    assert stripped.escalated and stripped.code is None
+    # It falls through 2(b) and 3(a) and stops at essential character.
+    assert stripped.rule_path[-1] == "GRI 3(b)"
+
+
+def test_switching_off_conditions_stops_threshold_elimination(engine):
+    facts = Facts(description="a suit of 40% silk and 60% cotton",
+                  materials={"silk": 40.0, "cotton": 60.0})
+    full = engine.adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
+    stripped = GRIEngine(
+        engine.exclusions, enabled=without_mechanisms("conditions")
+    ).adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
+
+    assert full.conditions_applied and full.code == SILK_LOW
+    assert stripped.conditions_applied == []
+
+    # And what it decides instead is the case for keeping the mechanism.
+    # Without the threshold check, GRI 3(a) strikes SILK_LOW as residual -
+    # its own segment is "Other" - and the engine answers "Containing 70
+    # percent or more by weight of silk" for a suit that is 40% silk. The
+    # layer decides nothing on the current corpus and still prevents a
+    # confidently wrong answer the moment retrieval offers a threshold pair.
+    assert stripped.code == SILK_HIGH
+    assert "GRI 3(a)" in stripped.rule_path

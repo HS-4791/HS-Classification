@@ -2,12 +2,24 @@
   "revision": "2026HTSRev21",
   "configurations": {
     "no-reranker": {
+      "proposer": {
+        "test-200": {
+          "top1@6": 0.15,
+          "top5@6": 0.225,
+          "top1@10": 0.030456852791878174,
+          "ms_per_classification": 24.8,
+          "escalation_rate": 0.0,
+          "covered_n": 200.0,
+          "accuracy_on_covered@6": 0.15,
+          "accuracy_if_forced@6": 0.0
+        }
+      },
       "adjudicated": {
         "test-200": {
           "top1@6": 0.015,
           "top5@6": 0.015,
           "top1@10": 0.0,
-          "ms_per_classification": 29.7,
+          "ms_per_classification": 24.1,
           "escalation_rate": 0.975,
           "covered_n": 5.0,
           "accuracy_on_covered@6": 0.6,
@@ -16,12 +28,24 @@
       }
     },
     "lexical": {
+      "proposer": {
+        "test-200": {
+          "top1@6": 0.15,
+          "top5@6": 0.23,
+          "top1@10": 0.03553299492385787,
+          "ms_per_classification": 22.7,
+          "escalation_rate": 0.0,
+          "covered_n": 200.0,
+          "accuracy_on_covered@6": 0.15,
+          "accuracy_if_forced@6": 0.0
+        }
+      },
       "adjudicated": {
         "test-200": {
           "top1@6": 0.005,
           "top5@6": 0.005,
           "top1@10": 0.0,
-          "ms_per_classification": 27.0,
+          "ms_per_classification": 25.5,
           "escalation_rate": 0.965,
           "covered_n": 7.0,
           "accuracy_on_covered@6": 0.1429,
@@ -30,12 +54,24 @@
       }
     },
     "cross-encoder-50": {
+      "proposer": {
+        "test-200": {
+          "top1@6": 0.195,
+          "top5@6": 0.26,
+          "top1@10": 0.06091370558375635,
+          "ms_per_classification": 1729.4,
+          "escalation_rate": 0.0,
+          "covered_n": 200.0,
+          "accuracy_on_covered@6": 0.195,
+          "accuracy_if_forced@6": 0.0
+        }
+      },
       "adjudicated": {
         "test-200": {
           "top1@6": 0.015,
           "top5@6": 0.015,
           "top1@10": 0.0,
-          "ms_per_classification": 1809.6,
+          "ms_per_classification": 1307.7,
           "escalation_rate": 0.975,
           "covered_n": 5.0,
           "accuracy_on_covered@6": 0.6,

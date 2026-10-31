@@ -9,6 +9,7 @@ determinism tests harder to argue.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from dataclasses import dataclass
@@ -20,6 +21,38 @@ from hsclass.retrieval.embedder import Embedder
 
 #: How many texts to embed between progress lines.
 PROGRESS_CHUNK = 2000
+
+#: Separators inside the fingerprint, so that a code ending where the next
+#: text begins cannot hash the same as a different split of the same bytes.
+_FIELD_END = b"\x00"
+_RECORD_END = b"\x01"
+
+
+class StaleIndex(RuntimeError):
+    """A cached index does not match the candidates it is being used for."""
+
+
+def fingerprint(candidates: list[Candidate]) -> str:
+    """A hash of exactly what was embedded: every code and every text.
+
+    A saved index already records its embedder and its schedule revision,
+    and both can match while the index is stale anyway - a parser fix
+    changes the *contents* of a revision without changing its name. That
+    happened: the cached levelled index held 30,195 provisions while the
+    current parser produces 29,861, a 342-provision gap with 494 further
+    texts differing, and nothing in the repository noticed. Two arms of the
+    chunking ablation were compared across that gap.
+
+    ``make check`` validates the tree and reconciles it against the USITC
+    export; neither looks at the index. This is the check that does.
+    """
+    digest = hashlib.blake2b(digest_size=16)
+    for candidate in candidates:
+        digest.update(candidate.code.encode("utf-8"))
+        digest.update(_FIELD_END)
+        digest.update(candidate.text.encode("utf-8"))
+        digest.update(_RECORD_END)
+    return digest.hexdigest()
 
 
 @dataclass
@@ -97,6 +130,7 @@ class VectorIndex:
             json.dumps({
                 "embedder": self.embedder_name,
                 "revision": self.revision,
+                "fingerprint": fingerprint(self.candidates),
                 "candidates": [c.__dict__ for c in self.candidates],
             }),
             encoding="utf-8",
@@ -104,11 +138,29 @@ class VectorIndex:
         return directory
 
     @classmethod
-    def load(cls, directory: Path | str) -> VectorIndex:
+    def load(
+        cls, directory: Path | str, expecting: list[Candidate] | None = None
+    ) -> VectorIndex:
+        """Load a saved index, optionally checking that it is still current.
+
+        ``expecting`` is the candidate list the caller is about to use this
+        index for. Passing it turns a silent staleness into an error, which
+        is the only way a stale index gets noticed - the revision and the
+        embedder both still match across a parser change.
+        """
         directory = Path(directory)
         meta = json.loads((directory / "candidates.json").read_text(encoding="utf-8"))
+        candidates = [Candidate(**c) for c in meta["candidates"]]
+        if expecting is not None:
+            wanted = fingerprint(expecting)
+            if meta.get("fingerprint") != wanted:
+                raise StaleIndex(
+                    f"{directory} holds {len(candidates)} provisions "
+                    f"({meta.get('fingerprint', 'unfingerprinted')}); the caller "
+                    f"expects {len(expecting)} ({wanted}). Rebuild it."
+                )
         return cls(
-            [Candidate(**c) for c in meta["candidates"]],
+            candidates,
             np.load(directory / "vectors.npy"),
             meta["embedder"],
             meta["revision"],

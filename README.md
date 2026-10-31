@@ -217,11 +217,11 @@ No hierarchy, no notes, no rules. `BAAI/bge-small-en-v1.5` over 27,146 searchabl
 | Metric | Official test split | Held-out slice of train |
 | --- | ---: | ---: |
 | n | 200 | 2,000 |
-| top-1 @ 6 digits | **14.50%** | **14.00%** |
-| top-5 @ 6 digits | 28.00% | 30.10% |
+| top-1 @ 6 digits | **14.50%** | **14.05%** |
+| top-5 @ 6 digits | 28.00% | 30.15% |
 | top-1 @ 10 digits | 6.09% | 4.55% |
 | escalation rate | 0% — the baseline never declines | 0% |
-| latency per classification | 32ms | 31ms |
+| latency, p50 per classification | 9.4ms | 9.4ms |
 
 Two sets, reported separately and never averaged. The official 200-row split is what the
 published baselines score on, so it is the comparable number; 200 rows carry a confidence
@@ -251,11 +251,17 @@ nothing is a finding, not something to hide.
 
 | Configuration | top-1 @ 6 (test / held-out) | top-5 @ 6 | top-1 @ 10 | Δ top-1 @ 6 |
 | --- | ---: | ---: | ---: | ---: |
-| 1 · vector retrieval only | 14.50% / 14.00% | 28.00% / 30.10% | 6.09% / 4.55% | — |
-| 2 · + hierarchical traversal | 13.50% / 13.50% | 21.00% / 24.55% | 2.54% / 2.88% | **−1.00 / −0.50** |
+| 1 · vector retrieval only | 14.50% / 14.05% | 28.00% / 30.15% | 6.09% / 4.55% | — |
+| 2 · + hierarchical traversal | 13.50% / 13.50% | 21.00% / 24.60% | 2.54% / 2.88% | **−1.00 / −0.55** |
 | 3 · + GRI engine adjudicating | 1.50% / 0.35% | 1.50% / 0.35% | 0% / 0% | **−13.00 / −13.65** |
-| 4 · + hybrid dense/lexical retrieval | 15.00% / 13.75% | 22.50% / 24.70% | 3.05% / 2.98% | **+0.50 / −0.25** |
+| 4 · + hybrid dense/lexical retrieval | 15.00% / 13.75% | 22.50% / 24.75% | 3.05% / 2.98% | **+0.50 / −0.30** |
 | 5 · hybrid + GRI engine | 1.50% / 0.35% | 1.50% / 0.35% | 0% / 0% | **−13.00 / −13.65** |
+| 6 · 5 without the note-chain | 1.50% / 0.35% | 1.50% / 0.35% | 0% / 0% | −13.00 / −13.65 |
+| 7 · 5 without KAG conditions | 1.50% / 0.35% | 1.50% / 0.35% | 0% / 0% | −13.00 / −13.65 |
+| 8 · 5 without Section XI Note 2(A) | 0% / 0% | 0% / 0% | 0% / 0% | −14.50 / −14.00 |
+
+Rows 6 to 8 price each mechanism by removing it. Two change nothing at all and the third takes
+the engine from 24 answers to one — see "Pricing each mechanism" below.
 
 Configurations 3 and 5 answer 5 of 200 and 5 of 200 on the test split; the coverage pair is
 below, and five decided cases is too small to rank 3 against 5.
@@ -534,9 +540,9 @@ system not at all. Both halves are the result. Everything here comes from
 | test split (n=200) | top1@6 | top5@6 | decided | right on decided | per query |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | **proposer**, no reranker | 15.00% | 22.50% | — | — | 16ms |
-| **proposer**, cross-encoder | **19.50%** | **26.00%** | — | — | 1,948ms |
+| **proposer**, cross-encoder | **19.50%** | **26.00%** | — | — | 1,729-1,948ms |
 | **adjudicated**, no reranker | 1.50% | 1.50% | 5 of 200 | 3/5 = 60.0% | 30ms |
-| **adjudicated**, cross-encoder | 1.50% | 1.50% | 5 of 200 | 3/5 = 60.0% | 1,810ms |
+| **adjudicated**, cross-encoder | 1.50% | 1.50% | 5 of 200 | 3/5 = 60.0% | 1,308-1,810ms |
 
 **+4.5 points of top-1 on the proposer, and nothing whatever on the adjudicated system.** Not a
 regression, not noise — the same five cases, the same three correct, verified case by case
@@ -554,10 +560,13 @@ reason the proposer number must never be quoted on its own.
 `HierarchicalClassifier` takes `reranker=None` by default and nothing in the shipped pipeline
 passes one. On this evidence that stays, because the price is not only latency:
 
-- **A hundred times slower.** 16ms to 1,948ms on the proposer, 30ms to 1,810ms adjudicated. And
-  the figure is sensitive to memory headroom rather than being a constant: the same adjudicated
-  work measured **3,188ms** while another process held its own ONNX arena, so quoting a single
-  number for it would be quoting whichever run suited the argument.
+- **Roughly eighty times slower, and the range is the honest form.** Against a 22.8ms pipeline,
+  the cross-encoder measured 1,729ms and 1,948ms on the proposer across two runs, and 1,308ms
+  and 1,810ms adjudicated — single runs, not the repeated sweep the other latency figures get,
+  so the spread is a floor on the uncertainty rather than a measurement of it. A third run under
+  memory pressure gave 3,188ms. Quoting any one of these as *the* number would be quoting
+  whichever suited the argument; see the latency section for what happened when this project
+  did that.
 - **Six times the memory.** 472MB to **2.7GB** of working set. ONNX reserves its arena inside
   the first twenty classifications and holds it flat, so this is a floor, not a leak. On a 16GB
   machine two evaluation runs do not fit, and the second dies with `bad allocation` from inside
@@ -596,8 +605,8 @@ gold subheading is in the pool at all, the share reachable within the first N by
 | ---: | ---: | ---: |
 | 10 | 56.4% | ~880ms |
 | 30 | 76.6% | ~1,270ms |
-| **50** | **89.4%** | **1,948ms, measured** |
-| 100 | 95.7% | 2,620ms, measured |
+| **50** | **89.4%** | **1,729-1,948ms, measured** |
+| 100 | 95.7% | 2,620ms, one run |
 | 212, the whole pool | 100% | ~4,780ms |
 
 Two measured points fit 19.3ms per pair plus about 670ms of fixed overhead per call. Depth 50 is
@@ -691,9 +700,205 @@ python scripts/measure_rerank.py test-200 cross-encoder-50
 python scripts/measure_calibration.py
 ```
 
+```bash
+python scripts/measure_latency.py
+```
+
+```bash
+python scripts/measure_chunking.py
+```
+
 The reranker takes the process from 472MB to 2.7GB of working set, so run one of these at a
 time — two together do not fit on a 16GB machine, and the second dies with `bad allocation`
 from inside onnxruntime, which names memory nowhere.
+
+## Pricing each mechanism, and where the errors actually are
+
+Three measurements the spec asks for and the project had not made: what each rule mechanism is
+worth, what the pipeline costs at p50 and p95 rather than on average, and which chapters it
+fails in. Produced by `scripts/run_ablations.py`, `scripts/measure_latency.py` and the
+`per_chapter` block every eval report already carried and nobody had read.
+
+### Ablations 6 to 8: what each mechanism is worth
+
+The spec lists "+ note-chain" and "+ KAG rule evaluation" as steps upward from a baseline. They
+are built here as subtractions from the full engine instead, because adding a mechanism to a
+stripped engine measures it against a configuration nobody would ship, while removing it answers
+the question an operator has: what do I lose if this is off?
+
+| configuration | test: decided / right | held-out: decided / right |
+| --- | ---: | ---: |
+| full engine (5 · hybrid + GRI) | 5 / 60.0% | 24 / 29.2% |
+| 6 · without the note-chain | 5 / 60.0% | 24 / 29.2% |
+| 7 · without KAG conditions | 5 / 60.0% | 24 / 29.2% |
+| 8 · without Section XI Note 2(A) | **0 / —** | **1 / 0.0%** |
+
+**The adjudication rests almost entirely on one note.** Remove Section XI Note 2(A) — the
+predominant-weight test — and the engine answers *one* case in 2,200, by GRI 2(a), and gets it
+wrong: a ruling on bicycle parts answered as copper pipe fittings, `7412.20.0015`, which the
+full engine also decides. Everything else is built, tested and almost unexercised. Measured on
+the held-out 2,000, the deciding rule is Note 2(A) for 23 of the 24 answers and GRI 2(a) for the
+other one; the note-chain, the KAG threshold conditions and the narrow 3(a) decide nothing.
+
+Nothing is being shadowed by rule order, which was the obvious alternative reading. The
+conditions rule runs *before* Note 2(A) and GRI 3(a) runs after it, and with 2(A) switched off
+GRI 3(a) is reached 105 times instead of 82 — the extra 23 being exactly 2(A)'s cases — and
+resolves none of them. `_most_specific` needs exactly one non-residual candidate out of five,
+and on this corpus that never happens.
+
+Two of those three rows were predicted before the run and are not failures:
+
+- **The note-chain cannot move a decision, by design.** `_excluded` reports the exclusions in
+  scope rather than acting on them, because dropping a candidate on an unevaluated condition is
+  the confident-but-wrong behaviour the project exists to avoid. So its row belongs in the
+  explanation scores and not in the accuracy table, and
+  `test_switching_off_the_note_chain_removes_citations_not_decisions` pins exactly that: same
+  code, same rule path, no citations.
+- **The KAG layer's reach was already measured at zero** and the ablation confirms it from the
+  other direction. Of 21 test cases where a candidate carries an evaluable threshold, only four
+  ask about a material the description quantifies.
+
+The third was not predicted and is the useful one. An engine whose coverage depends on a single
+textile note is not a general GRI engine yet, whatever its rule paths say — and that is an
+argument about stage 1, not about the rules. The mechanisms are starved, not wrong.
+
+### Latency: p50, p95, and three attempts to measure them honestly
+
+Three fresh processes per configuration, 20 warm-up cases discarded and not re-timed, 180 timed
+cases each, with the spread of the three medians shown because it is what makes the differences
+readable:
+
+| configuration | p50 (spread) | p95 | mean |
+| --- | ---: | ---: | ---: |
+| 1 · vector-only | **9.4ms** (9.3–9.6) | 16.2ms | 10.2ms |
+| 2 · + hierarchical traversal | 15.4ms (14.6–15.7) | 25.1ms | 16.0ms |
+| 4 · + hybrid retrieval | 21.7ms (20.8–23.0) | 37.9ms | 23.5ms |
+| 5 · + the GRI engine | **22.8ms** (22.0–23.9) | 39.4ms | 24.0ms |
+| 6 · without the note-chain | 22.4ms (22.4–23.6) | 42.3ms | 24.4ms |
+| 7 · without KAG conditions | 21.7ms (21.2–22.4) | 39.9ms | 23.9ms |
+
+**The whole pipeline is 22.8ms at the median.** Traversal adds 6ms over flat search, hybrid
+retrieval adds another 6.3ms, and the rule engine adds 1.1ms — which is inside the ±1ms spread,
+so the honest statement is that the deterministic stage is free. Rows 6 and 7 sit inside that
+same spread, so neither the note-chain nor the KAG conditions has a measurable cost either.
+The p95 is about 1.7 times the p50 in every row.
+
+#### What this number cost to get right
+
+This table is the third attempt, and the first two were published. They are kept here because
+the project's rule is that a difference has to beat its own noise, and latency is where that
+rule was hardest to follow.
+
+**The first** took the percentiles from the ablation sweep: eight configurations back to back in
+one process, which gave configuration 6 a p50 of 102ms and configuration 7 a p50 of 17ms —
+two configurations sharing one retrieval object and differing only in the rule engine. I
+diagnosed it as position in a long run, "after about 13,000 classifications something changes",
+and wrote that into a script docstring.
+
+**The second** gave each configuration its own interpreter, which is what that diagnosis
+implied. Its own output refuted it: the same configuration in two fresh processes forty minutes
+apart differed by six times. A fresh interpreter does not isolate a measurement from the machine
+it runs on.
+
+**The diagnosis was also backwards.** The slow numbers were the artefact, not the fast ones.
+Configuration 1 is a single 27,000 × 384 matmul and takes 9.4ms; the sweep that reported it at
+42ms was measuring whole-machine contention from its very first classification, before any
+long-run effect could apply. So the earlier published figures — a p95 of 6.7 times the p50,
+hybrid retrieval costing 70ms, the rule engine costing 8ms — were all contention. The real
+figures are 1.7 times, 6.3ms, and nothing measurable.
+
+**What the third attempt does differently** is repeat each configuration three times, publish
+the spread, and check the cheapest configuration against a floor: one matmul cannot take 25ms,
+so if it does, the machine is busy and the sweep is discarded rather than published. That check
+earned itself on its first use — it refused a sweep taken while a calibration run was still
+going, where configuration 1 measured 38.9ms.
+
+### Error analysis by chapter, and a claim in the spec that does not hold
+
+Held-out 2,000, top-1 at six digits. Only 10 of 41 chapters reach n = 20, and those ten carry
+1,843 of the 2,000 cases, so the per-chapter view is really a view of ten chapters.
+
+| | n | top1@6 |
+| --- | ---: | ---: |
+| chapter 82 · tools | 136 | **6.6%** |
+| chapter 85 · electrical machinery | 171 | 9.9% |
+| chapter 90 · optical and measuring instruments | 156 | 10.3% |
+| chapter 39 · plastics | 268 | 10.4% |
+| chapter 84 · machinery | 379 | 13.7% |
+| chapter 29 · organic chemicals | 143 | 14.0% |
+| chapter 61 · knitted apparel | 353 | 17.8% |
+| chapter 73 · articles of iron or steel | 178 | **22.5%** |
+
+Grouped the way the spec groups them:
+
+| | n | top1@6 |
+| --- | ---: | ---: |
+| chemicals (28–38) | 189 | 12.2% |
+| machinery (84–85) | 550 | 12.5% |
+| base metals (72–83) | 341 | 16.7% |
+| **textiles (50–63)** | 374 | **17.6%** |
+| whole set | 2,000 | 13.8% |
+
+The spec says "chemicals, textiles and machinery are notoriously contested". Two of the three
+hold — chemicals and machinery sit below the whole-set rate. **Textiles is the strongest large
+group in the project**, four points above it, and that is not a property of the nomenclature.
+It is a property of this build: the only live rule mechanism is a Section XI textile note, the
+running example throughout is a knitted t-shirt, and the KAG threshold conditions were written
+against chapter 50–63 weight tests. The system has been developed against textiles and reports
+textiles as its best subject. Worth stating plainly, because it is the kind of result that
+flatters a project if nobody names the cause.
+
+The weak chapters have something in common that points the same way as everything else here.
+Tools, electrical machinery, instruments and plastics are classified on **function and
+construction** — what the thing does, how it is assembled, what it is for. The one typed
+attribute stage 1 extracts is material composition. The system does best where composition
+decides and worst where it does not, which is the same finding the KAG funnel and the mechanism
+ablations arrived at from two other directions.
+
+### The chunking ablation, and the one spec claim that held exactly
+
+The spec asks for four chunking strategies — fixed-size, structural, structural plus
+contextual, small-to-big — measured on the note-dependent slice only. Three of the four do not
+apply to this architecture, and saying why is part of the answer rather than a way around it:
+
+- **The schedule is not chunked.** It is parsed into a tree, one node per tariff line, because
+  chunking by token count would destroy the hierarchy and the hierarchy is the legal structure.
+  There is no chunk size to vary.
+- **The notes are not retrieved.** They are parsed one provision per chunk and applied by rule —
+  the exclusion graph and Section XI Note 2(A). Nothing fetches a note by similarity, so
+  varying a note chunk size compares two things the pipeline does not do.
+- **Small-to-big is already here, and already measured.** `lexical_documents()` indexes every
+  heading with the vocabulary of every line beneath it and returns the heading: retrieve on the
+  big document, classify the small one. `MAX_DESCENDANT_CHARS` is its chunk-size knob, and the
+  retrieval section above reports what removing the cap does (fused heading recall@5 falls 0.5
+  points). Listing it as inapplicable was wrong — it is implemented, and the measurement exists
+  under another heading.
+
+What *is* a chunking decision here, and the spec names it in the same breath, is **inherited
+context**: a tariff line reads "Of cotton" alone and is meaningless embedded that way, so every
+node is embedded with its full chain. The spec states flatly that without it "retrieval dies".
+That had never been measured. Rebuilding the same 30,000-node index from each line's own
+description alone:
+
+| | test top1@6 | test top5@6 | held-out top1@6 | held-out top5@6 |
+| --- | ---: | ---: | ---: | ---: |
+| inherited chain | **15.00%** | **22.50%** | **13.75%** | **24.70%** |
+| own text only | 7.50% | 17.00% | 7.05% | 14.70% |
+
+**Top-1 at six digits halves**: 15.00% to 7.50% on the test split and 13.75% to 7.05% on the
+held-out 2,000, with top-5 falling alongside. At ten digits the fall is much smaller — 3.05% to
+2.03% and 2.98% to 2.37%, so 20 to 33% rather than 50% — which is why the headline names the
+digit level. Six and ten digits are different claims and the project does not merge them.
+
+Both arms are built from the same 29,861-provision tree. They were not at first: the cached
+index predated a parser fix and held 30,195 provisions, so "the same index with and without
+context" compared two different schedules across a 342-provision gap. `VectorIndex.load` now
+takes the candidate list it is being used for and refuses a cached index that does not match.
+
+It is also the only claim from the source documents that this week's measurements confirmed
+without qualification. The spec's "chemicals, textiles and machinery are contested" is two
+thirds right and backwards on textiles here; its escalation-calibration test was missing and
+turned out positive; its chunking ablation mostly does not apply. This one was simply correct.
 
 ## Escalation calibration: the refusal earns its keep, and most of what looks like signal is not
 
@@ -727,14 +932,14 @@ slice. Held-out 2,000, base rate 13.75%:
 
 | requested coverage | 1% | 2.5% | 5% | 10% | 25% | 100% |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `margin_to_second` | **50.0%** (20) | **50.0%** (50) | 48.0% (100) | 40.5% (200) | 26.8% (500) | 13.8% |
+| `margin_to_second` | **50.0%** (20) | **50.0%** (50) | 49.0% (100) | 41.0% (200) | 26.8% (500) | 13.8% |
 | `top1_similarity` | 40.0% (20) | 40.0% (50) | 33.0% (100) | 32.0% (200) | 25.6% (500) | 13.8% |
 | `description_terms` | 10.0% (20) | 18.9% (53) | 19.8% (111) | 19.7% (203) | 15.7% (534) | 13.8% |
 | `has_composition` | 20.1% (239) | 20.1% (239) | 20.1% (239) | 20.1% (239) | 13.8% (2000) | 13.8% |
-| `top_heading_share_of_20` | 17.6% (1253) | 17.6% (1253) | 17.6% (1253) | 17.6% (1253) | 17.6% (1253) | 13.8% |
+| `top_heading_share_of_20` | 17.6% (1255) | 17.6% (1255) | 17.6% (1255) | 17.6% (1255) | 17.6% (1255) | 13.8% |
 
-**The gap between the top candidate and the runner-up is the one robust signal** — 40.5% over
-200 cases, a 95% lower bound of 33.9% against a 13.75% base rate, and it replicates on the test
+**The gap between the top candidate and the runner-up is the one robust signal** — 41.0% over
+200 cases, a 95% lower bound of 34.4% against a 13.75% base rate, and it replicates on the test
 split (60.0% over 20 cases). It is the only signal that survives the gate on *both* sets.
 
 Three measurement guards are doing visible work in that table, and each of them was added
@@ -747,7 +952,7 @@ because the number it guards against had already been believed somewhere in this
   lexical reranker lost real accuracy earlier in this project.
 - **`top_heading_share_of_20` is capped by a tuning constant, not by the goods.** The beam keeps
   at most `per_heading = 5` walks per heading, so at most 5 of the top 20 can share the winning
-  heading and the signal takes exactly five values with a maximum of 0.25. Its floor of 1,253
+  heading and the signal takes exactly five values with a maximum of 0.25. Its floor of 1,255
   cases is an artefact of the beam. An earlier draft explained the floor as "agreement takes too
   few distinct values", which is true and not the reason.
 - **"Informative" is a Wilson lower bound above the base rate, not a lift above a round

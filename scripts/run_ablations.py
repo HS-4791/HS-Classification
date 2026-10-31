@@ -1,4 +1,4 @@
-"""Ablations 1-3: what each component is worth, measured on the same test sets.
+"""Ablations: what each component is worth, measured on the same test sets.
 
 Every configuration is scored on the same two sets - the official 200-row
 split and the 2,000-row held-out slice - and the deltas are published. A
@@ -20,14 +20,14 @@ from hsclass.data.atlas import as_dataset, load_split  # noqa: E402
 from hsclass.eval.runner import run_eval  # noqa: E402
 from hsclass.pipeline.adjudicated import AdjudicatedClassifier  # noqa: E402
 from hsclass.pipeline.baseline import VectorOnlyClassifier, candidates_from_tree  # noqa: E402
-from hsclass.pipeline.gri import GRIEngine  # noqa: E402
+from hsclass.pipeline.gri import GRIEngine, without  # noqa: E402
 from hsclass.pipeline.traversal import (  # noqa: E402
     HierarchicalClassifier,
     LevelIndex,
     candidates_at_every_level,
 )
 from hsclass.retrieval.embedder import get_embedder  # noqa: E402
-from hsclass.retrieval.index import VectorIndex  # noqa: E402
+from hsclass.retrieval.index import StaleIndex, VectorIndex  # noqa: E402
 from hsclass.retrieval.lexical import LexicalIndex  # noqa: E402
 from hsclass.schedule.exclusions import build_exclusion_graph  # noqa: E402
 from hsclass.schedule.models import build_from_export, load_export  # noqa: E402
@@ -40,8 +40,21 @@ SEED = 20261017
 
 
 def _index(directory: Path, candidates, embedder, revision: str) -> VectorIndex:
+    """Load the cached index, or build it - and never silently use a stale one.
+
+    ``expecting`` is what makes the cache safe. Without it this returned any
+    index whose directory existed, and it did: the cached levelled index
+    held 30,195 provisions built before a parser fix, against 29,861 from
+    the current tree, with 342 chapter 98/99 codes that no longer exist and
+    494 further texts changed. Every ablation number in the project was
+    measured against it, and nothing noticed, because the revision and the
+    embedder both still matched.
+    """
     if (directory / "vectors.npy").exists():
-        return VectorIndex.load(directory)
+        try:
+            return VectorIndex.load(directory, expecting=candidates)
+        except StaleIndex as stale:
+            print(f"  rebuilding: {stale}", flush=True)
     started = time.time()
     index = VectorIndex.build(candidates, embedder, revision, progress=True)
     index.save(directory)
@@ -68,7 +81,8 @@ def main() -> int:
     held_out = random.Random(SEED).sample(train, min(HELD_OUT_SIZE, len(train)))
 
     notes = load_notes(settings.processed_dir / "notes.json")
-    engine = GRIEngine(build_exclusion_graph(notes))
+    exclusions = build_exclusion_graph(notes)
+    engine = GRIEngine(exclusions)
     texts = {c.code: c.text for c in levelled.candidates}
     print(f"{len(notes)} provisions, {len(texts)} candidate texts for the rules", flush=True)
 
@@ -85,6 +99,25 @@ def main() -> int:
         "3-gri-adjudicated": AdjudicatedClassifier(traversal, engine, texts),
         "4-hybrid-retrieval": hybrid,
         "5-hybrid-adjudicated": AdjudicatedClassifier(hybrid, engine, texts),
+        # Each mechanism priced by removing it from the full engine. The spec
+        # asks for "+ note-chain" and "+ KAG rule evaluation" as steps; built
+        # as subtractions instead, because adding a mechanism to a stripped
+        # engine measures it against a configuration nobody would ship.
+        "6-without-note-chain": AdjudicatedClassifier(
+            hybrid,
+            GRIEngine(exclusions, enabled=without("note_chain")),
+            texts,
+        ),
+        "7-without-kag-conditions": AdjudicatedClassifier(
+            hybrid,
+            GRIEngine(exclusions, enabled=without("conditions")),
+            texts,
+        ),
+        "8-without-note-2a": AdjudicatedClassifier(
+            hybrid,
+            GRIEngine(exclusions, enabled=without("note_2a")),
+            texts,
+        ),
     }
     sets = {"test-200": official, "heldout-2000": held_out}
 
@@ -101,13 +134,14 @@ def main() -> int:
             summary.setdefault(name, {})[set_name] = result.to_dict()["metrics"] | {
                 "n": result.n,
                 "per_classification_ms": round(elapsed / max(result.n, 1) * 1000, 1),
-            } | coverage
-            print(f"  {name:18} {set_name:14} "
+            } | coverage | {"latency_ms": result.to_dict()["latency_ms"]}
+            print(f"  {name:24} {set_name:14} "
                   f"top1@6={result.metrics['top1@6']:.2%} "
                   f"top5@6={result.metrics['top5@6']:.2%} "
-                  f"top1@10={result.metrics['top1@10']:.2%} "
-                  f"escalated={coverage['escalation_rate']:.1%} "
-                  f"covered@6={coverage['accuracy_on_covered@6']:.2%}", flush=True)
+                  f"decided={coverage['covered_n']:.0f} "
+                  f"on-decided={coverage['accuracy_on_covered@6']:.2%} "
+                  f"p50={result.latency.get('p50', 0):.0f}ms "
+                  f"p95={result.latency.get('p95', 0):.0f}ms", flush=True)
 
     (settings.reports_dir / "ablations.json").write_text(
         json.dumps({"revision": revision, "configurations": summary}, indent=2),

@@ -204,11 +204,48 @@ class Decision:
         }
 
 
+#: The optional mechanisms, each of which can be switched off so the
+#: ablations can price it. Named rather than booleans so a configuration
+#: reads as what it contains: ``MECHANISMS - {"conditions"}`` is legible in
+#: a report in a way that ``use_conditions=False`` is not.
+#:
+#: GRI 1, 2(a), 2(b) and the narrow 3(a) are not here. They are the rules
+#: themselves; an engine without them is not a worse engine, it is not this
+#: engine.
+MECHANISMS = frozenset({"note_chain", "note_2a", "conditions"})
+
+
+def without(*mechanisms: str) -> frozenset[str]:
+    """Every mechanism except these, refusing a name that does not exist.
+
+    ``GRIEngine`` rejects an unknown name in ``enabled``, but the ablations
+    are written as subtractions and set difference is silent:
+    ``MECHANISMS - {"note-chain"}`` is just ``MECHANISMS``, so an ablation
+    row with a hyphen for an underscore measures the full engine and reports
+    it as an ablation - producing exactly the identical-to-the-baseline
+    output that two of these rows legitimately produce, which makes the
+    typo invisible.
+    """
+    unknown = set(mechanisms) - MECHANISMS
+    if unknown:
+        raise ValueError(
+            f"unknown mechanisms: {sorted(unknown)}; pick from {sorted(MECHANISMS)}"
+        )
+    return MECHANISMS - set(mechanisms)
+
+
 class GRIEngine:
     """Applies the rules in order and stops at the first that resolves."""
 
-    def __init__(self, exclusions: ExclusionGraph) -> None:
+    def __init__(
+        self, exclusions: ExclusionGraph, enabled: frozenset[str] = MECHANISMS
+    ) -> None:
+        unknown = enabled - MECHANISMS
+        if unknown:
+            raise ValueError(f"unknown mechanisms: {sorted(unknown)}")
         self.exclusions = exclusions
+        #: Which optional mechanisms are live. See ``MECHANISMS``.
+        self.enabled = enabled
 
     # ---------------------------------------------------------------- GRI 1
 
@@ -220,7 +257,14 @@ class GRIEngine:
         engine reports the exclusions in scope rather than acting on them,
         because silently dropping a candidate on an unevaluated condition is
         exactly the confident-but-wrong behaviour the project exists to avoid.
+
+        That design decides what the note-chain ablation can possibly show.
+        Switching ``note_chain`` off removes these citations and cannot move
+        a single decision, because acting on them was never what they did.
+        The row belongs in the explanation scores, not in the accuracy table.
         """
+        if "note_chain" not in self.enabled:
+            return []
         return [
             edge.citation
             for edge in self.exclusions.excluded_from(chapter)
@@ -273,7 +317,7 @@ class GRIEngine:
         heading was never in the same contest, and the honest outcome is to
         set the elimination aside and let the ordinary rules run.
         """
-        if not facts.materials:
+        if "conditions" not in self.enabled or not facts.materials:
             return candidates, []
         kept, failed, untested = [], [], set()
         for code in candidates:
@@ -317,7 +361,7 @@ class GRIEngine:
         it as an essential-character judgment would be the error the primer
         warns about, reaching Rule 3 where Rule 1 answered.
         """
-        if not facts.is_mixture:
+        if "note_2a" not in self.enabled or not facts.is_mixture:
             return None
 
         # A Section XI note can only classify within Section XI. Applying the
