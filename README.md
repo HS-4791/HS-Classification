@@ -322,10 +322,15 @@ is currently read with a regex from whatever the description happens to say. Tha
 1 — model-based attribute extraction from text and images — is for, and it is what widens the
 first row. The third row widens with better candidate generation.
 
-One honest reading of the escalation column: forcing an answer on the declined cases scores
-about 14%, which is the baseline. The refusal is not yet selecting hard cases — it is declining
-nearly everything, because nearly nothing is evaluable. Escalation calibration becomes a real
-question in week 3, once there is a population of genuinely close calls to calibrate on.
+One reading of the escalation column used to live here: forcing an answer on the declined cases
+scores about 14%, the baseline, so "the refusal is not yet selecting hard cases — it is
+declining nearly everything". The first half is a measurement and the second was a guess, and
+the guess is wrong. Measured properly, the cases the rules answer score 2.1 to 3.9 times the
+accuracy the declined cases would have scored if forced, which is the spec's own test for
+whether a refusal is too cautious. What the refusal selects for is **having facts to reason
+over**: 23 of the 24 cases it answers on the held-out set lie inside the 239 where a composition
+was extractable. Not confidence — the rules' cases are rank-indistinguishable from random under
+every confidence signal tried. See the calibration section below.
 
 
 ### The KAG layer: provision text as arithmetic, and why it changes nothing yet
@@ -682,9 +687,146 @@ python scripts/run_ablations.py
 python scripts/measure_rerank.py test-200 cross-encoder-50
 ```
 
+```bash
+python scripts/measure_calibration.py
+```
+
 The reranker takes the process from 472MB to 2.7GB of working set, so run one of these at a
 time — two together do not fit on a 16GB machine, and the second dies with `bad allocation`
 from inside onnxruntime, which names memory nowhere.
+
+## Escalation calibration: the refusal earns its keep, and most of what looks like signal is not
+
+The engine answers 2.5% of the test split at 60%. That is one operating point with nothing to
+turn, so this section asks two things: is the refusal worth having, and could a confidence
+threshold do the job instead? Produced by `scripts/measure_calibration.py`.
+
+The first draft of this section got the headline wrong in a way worth keeping on the record,
+and the correction is at the end.
+
+### The spec's own test: the refusal is not too cautious
+
+`docs/HS-PROJECT-CONTEXT.md` defines escalation calibration directly — force answers on the
+declined cases, and if accuracy is close to the auto-classified slice, the threshold is too
+cautious. That test is one line and it is the clearest result here:
+
+| | answered by the rules | forced on the declined | ratio |
+| --- | ---: | ---: | ---: |
+| test split | **60.0%** (5 cases, 95% low 23.1%) | 15.4% (195 cases, 95% low 11.0%) | 0.26 |
+| held-out 2,000 | **29.2%** (24 cases, 95% low 14.9%) | 13.6% (1,976 cases, 95% low 12.2%) | 0.47 |
+
+The cases the rules answer are twice to four times as accurate as the ones they decline would
+have been. On the test split the intervals do not overlap; on the held-out set they overlap
+marginally (14.9% against a forced upper bound of 15.2%), so the held-out evidence is suggestive
+rather than conclusive. The refusal is selecting, and the README used to say the opposite.
+
+### The curve: one signal survives, and it is the margin
+
+Accuracy of the proposer's top candidate over the most-confident slice, with the size of every
+slice. Held-out 2,000, base rate 13.75%:
+
+| requested coverage | 1% | 2.5% | 5% | 10% | 25% | 100% |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `margin_to_second` | **50.0%** (20) | **50.0%** (50) | 48.0% (100) | 40.5% (200) | 26.8% (500) | 13.8% |
+| `top1_similarity` | 40.0% (20) | 40.0% (50) | 33.0% (100) | 32.0% (200) | 25.6% (500) | 13.8% |
+| `description_terms` | 10.0% (20) | 18.9% (53) | 19.8% (111) | 19.7% (203) | 15.7% (534) | 13.8% |
+| `has_composition` | 20.1% (239) | 20.1% (239) | 20.1% (239) | 20.1% (239) | 13.8% (2000) | 13.8% |
+| `top_heading_share_of_20` | 17.6% (1253) | 17.6% (1253) | 17.6% (1253) | 17.6% (1253) | 17.6% (1253) | 13.8% |
+
+**The gap between the top candidate and the runner-up is the one robust signal** — 40.5% over
+200 cases, a 95% lower bound of 33.9% against a 13.75% base rate, and it replicates on the test
+split (60.0% over 20 cases). It is the only signal that survives the gate on *both* sets.
+
+Three measurement guards are doing visible work in that table, and each of them was added
+because the number it guards against had already been believed somewhere in this project.
+
+- **A requested coverage that falls inside a run of equal scores widens, and says so.**
+  `has_composition` takes two values, so its smallest possible slice is every case carrying a
+  composition: 239 of 2,000. There is no 1% slice to have. Cutting an arbitrary 20 out of the
+  tied tier would let the sort order decide which cases count as confident, which is how the
+  lexical reranker lost real accuracy earlier in this project.
+- **`top_heading_share_of_20` is capped by a tuning constant, not by the goods.** The beam keeps
+  at most `per_heading = 5` walks per heading, so at most 5 of the top 20 can share the winning
+  heading and the signal takes exactly five values with a maximum of 0.25. Its floor of 1,253
+  cases is an artefact of the beam. An earlier draft explained the floor as "agreement takes too
+  few distinct values", which is true and not the reason.
+- **"Informative" is a Wilson lower bound above the base rate, not a lift above a round
+  number.** A lift threshold has no `n` in it: on the test split `top1_similarity` scores five
+  correct of twenty, a lift of 1.67 that a permutation test puts at p = 0.16, and a 1.2 gate let
+  it through. Under the interval gate the test split keeps only `margin_to_second`. On the
+  held-out 2,000 all five signals clear it, including `has_composition` at 1.46 and
+  `description_terms` at 1.43 — those are real at n ≈ 200–240, and an earlier draft of this
+  section dismissed them as telling you nothing.
+
+### What the rules select for, which is not confidence
+
+Sizing each signal's slice to the number of cases the rules answered, and scoring each mechanism
+on what it returns — the engine on the code it decided, a threshold on the top candidate:
+
+| held-out 2,000 | n | accuracy | overlap with the rules | expected by chance |
+| --- | ---: | ---: | ---: | ---: |
+| the rules | 24 | 29.2% | — | — |
+| `margin_to_second` | 24 | 41.7% | 0 cases | 0.29 cases |
+| `has_composition` (whole tier) | 239 | — | **23 of 24** | — |
+
+**The margin's zero overlap with the rules is a null result, not a finding.** Two subsets of 24
+drawn from 2,000 are expected to share 0.29 cases, and P(disjoint) under independence is about
+0.75 — so observing zero is the ordinary outcome whether or not the mechanisms are related. A
+rank test agrees: the rules' cases sit at mean rank 1,071 under the margin against a null of
+999.5 (p = 0.73). They are not measurably related in either direction.
+
+What *is* measurable is the last row. **23 of the rules' 24 answered cases lie inside the
+239-case tier where a composition was extractable** (5 of 5 on the test split), which is far
+beyond chance. That is the real selection the refusal performs: it answers cases where stage 1
+found something typed to reason over, which is exactly what the KAG funnel predicted and the
+opposite of a confidence threshold's criterion. The two mechanisms may well be complementary —
+a threshold bets on the top candidate, the rules bet on having facts — but on this evidence
+"complementary" is a hypothesis with a plausible mechanism, not a measured result.
+
+A note on why the overlap column reads `tie-cut` for three signals: matching the rules' coverage
+exactly means taking exactly 24 cases, which for a two-valued signal cuts a tier of 239. The
+overlap is then an average over an arbitrary subset of equal scores, so it is withheld. A
+published `0.083` for `has_composition` came from exactly that cut — the one signal that
+predicts the rules' set best was reported as the least related.
+
+### What is not claimed
+
+**That the rules earn their keep by overriding a wrong top candidate.** On the test split the
+engine answers five cases, gets three right, and the top candidate on those same five is right
+*none* of the time — which looks decisive and is not: under a 15% base rate, zero-of-five
+happens 44% of the time. On the held-out 2,000 the direction nearly reverses: the top candidate
+is right on 6 of the 24, the rules on 7. One case in 24. The figure is now emitted as
+`rules_operating_point.top1_accuracy_on_the_same_cases` so the claim is reproducible from the
+artefact rather than quoted from a draft.
+
+**That a threshold should replace the refusal.** The rules return a citation; a margin returns a
+number, and a customs decision needs the former. The design the evidence supports is to answer
+both slices and label which mechanism answered — but the union figures are policy-dependent
+(`either_accuracy` prefers the engine's code where both fire, which is a choice, declared in the
+field's own comment), and the slices are not measurably related, so this is a week-4 proposal
+rather than a result.
+
+**That these five signals are the best available.** `margin_to_second` and `top1_similarity` are
+nearly independent (Spearman 0.25) and their combination was not tried. Two variants were and
+are recorded as negative: normalising the margin by the top similarity scores slightly *worse*
+(2.91 against 2.95 on held-out), and ranking by the number of distinct candidate prefixes is
+unstable across sets (1.30 held-out, 0.64 on test).
+
+### The correction
+
+The first version of this section led with "the overlap is zero on both sets — that is not a
+coincidence, and it explains the whole section", and built a mechanism on top of it: a threshold
+picks cases where the top candidate looks good, the rules pick cases where it is wrong and
+override it.
+
+Both halves were wrong. The overlap is what chance gives, the override story rests on five
+cases and does not survive the larger set, and the signal the draft said "tells you nothing
+about being right" is the one that actually predicts which cases the rules answer. The
+arithmetic was right throughout; what failed was asking whether a difference was larger than
+the noise around it — the same failure as the +4.48ms tracing overhead and the retracted
+reranker finding, and the third time in one week. The guards now in `eval/calibration.py` are
+the response: a denominator on every number, a chance baseline beside every overlap, and an
+interval rather than a ratio deciding what counts as a signal.
 
 ## Observability: the costs that are not tokens
 
@@ -816,6 +958,7 @@ src/hsclass/
   config.py          pinned revision, paths, cost ceiling
   schedule/          tree model, export builder, validators
   eval/              metrics (6 vs 10 digit, coverage, per-chapter), runner
+  eval/calibration.py    risk-coverage curves, and the rules against a threshold
   obs/               tracing, the cost ledger and the resource gauge
   obs/resources.py       the latency budget, and why memory is not budgeted
   schedule/parse_pdf.py  the PDF parser: x-positions back into levels
