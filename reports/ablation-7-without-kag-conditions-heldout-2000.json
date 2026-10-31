@@ -3,8 +3,8 @@
   "schedule_version": "2026HTSRev21",
   "n": 2000,
   "metrics": {
-    "top1@6": 0.0035,
-    "top5@6": 0.0035,
+    "top1@6": 0.0025,
+    "top5@6": 0.0025,
     "top1@10": 0.0
   },
   "scored": {
@@ -13,17 +13,16 @@
     "top1@10": 1979
   },
   "coverage": {
-    "escalation_rate": 0.988,
-    "covered_n": 24.0,
-    "accuracy_on_covered@6": 0.2917,
-    "accuracy_if_forced@6": 0.1366
+    "escalation_rate": 0.9915,
+    "covered_n": 17.0,
+    "accuracy_on_covered@6": 0.2941,
+    "accuracy_if_forced@6": 0.1372
   },
   "latency_ms": {
-    "p50": 26.47,
-    "p95": 47.92,
-    "p99": 58.57,
-    "mean": 28.24,
-    "n": 2000.0
+    "p50": 14.81,
+    "p95": 25.3,
+    "p99": 32.02,
+    "mean": 15.84
   },
   "per_chapter": {
     "15": {
@@ -104,7 +103,7 @@
     },
     "61": {
       "n": 353,
-      "top1@6": 0.0198
+      "top1@6": 0.0142
     },
     "62": {
       "n": 10,

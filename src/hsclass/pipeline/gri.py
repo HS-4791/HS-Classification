@@ -171,7 +171,15 @@ def extract_facts(description: str) -> Facts:
             phrase = match.group(1) if flip else match.group(2)
             share = float(match.group(2) if flip else match.group(1))
             material = _material_of(phrase)
-            if material and 0 < share <= 100 and len(material) <= 40:
+            # At least two characters. A one-letter "material" is always an
+            # artefact, and one in particular was doing real damage: in
+            # "a men's 100% cotton pullover" the pattern that reads "cotton
+            # 60%" also reads "s 100%" from the possessive, so a
+            # single-material garment looked like a mixture, Section XI Note
+            # 2(A) fired on it, and the engine answered 6110.90.9014 for a
+            # cotton pullover. Two of the five cases the engine decided on
+            # the test split were wrong for this reason.
+            if material and 0 < share <= 100 and 2 <= len(material) <= 40:
                 materials.setdefault(material, share)
     return Facts(description=description, materials=materials)
 

@@ -28,6 +28,12 @@ PRICES: dict[str, Price] = {
     "claude-opus-5": Price(5.00, 25.00),
     "claude-sonnet-5-5": Price(2.00, 10.00, 0.20),
     "claude-haiku-5-5": Price(0.10, 0.50),
+    # OpenAI, read from the published pricing page on 31 October 2026,
+    # standard synchronous tier. The Batch API halves input and output and
+    # offers no cached rate, so a batch run needs its own entry rather than
+    # a multiplier applied to these.
+    "gpt-4o": Price(2.50, 10.00, 1.25),
+    "gpt-4o-mini": Price(0.15, 0.60, 0.075),
     # Local embedding runs on CPU in-process: no marginal token cost.
     "local-embedding": Price(0.0, 0.0),
 }

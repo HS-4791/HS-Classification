@@ -4,28 +4,27 @@ Schedule version `2026HTSRev21` - n = 2000
 
 | metric | value | scored on |
 | --- | ---: | ---: |
-| top1@6 | 0.35% | 2000 |
-| top5@6 | 0.35% | 2000 |
+| top1@6 | 0.25% | 2000 |
+| top5@6 | 0.25% | 2000 |
 | top1@10 | 0.00% | 1979 |
 
 ## Coverage
 
 | metric | value |
 | --- | ---: |
-| escalation_rate | 98.80% |
-| covered_n | 24 |
-| accuracy_on_covered@6 | 29.17% |
-| accuracy_if_forced@6 | 13.66% |
+| escalation_rate | 99.15% |
+| covered_n | 17 |
+| accuracy_on_covered@6 | 29.41% |
+| accuracy_if_forced@6 | 13.72% |
 
-## Latency per classification
+## Latency per classification (n = 2000)
 
 | statistic | ms |
 | --- | ---: |
-| p50 | 24.8 |
-| p95 | 44.3 |
-| p99 | 54.5 |
-| mean | 26.7 |
-| n | 2000.0 |
+| p50 | 14.7 |
+| p95 | 25.4 |
+| p99 | 30.5 |
+| mean | 15.7 |
 
 ## Weakest chapters (n >= 20)
 
@@ -40,4 +39,4 @@ Schedule version `2026HTSRev21` - n = 2000
 | 84 | 379 | 0.00% |
 | 85 | 171 | 0.00% |
 | 90 | 156 | 0.00% |
-| 61 | 353 | 1.98% |
+| 61 | 353 | 1.42% |

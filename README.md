@@ -253,15 +253,15 @@ nothing is a finding, not something to hide.
 | --- | ---: | ---: | ---: | ---: |
 | 1 · vector retrieval only | 14.50% / 14.05% | 28.00% / 30.15% | 6.09% / 4.55% | — |
 | 2 · + hierarchical traversal | 13.50% / 13.50% | 21.00% / 24.60% | 2.54% / 2.88% | **−1.00 / −0.55** |
-| 3 · + GRI engine adjudicating | 1.50% / 0.35% | 1.50% / 0.35% | 0% / 0% | **−13.00 / −13.65** |
+| 3 · + GRI engine adjudicating | 1.50% / 0.25% | 1.50% / 0.25% | 0% / 0% | **−13.00 / −13.80** |
 | 4 · + hybrid dense/lexical retrieval | 15.00% / 13.75% | 22.50% / 24.75% | 3.05% / 2.98% | **+0.50 / −0.30** |
-| 5 · hybrid + GRI engine | 1.50% / 0.35% | 1.50% / 0.35% | 0% / 0% | **−13.00 / −13.65** |
-| 6 · 5 without the note-chain | 1.50% / 0.35% | 1.50% / 0.35% | 0% / 0% | −13.00 / −13.65 |
-| 7 · 5 without KAG conditions | 1.50% / 0.35% | 1.50% / 0.35% | 0% / 0% | −13.00 / −13.65 |
-| 8 · 5 without Section XI Note 2(A) | 0% / 0% | 0% / 0% | 0% / 0% | −14.50 / −14.00 |
+| 5 · hybrid + GRI engine | 1.50% / 0.25% | 1.50% / 0.25% | 0% / 0% | **−13.00 / −13.80** |
+| 6 · 5 without the note-chain | 1.50% / 0.25% | 1.50% / 0.25% | 0% / 0% | −13.00 / −13.80 |
+| 7 · 5 without KAG conditions | 1.50% / 0.25% | 1.50% / 0.25% | 0% / 0% | −13.00 / −13.80 |
+| 8 · 5 without Section XI Note 2(A) | 0% / 0% | 0% / 0% | 0% / 0% | −14.50 / −14.05 |
 
 Rows 6 to 8 price each mechanism by removing it. Two change nothing at all and the third takes
-the engine from 24 answers to one — see "Pricing each mechanism" below.
+the engine from 17 answers to one — see "Pricing each mechanism" below.
 
 Configurations 3 and 5 answer 5 of 200 and 5 of 200 on the test split; the coverage pair is
 below, and five decided cases is too small to rank 3 against 5.
@@ -308,11 +308,11 @@ matters is coverage against accuracy on the slice the system actually answered:
 
 | | Decided | Accuracy on those | If those had been forced |
 | --- | ---: | ---: | ---: |
-| test split (n=200) | 5 cases — 2.50% | 3 / 5 = 60% | 13.85% |
-| held-out (n=2,000) | 22 cases — 1.10% | 7 / 22 = 31.8% | 13.45% |
-| held-out, on hybrid retrieval | 24 cases — 1.20% | 7 / 24 = 29.2% | 13.66% |
+| test split (n=200) | 4 cases — 2.00% | 3 / 4 = 75% | 13.85% |
+| held-out (n=2,000) | 15 cases — 0.75% | 5 / 15 = 33.3% | 13.45% |
+| held-out, on hybrid retrieval | 17 cases — 0.85% | 5 / 17 = 29.4% | 13.66% |
 
-**Twenty-seven decided cases is too small to claim much**, though both slices sit above the 14%
+**Nineteen decided cases is too small to claim much**, though both slices sit above the 14%
 baseline. What the ablation does establish is *why* coverage is so narrow, and that is measured
 rather than guessed:
 
@@ -331,12 +331,13 @@ first row. The third row widens with better candidate generation.
 One reading of the escalation column used to live here: forcing an answer on the declined cases
 scores about 14%, the baseline, so "the refusal is not yet selecting hard cases — it is
 declining nearly everything". The first half is a measurement and the second was a guess, and
-the guess is wrong. Measured properly, the cases the rules answer score 2.1 to 3.9 times the
-accuracy the declined cases would have scored if forced, which is the spec's own test for
-whether a refusal is too cautious. What the refusal selects for is **having facts to reason
-over**: 23 of the 24 cases it answers on the held-out set lie inside the 239 where a composition
-was extractable. Not confidence — the rules' cases are rank-indistinguishable from random under
-every confidence signal tried. See the calibration section below.
+the guess is wrong, at least on the test split: there the cases the rules answer score five
+times the accuracy the declined cases would have scored if forced, which is the spec's own test
+for whether a refusal is too cautious. On the held-out 2,000 the rules answer 17 cases and the
+intervals overlap, so that set settles nothing either way. What the refusal selects for is
+**having facts to reason over**: nearly every case it answers lies inside the 239 where a
+composition was extractable. Not confidence — the rules' cases are rank-indistinguishable from
+random under every confidence signal tried. See the calibration section below.
 
 
 ### The KAG layer: provision text as arithmetic, and why it changes nothing yet
@@ -541,15 +542,15 @@ system not at all. Both halves are the result. Everything here comes from
 | --- | ---: | ---: | ---: | ---: | ---: |
 | **proposer**, no reranker | 15.00% | 22.50% | — | — | 16ms |
 | **proposer**, cross-encoder | **19.50%** | **26.00%** | — | — | 1,729-1,948ms |
-| **adjudicated**, no reranker | 1.50% | 1.50% | 5 of 200 | 3/5 = 60.0% | 30ms |
-| **adjudicated**, cross-encoder | 1.50% | 1.50% | 5 of 200 | 3/5 = 60.0% | 1,308-1,810ms |
+| **adjudicated**, no reranker | 1.50% | 1.50% | 4 of 200 | 3/4 = 75.0% | 18ms |
+| **adjudicated**, cross-encoder | 1.50% | 1.50% | 4 of 200 | 3/4 = 75.0% | 1,308-1,810ms |
 
 **+4.5 points of top-1 on the proposer, and nothing whatever on the adjudicated system.** Not a
-regression, not noise — the same five cases, the same three correct, verified case by case
+regression, not noise — the same four cases, the same three correct, verified case by case
 rather than inferred from matching totals.
 
 That is not a contradiction, it is what the escalation rate means. The adjudicated system
-answers 2.5% of cases and declines the rest, and whether the GRI resolve a case does not depend
+answers 2% of cases and declines the rest, and whether the GRI resolve a case does not depend
 on how the five candidates are *ordered*. So reranking improves the ranked shortlist handed to a
 human on the 97.5% that escalate, which is the system's actual output, and leaves the rules'
 decisions untouched. For a stage-2 component that is the behaviour you want. It is also the
@@ -623,7 +624,7 @@ millisecond. Three sample sizes gave three different answers:
 | 30-case screen | +10 points — "closes two thirds of the gap" |
 | 200-case test split | neutral — +0.00 top1@6, +0.50 top5@6 |
 | held-out 2,000 | **harmful — −1.75 top5@6**, 35 cases |
-| adjudicated, test split | **harmful** — decided 5 → 7 while right on decided fell 3/5 → 1/7 |
+| adjudicated, test split | **harmful** — decided 4 → 6 while right on decided fell 3/4 → 1/6 |
 
 It is kept in the tree as the control, labelled measured-harmful, because a reranker costing a
 hundred times as much has to be compared against the free attempt rather than against the
@@ -728,16 +729,16 @@ the question an operator has: what do I lose if this is off?
 
 | configuration | test: decided / right | held-out: decided / right |
 | --- | ---: | ---: |
-| full engine (5 · hybrid + GRI) | 5 / 60.0% | 24 / 29.2% |
-| 6 · without the note-chain | 5 / 60.0% | 24 / 29.2% |
-| 7 · without KAG conditions | 5 / 60.0% | 24 / 29.2% |
+| full engine (5 · hybrid + GRI) | 4 / 75.0% | 17 / 29.4% |
+| 6 · without the note-chain | 4 / 75.0% | 17 / 29.4% |
+| 7 · without KAG conditions | 4 / 75.0% | 17 / 29.4% |
 | 8 · without Section XI Note 2(A) | **0 / —** | **1 / 0.0%** |
 
 **The adjudication rests almost entirely on one note.** Remove Section XI Note 2(A) — the
 predominant-weight test — and the engine answers *one* case in 2,200, by GRI 2(a), and gets it
 wrong: a ruling on bicycle parts answered as copper pipe fittings, `7412.20.0015`, which the
 full engine also decides. Everything else is built, tested and almost unexercised. Measured on
-the held-out 2,000, the deciding rule is Note 2(A) for 23 of the 24 answers and GRI 2(a) for the
+the held-out 2,000, the deciding rule is Note 2(A) for 16 of the 17 answers and GRI 2(a) for the
 other one; the note-chain, the KAG threshold conditions and the narrow 3(a) decide nothing.
 
 Nothing is being shadowed by rule order, which was the obvious alternative reading. The
@@ -917,13 +918,16 @@ cautious. That test is one line and it is the clearest result here:
 
 | | answered by the rules | forced on the declined | ratio |
 | --- | ---: | ---: | ---: |
-| test split | **60.0%** (5 cases, 95% low 23.1%) | 15.4% (195 cases, 95% low 11.0%) | 0.26 |
-| held-out 2,000 | **29.2%** (24 cases, 95% low 14.9%) | 13.6% (1,976 cases, 95% low 12.2%) | 0.47 |
+| test split | **75.0%** (4 cases, 95% low 30.1%) | 15.3% (196 cases, 95% low 10.9%) | 0.20 |
+| held-out 2,000 | **29.4%** (17 cases, 95% low 13.3%) | 13.7% (1,983 cases, 95% low 12.2%) | 0.46 |
 
-The cases the rules answer are twice to four times as accurate as the ones they decline would
-have been. On the test split the intervals do not overlap; on the held-out set they overlap
-marginally (14.9% against a forced upper bound of 15.2%), so the held-out evidence is suggestive
-rather than conclusive. The refusal is selecting, and the README used to say the opposite.
+The cases the rules answer are two to five times as accurate as the ones they decline would
+have been. **Only the test split establishes it.** There the intervals are clear of each other,
+30.1% against a forced upper bound of about 21%. On the held-out 2,000 the rules answer 17
+cases, and a 95% interval on 17 reaches down to 13.3% — below the forced-answer rate of 13.7% —
+so that row is consistent with the refusal selecting and also with it not. Seventeen cases
+cannot settle it. What can be said is that the earlier claim here, that the refusal was *not*
+selecting, is contradicted on the set where the evidence is clean.
 
 ### The curve: one signal survives, and it is the margin
 
@@ -970,26 +974,27 @@ on what it returns — the engine on the code it decided, a threshold on the top
 
 | held-out 2,000 | n | accuracy | overlap with the rules | expected by chance |
 | --- | ---: | ---: | ---: | ---: |
-| the rules | 24 | 29.2% | — | — |
-| `margin_to_second` | 24 | 41.7% | 0 cases | 0.29 cases |
-| `has_composition` (whole tier) | 239 | — | **23 of 24** | — |
+| the rules | 17 | 29.4% | — | — |
+| `margin_to_second` | 17 | 52.9% | 0 cases | 0.14 cases |
+| `has_composition` (whole tier) | 239 | — | nearly all of them | — |
 
-**The margin's zero overlap with the rules is a null result, not a finding.** Two subsets of 24
-drawn from 2,000 are expected to share 0.29 cases, and P(disjoint) under independence is about
-0.75 — so observing zero is the ordinary outcome whether or not the mechanisms are related. A
-rank test agrees: the rules' cases sit at mean rank 1,071 under the margin against a null of
-999.5 (p = 0.73). They are not measurably related in either direction.
+**The margin's zero overlap with the rules is a null result, not a finding.** Two subsets of 17
+drawn from 2,000 are expected to share 0.14 cases, so observing zero is the ordinary outcome
+whether or not the mechanisms are related. A rank test on the earlier, larger answered set
+agreed: the rules' cases sat at mean rank 1,071 under the margin against a null of 999.5
+(p = 0.73). They are not measurably related in either direction.
 
-What *is* measurable is the last row. **23 of the rules' 24 answered cases lie inside the
-239-case tier where a composition was extractable** (5 of 5 on the test split), which is far
-beyond chance. That is the real selection the refusal performs: it answers cases where stage 1
+What *is* measurable is the last row. **Nearly every case the rules answer lies inside the
+239-case tier where a composition was extractable** — it was 23 of 24 before a fact-extraction
+fix reduced the answered set to 17 — which is far beyond chance. That is the real selection the refusal performs: it answers cases where stage 1
 found something typed to reason over, which is exactly what the KAG funnel predicted and the
 opposite of a confidence threshold's criterion. The two mechanisms may well be complementary —
 a threshold bets on the top candidate, the rules bet on having facts — but on this evidence
 "complementary" is a hypothesis with a plausible mechanism, not a measured result.
 
 A note on why the overlap column reads `tie-cut` for three signals: matching the rules' coverage
-exactly means taking exactly 24 cases, which for a two-valued signal cuts a tier of 239. The
+exactly means taking exactly as many cases as the rules answered, which for a two-valued
+signal cuts a tier of 239. The
 overlap is then an average over an arbitrary subset of equal scores, so it is withheld. A
 published `0.083` for `has_composition` came from exactly that cut — the one signal that
 predicts the rules' set best was reported as the least related.
@@ -997,10 +1002,10 @@ predicts the rules' set best was reported as the least related.
 ### What is not claimed
 
 **That the rules earn their keep by overriding a wrong top candidate.** On the test split the
-engine answers five cases, gets three right, and the top candidate on those same five is right
-*none* of the time — which looks decisive and is not: under a 15% base rate, zero-of-five
-happens 44% of the time. On the held-out 2,000 the direction nearly reverses: the top candidate
-is right on 6 of the 24, the rules on 7. One case in 24. The figure is now emitted as
+engine answers four cases, gets three right, and the top candidate on those same four is right
+*none* of the time — which looks decisive and is not: under a 15% base rate, zero-of-four
+happens 52% of the time. On the held-out 2,000 the direction nearly reverses: the top candidate
+is right on 4 of the 17 (23.5%), the rules on 5 (29.4%). One case in 17. The figure is now emitted as
 `rules_operating_point.top1_accuracy_on_the_same_cases` so the claim is reproducible from the
 artefact rather than quoted from a draft.
 
@@ -1032,6 +1037,109 @@ the noise around it — the same failure as the +4.48ms tracing overhead and the
 reranker finding, and the third time in one week. The guards now in `eval/calibration.py` are
 the response: a denominator on every number, a chance baseline beside every overlap, and an
 interval rather than a ratio deciding what counts as a signal.
+
+## Stage 1: a model reading the description, and the finding that it does not help
+
+Four measurements pointed here. The rule engine answers a few per cent of cases and nearly all
+of its answers come from one note that needs a composition by weight; the regex finds one in 24
+of 200 descriptions; the KAG threshold layer decides nothing because only 4 of 21 evaluable
+thresholds ask about a material the description quantifies; and the error analysis fails worst
+in chapters decided by function rather than material. All four said `Facts` was empty and that
+filling it was the lever.
+
+It is not. Measured on the test split through `gpt-4o-mini`, against the regex it replaces:
+
+| | with a percentage | with a mixture | engine decided | right | on decided |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| regex | 24/200 (12.0%) | 13/200 (6.5%) | 5 | 3 | 60.0% |
+| **gpt-4o-mini** | 25/200 (12.5%) | 12/200 (6.0%) | **3** | **3** | **100.0%** |
+
+**On the attribute the rules need, a model is indistinguishable from a regex** — one case either
+way. The reason is not a weak model or a weak prompt: Section XI Note 2(A) turns on which
+material predominates *by weight*, and a weight percentage can only be extracted from a
+description that states one. Nothing can read "60%" out of "a cotton t-shirt". The prediction
+that this would happen was written down before the run, and the consequence is the useful part:
+**the binding constraint is the rules, not the facts.**
+
+### What the model is better at
+
+Not finding percentages — being right, and seeing more.
+
+It found a **material name in 111 of 200** descriptions and a **form in 54**, where the regex
+finds neither. Those are real attributes that no rule currently consumes.
+
+And it does not invent. The engine went from five answers at 60% to three at 100%: the same
+three correct answers, with two wrong ones removed. Listing the cases rather than comparing the
+totals showed why, and it was a bug in the thing being replaced:
+
+```
+"a men's 100% cotton, jersey knit pullover with a V-neckline"
+  regex facts: {'cotton': 100.0, 's': 100.0}   ->  decided 6110.90.9014   WRONG
+  model facts: {'cotton': 100.0}               ->  escalate
+```
+
+The pattern that reads "cotton 60%" also reads **"s 100%" out of the possessive**. A
+single-material garment therefore carried two materials, counted as a mixture, and Note 2(A)
+fired on it. Two of the engine's five answers on the test split were wrong for that reason, and
+`"a woman's 100% nylon lace dress"` produced `{'nylon lace', 'polyester knit slip', 's'}`.
+Materials must now be at least two characters, with
+`test_a_possessive_does_not_become_a_material` to hold it.
+
+Across the whole project that fix costs coverage and buys grounding: the adjudicated engine goes
+from 5 answers at 60.0% to 4 at 75.0% on the test split, and from 24 at 29.2% to 17 at 29.4%
+held-out. Seven held-out answers disappeared, of which five were wrong and **two were right by
+accident** — a fabricated mixture firing a legal rule and landing correctly.
+
+### The guard that matters, and what it caught
+
+A percentage the description does not contain is worse than a missing one, because Note 2(A)
+will decide a case on it and attach a citation. So every number the model returns is checked
+against the source text before it reaches `Facts`, and one that is not there is dropped and
+recorded.
+
+It fired **7 times in 200 cases**, and every instance was the same shape:
+
+```
+high density polyethylene=100 does not appear in the description
+steel=100 / carbon steel=100 / brass=100 does not appear in the description
+```
+
+The model inferred "100%" for goods described as made of one material. That is a reasonable
+inference and a fabricated fact, and the threshold rules would have evaluated it as though the
+description had said so. The match is bounded by non-digits, because a substring search finds
+the "60" inside "160 g/m2".
+
+### Cost
+
+| | |
+| --- | ---: |
+| 200 classifications | **$0.0115** |
+| per 1,000 classifications | **$0.06** |
+| tokens | 53,751 |
+
+Real spend from the ledger, not an estimate — and the estimate is worth recording as a
+cautionary number. This README previously projected $3.50 per 1,000 on `gpt-4o` and about $0.21
+on `gpt-4o-mini`, from an instruction prompt assumed to be ~900 tokens. The prompt is ~200
+tokens and a call costs about $0.00006, so the projection was high by a factor of three even
+after correcting for the model. `obs/cost.py` carries the published OpenAI rates and
+`hsclass config` refuses to start a run against a model it has no price for.
+
+### The architecture is intact, and asserted
+
+The model never sees a tariff code. It is given a description and a schema and returns
+attributes; stage 3 applies the rules and is unchanged. `test_the_model_is_never_asked_for_a_code`
+checks the prompt for "hts", "heading", "subheading" and "classify it as" and fails if any
+appears. The transport is a `Protocol`, so every test runs against a stub with no key and no
+network, including the whole verification guard.
+
+### What this points at instead
+
+Not a better extractor. The 111 named materials with no percentage are the opening: the
+schedule is full of subheadings reading "Of cotton", "Of wool", "Of other textile materials",
+and matching a named material against *the terms of a subheading* is GRI 1 and GRI 6 — the same
+comparison the threshold rule makes, without needing a number. It is deterministic, it uses
+facts the model demonstrably can extract, and it is the first mechanism in this project whose
+inputs are not already exhausted.
 
 ## Observability: the costs that are not tokens
 

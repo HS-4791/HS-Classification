@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.table import Table
 
 from hsclass.config import get_settings
+from hsclass.obs.cost import PRICES
 from hsclass.schedule.models import build_from_export, load_export
 from hsclass.schedule.validate import validate_tree
 
@@ -125,7 +126,14 @@ def show_config() -> None:
         if s.latency_budget_ms is not None
         else "unset",
     )
+    # Whether a key is present, never any part of its value - this output
+    # gets pasted into issues and screenshots.
     table.add_row("anthropic key", "set" if s.anthropic_api_key else "unset")
+    table.add_row("openai key", "set" if s.openai_api_key else "unset")
+    table.add_row(
+        "price for llm_model",
+        "known" if s.llm_model in PRICES else f"MISSING - add {s.llm_model!r} to obs.cost.PRICES",
+    )
     console.print(table)
 
 

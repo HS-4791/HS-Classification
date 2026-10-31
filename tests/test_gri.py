@@ -536,3 +536,23 @@ def test_switching_off_conditions_stops_threshold_elimination(engine):
     # confidently wrong answer the moment retrieval offers a threshold pair.
     assert stripped.code == SILK_HIGH
     assert "GRI 3(a)" in stripped.rule_path
+
+
+def test_a_possessive_does_not_become_a_material():
+    """The regex extractor invented a material called "s", and it decided cases.
+
+    "a men's 100% cotton pullover": the pattern that reads "cotton 60%"
+    also reads "s 100%" out of the possessive, so a single-material garment
+    carried two materials, counted as a mixture, and Section XI Note 2(A)
+    fired on it - answering 6110.90.9014 for a cotton pullover. Two of the
+    five cases the engine decided on the test split were wrong this way, and
+    a model-based extractor exposed it by not making the mistake.
+    """
+    facts = extract_facts("a men's 100% cotton, jersey knit pullover")
+    assert facts.materials == {"cotton": 100.0}
+    assert not facts.is_mixture        # and so Note 2(A) cannot fire
+
+    womens = extract_facts(
+        "a woman's 100% nylon lace dress with a 100% polyester slip liner"
+    )
+    assert "s" not in womens.materials

@@ -13,17 +13,16 @@
     "top1@10": 197
   },
   "coverage": {
-    "escalation_rate": 0.975,
-    "covered_n": 5.0,
-    "accuracy_on_covered@6": 0.6,
-    "accuracy_if_forced@6": 0.1538
+    "escalation_rate": 0.98,
+    "covered_n": 4.0,
+    "accuracy_on_covered@6": 0.75,
+    "accuracy_if_forced@6": 0.1531
   },
   "latency_ms": {
-    "p50": 26.24,
-    "p95": 42.99,
-    "p99": 56.29,
-    "mean": 27.68,
-    "n": 200.0
+    "p50": 15.0,
+    "p95": 24.78,
+    "p99": 30.9,
+    "mean": 16.22
   },
   "per_chapter": {
     "29": {
