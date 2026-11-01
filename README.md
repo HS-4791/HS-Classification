@@ -1164,12 +1164,47 @@ connects acrylic to man-made. Retrieval hit the identical wall, where "cardigan"
 in a nomenclature that reads "Sweaters, pullovers ... and similar articles". Three mechanisms,
 one vocabulary gap.
 
-**What bridges it is law, not folklore, and it is already parsed.** Chapter 54 note 1 defines
-"synthetic" and "artificial" in relation to fibers, naming viscose rayon, cupro and cellulose
-acetate; the project holds 3,318 note provisions and that is one of them. It is definitional
-prose with "for example" lists rather than a lookup table, so turning it into a
-material-to-category map is a batch of its own — and it is what this rule is waiting on. Not a
-better prompt, and not a bigger model: that was tried, and the ceiling is the vocabulary.
+**Two ways to bridge it were measured, and both are closed.**
+
+*Deriving the map from the notes.* Chapter 54 note 1 defines "synthetic" and "artificial" in
+relation to fibers, naming polyamides, polyesters, polyolefins, polyurethanes, cupro, viscose
+rayon and cellulose acetate, and declares those meanings hold throughout the schedule. The
+schedule adds one usable equation of its own, "Of nylon or other polyamides". That is citable
+law and it is already parsed — and it covers **29 of 228 material mentions, 12.7%**. The names
+descriptions actually use are `polyester` (16), `cotton` (12), `spandex` (8), `nylon` (8),
+`acrylic` (5), then a tail of 150 distinct names. Spandex and acrylic are derivable from
+nothing in the schedule or its notes. Mining the schedule's own hierarchy for more — terms
+sitting beneath a heading that says "synthetic" — yields "acrylic or modacrylic" and "aramids"
+alongside "backpacking tents" and "diamonds", because unrelated breakouts sit under the same
+parent. A map built from the clean sources would act on an eighth of the vocabulary, inside the
+36 cases that reach the rule. Not worth building, and that was established before building it.
+
+*Asking the model for the category instead of the material.* "Man-made fibres" rather than
+"acrylic". Ground truth needs no judgement here — the gold code's own chain states the category
+the schedule assigns — and the model scores **26 of 34, 76.5%**. The accuracy is not the
+reason to decline it. The errors are:
+
+```
+"70% polyester and 30% wool"       said "wool"    schedule says "man-made fibres"
+"ramie, wool, nylon, and acrylic"  said "wool"    schedule says "other textile materials"
+"hemp and cotton"                  said "cotton"  schedule says "other textile materials"
+```
+
+**The schedule's category is not a property of the material. It is the outcome of applying
+Section XI Note 2(A).** Polyester at 70% makes the garment "man-made fibres" because
+predominance by weight decides; four materials with none predominating land in "other textile
+materials"; hemp with cotton goes to "other" for the same reason. The model identified the
+materials correctly every time and got the category wrong because the category is a legal
+conclusion, not a fact about the goods.
+
+So asking for it hands Note 2(A) to the model — the one rule this engine's coverage rests on,
+and the thing the architecture exists to keep deterministic. The error pattern is the evidence
+that it happens. Declined on that ground rather than on the 76.5%.
+
+What is left is a curated material taxonomy from outside the schedule, which would be
+uncitable, in a system whose output is a citation. The material-terms rule therefore ships
+correct, guarded, ablatable and **inert**, and the vocabulary gap is recorded as a limit of the
+data rather than a gap in the implementation.
 
 ## Observability: the costs that are not tokens
 
