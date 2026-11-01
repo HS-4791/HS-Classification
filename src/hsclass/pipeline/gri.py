@@ -120,10 +120,20 @@ class Facts:
 
     description: str = ""
     materials: dict[str, float] = field(default_factory=dict)
+    #: Materials the goods are made of with no percentage given - "a cotton
+    #: and wool shirt". Useless to Section XI Note 2(A), which needs weights,
+    #: and the only fact available for most descriptions: stage 1 finds a
+    #: name in 111 of 200 test cases and a percentage in 25.
+    named_materials: list[str] = field(default_factory=list)
 
     @property
     def is_mixture(self) -> bool:
         return len(self.materials) > 1
+
+    @property
+    def all_materials(self) -> list[str]:
+        """Every material named, weighed or not, in a stable order."""
+        return list(dict.fromkeys([*self.materials, *self.named_materials]))
 
     def predominant(self) -> tuple[str, float] | None:
         """The material with the greatest share, or None if it is a tie.
@@ -220,7 +230,7 @@ class Decision:
 #: GRI 1, 2(a), 2(b) and the narrow 3(a) are not here. They are the rules
 #: themselves; an engine without them is not a worse engine, it is not this
 #: engine.
-MECHANISMS = frozenset({"note_chain", "note_2a", "conditions"})
+MECHANISMS = frozenset({"note_chain", "note_2a", "conditions", "material_terms"})
 
 
 def without(*mechanisms: str) -> frozenset[str]:
@@ -347,6 +357,96 @@ class GRIEngine:
             if kept[0] in untested or kept[0][:4] not in eliminated:
                 return candidates, []
         return kept, failed
+
+    # ------------------------------ GRI 6: the terms of competing subheadings
+
+    def _material_term_rule(
+        self, facts: Facts, candidates: list[str], texts: dict[str, str]
+    ) -> tuple[str, str] | None:
+        """Pick the subheading that names the material the goods are made of.
+
+        Chapter 61 reads "Of cotton", "Of wool or fine animal hair", "Of
+        man-made fibres", "Of other textile materials". Choosing between
+        those is GRI 6 - the terms of the subheadings - and it needs the
+        *name* of a material, not a weight. That matters because stage 1
+        finds a name in 111 of 200 descriptions and a percentage in 25, so
+        this is the first mechanism here whose input is not already
+        exhausted. Section XI Note 2(A) cannot use a name, and the threshold
+        rule cannot either.
+
+        Four conditions, each from a defect this engine already had:
+
+        * **One heading only.** Comparing "Of cotton" under 6109 with "Of
+          cotton" under 6110 is not GRI 6, and two rules in this engine have
+          already decided across chapters they had no authority over - a
+          coat as footwear, a dress as footwear.
+        * **Exactly one candidate names a material the goods have.** Two
+          matches is a choice this rule cannot make; zero is nothing to say.
+        * **The winner is not residual.** "Of other textile materials" is
+          where goods go when no specific subheading names them, so matching
+          the word "materials" in it would invert the rule. A residual can
+          be *eliminated* against, never selected.
+        * **Every competitor was considered.** If a candidate's text is
+          missing from ``texts`` the comparison is incomplete, and an
+          incomplete comparison is not a decision.
+        * **A subheading stating a threshold is not one that names a
+          material.** "Containing 70 percent or more by weight of silk"
+          mentions silk and is a condition, not a term naming the goods'
+          material, and it belongs to ``_condition_rule``. Without this, a
+          suit of 40 percent silk matched it on the word "silk" and was
+          decided into it - the exact answer the threshold layer exists to
+          prevent, reached by a different route. Each rule owns its own kind
+          of term.
+
+        **Measured, it reaches far more cases than the threshold rule and
+        still decides none of them.** On the test split: a material is named
+        for 139 of 200 descriptions, the candidates share one heading for 55,
+        both hold for 36 - and in all 36 the number of candidates naming the
+        material is **zero**, never two. The threshold rule reaches 21 cases
+        and decides 0; this reaches 36 and decides 0, for a different reason.
+
+        The reason is a vocabulary gap, not a logic gap, and it is the third
+        time this project has met it. The schedule names material
+        *categories* and descriptions name *specific materials*: a sweater
+        of "90% acrylic and 4% spandex" faces subheadings reading "Of
+        man-made fibers" and "Of other textile materials", and no string
+        match connects acrylic to man-made. Retrieval hit the same wall -
+        the word "cardigan" appears nowhere in the nomenclature, which reads
+        "Sweaters, pullovers ... and similar articles".
+
+        What would bridge it is a map from specific materials to the
+        schedule's categories, and that map is **law rather than folklore**:
+        chapter 54 note 1 defines "synthetic" and "artificial" in relation
+        to fibers, and the 3,318 parsed note provisions contain it. It is
+        definitional prose with "for example" lists rather than a lookup
+        table, so deriving it is a piece of work of its own, and it is the
+        work this rule is waiting on rather than a better prompt or a bigger
+        model.
+        """
+        if "material_terms" not in self.enabled:
+            return None
+        materials = facts.all_materials
+        if not materials or len(candidates) < 2:
+            return None
+        if len({code[:4] for code in candidates}) != 1:
+            return None
+        if any(code not in texts for code in candidates):
+            return None
+
+        distinguishing = _distinguishing_terms([texts[c] for c in dict.fromkeys(candidates)])
+        matching = [
+            code
+            for code, terms in zip(dict.fromkeys(candidates), distinguishing, strict=True)
+            if not NAMES_NO_MATERIAL_RE.search(terms)
+            and not STATES_A_THRESHOLD_RE.search(terms)
+            and any(_describes_material(terms, m) for m in materials)
+        ]
+        if len(matching) != 1:
+            return None
+        return (
+            matching[0],
+            "the goods are of a material one subheading names and the others do not",
+        )
 
     # --------------------------------------------------- Section XI Note 2(A)
 
@@ -516,6 +616,17 @@ class GRIEngine:
                 full.append("GRI 6")
             return Decision(code, full, [*notes_cited, *cited], reason=why)
 
+        # GRI 6 on the terms of the competing subheadings: the goods are of a
+        # material that one of them names. After Note 2(A), because a note
+        # resolving on weight is the more specific instrument and the rules
+        # stop at the first that resolves - a name match must not pre-empt a
+        # weight the schedule asked for. Before GRI 2(b) and 3, because this
+        # is still GRI 1's question, read at subheading level.
+        terms = self._material_term_rule(facts, candidates, texts)
+        if terms:
+            code, why = terms
+            return Decision(code, [*path, "GRI 6"], notes_cited, reason=why)
+
         # GRI 2(a) - an incomplete, unfinished or unassembled article is
         # classified as the finished one. It sits before 2(b) in the sequence.
         if INCOMPLETE_RE.search(facts.description):
@@ -590,6 +701,55 @@ def _is_parts_provision(text: str) -> bool:
 def _is_residual(text: str) -> bool:
     own = text.split("—")[-1].strip().rstrip(":").lower()
     return own in {"other", "others", "other articles"}
+
+
+def _own_segment(text: str) -> str:
+    """A provision's own words, without the inherited chain above them."""
+    return text.split("—")[-1].strip()
+
+
+def _distinguishing_terms(chains: list[str]) -> list[str]:
+    """For each chain, the part that is not common to all of them.
+
+    GRI 6 compares subheadings "at the same level", and the terms doing the
+    distinguishing are whatever the candidates do *not* share. The deepest
+    segment alone is the wrong place to look: under one heading the
+    candidates are usually ten-digit lines whose own segments are "Men's
+    (338)" and "Women's (339)", while the material that separates them -
+    "Of cotton" against "Of man-made fibres" - sits a level or two above.
+    Reading only the deepest segment, the rule that needs those terms would
+    almost never fire on real data.
+
+    Dropping the shared prefix also removes the chapter and section titles,
+    which have no legal force under GRI 1 and would otherwise be searched
+    for materials - a chapter called "Cotton" would match every candidate
+    beneath it.
+    """
+    split = [[part.strip() for part in chain.split("—")] for chain in chains]
+    shared = 0
+    shortest = min(len(parts) for parts in split)
+    while shared < shortest and len({parts[shared] for parts in split}) == 1:
+        shared += 1
+    return [" ".join(parts[shared:]) for parts in split]
+
+
+#: A subheading that catches what the specific ones do not name. "Of other
+#: textile materials" is where goods go precisely *because* no subheading
+#: names their material, so matching a material against the word "materials"
+#: in it would invert the rule it belongs to. ``_is_residual`` is narrower -
+#: it looks for a segment that is only the word "Other" - because GRI 3(a)
+#: depends on that narrowness, so this is a separate, broader test used only
+#: by the material-terms rule.
+#:
+#: It is deliberately over-broad. A subheading reading "Of cotton, other
+#: than denim" is excluded too, which costs a decision this rule would
+#: otherwise make and never produces a wrong one.
+NAMES_NO_MATERIAL_RE = re.compile(r"\bother\b", re.I)
+
+#: A subheading whose term is a threshold rather than a material name.
+#: ``_condition_rule`` owns these, and the material-terms rule must leave
+#: them alone - see its docstring for the wrong answer that overlap produced.
+STATES_A_THRESHOLD_RE = re.compile(r"\d|\bpercent\b", re.I)
 
 
 def _describes_material(text: str, material: str) -> bool:

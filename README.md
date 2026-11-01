@@ -1132,14 +1132,44 @@ checks the prompt for "hts", "heading", "subheading" and "classify it as" and fa
 appears. The transport is a `Protocol`, so every test runs against a stub with no key and no
 network, including the whole verification guard.
 
-### What this points at instead
+### The mechanism those named materials made possible, and the wall it hit
 
-Not a better extractor. The 111 named materials with no percentage are the opening: the
-schedule is full of subheadings reading "Of cotton", "Of wool", "Of other textile materials",
-and matching a named material against *the terms of a subheading* is GRI 1 and GRI 6 — the same
-comparison the threshold rule makes, without needing a number. It is deterministic, it uses
-facts the model demonstrably can extract, and it is the first mechanism in this project whose
-inputs are not already exhausted.
+The 111 named materials looked like the opening. The schedule is full of subheadings reading
+"Of cotton", "Of wool or fine animal hair", "Of other textile materials", and choosing between
+those is GRI 6 — the terms of the subheadings — needing a *name* rather than a weight. It is
+deterministic, it uses the fact the model reliably extracts, and it was the first mechanism here
+whose input was not already exhausted.
+
+It was built, with four guards each from a defect this engine has already had: one heading only,
+exactly one match, never select a residual, every competitor considered. Then a fifth, found by
+a test while building it — a subheading stating a threshold is not one that *names* a material,
+and without that exclusion a suit of 40% silk was decided into "Containing 70 percent or more by
+weight of silk" on the word "silk". Each rule owns its own kind of term.
+
+**It reaches 36 of 200 cases and decides none of them.** The funnel, on the test split:
+
+| gate | n |
+| --- | ---: |
+| cases | 200 |
+| a material is named | 139 |
+| the candidates share one heading | 55 |
+| both | **36** |
+| of those, exactly one candidate names the material | **0** |
+
+Never two matches — always zero. The prediction recorded before the run was 10 to 30, and it
+was wrong for a reason already written down two sections above: **the schedule names material
+categories and descriptions name specific materials.** A sweater of "90% acrylic and 4%
+spandex" faces "Of man-made fibers" and "Of other textile materials", and no string match
+connects acrylic to man-made. Retrieval hit the identical wall, where "cardigan" appears nowhere
+in a nomenclature that reads "Sweaters, pullovers ... and similar articles". Three mechanisms,
+one vocabulary gap.
+
+**What bridges it is law, not folklore, and it is already parsed.** Chapter 54 note 1 defines
+"synthetic" and "artificial" in relation to fibers, naming viscose rayon, cupro and cellulose
+acetate; the project holds 3,318 note provisions and that is one of them. It is definitional
+prose with "for example" lists rather than a lookup table, so turning it into a
+material-to-category map is a batch of its own — and it is what this rule is waiting on. Not a
+better prompt, and not a bigger model: that was tried, and the ceiling is the vocabulary.
 
 ## Observability: the costs that are not tokens
 

@@ -102,8 +102,20 @@ class Extraction:
     dropped: list[str] = field(default_factory=list)
 
     def to_facts(self, description: str) -> Facts:
-        """The shape stage 3 consumes. Only verified percentages reach it."""
-        return Facts(description=description, materials=dict(self.materials))
+        """The shape stage 3 consumes. Only verified attributes reach it.
+
+        Named materials are carried as well as weighed ones. They are no use
+        to Section XI Note 2(A), which needs a percentage, and they are what
+        the material-terms rule compares against the terms of competing
+        subheadings - the one rule here whose input is not already
+        exhausted, since a name is available for 111 of 200 descriptions and
+        a percentage for 25.
+        """
+        return Facts(
+            description=description,
+            materials=dict(self.materials),
+            named_materials=list(self.named_materials),
+        )
 
     def to_dict(self) -> dict:
         return {
@@ -125,6 +137,19 @@ def _states_number(description: str, value: float) -> bool:
     rendered = NUMBER_IN_TEXT.format(value)
     pattern = re.escape(rendered).replace(r"\.", r"\.")
     return re.search(rf"(?<!\d){pattern}(?!\d)", description) is not None
+
+
+def _words_appear(name: str, description: str) -> bool:
+    """Is any word of this material name in the description?
+
+    Whole words, so "silk" does not match "silkscreen" and the plural of a
+    material still matches its singular stem only when the stem is present.
+    """
+    haystack = description.lower()
+    return any(
+        re.search(rf"\b{re.escape(word)}", haystack)
+        for word in re.findall(r"[a-z]{3,}", name)
+    )
 
 
 def verify(raw: dict, description: str) -> Extraction:
@@ -149,10 +174,21 @@ def verify(raw: dict, description: str) -> Extraction:
             continue
         extraction.materials[str(name).lower().strip()] = share
 
-    named = raw.get("named_materials") or []
-    extraction.named_materials = [
-        str(m).lower().strip() for m in named if isinstance(m, str) and m.strip()
-    ]
+    # Names are checked against the source too. A rule is about to compare
+    # them with the terms of a subheading - "Of cotton" against "Of wool" -
+    # so a material the description never mentions would decide a case under
+    # GRI 6 exactly as a fabricated percentage would under Note 2(A). The
+    # check is looser than for numbers, because the schedule and a shipper
+    # write the same material differently ("nylon" for "polyamide"), so a
+    # name counts as supported when any of its words appears in the text.
+    for raw_name in raw.get("named_materials") or []:
+        if not isinstance(raw_name, str) or not raw_name.strip():
+            continue
+        name = raw_name.lower().strip()
+        if _words_appear(name, description):
+            extraction.named_materials.append(name)
+        else:
+            extraction.dropped.append(f"{name!r} does not appear in the description")
     for key in ("form", "use"):
         value = raw.get(key)
         setattr(extraction, key, str(value).lower().strip() if isinstance(value, str) else None)

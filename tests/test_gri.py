@@ -4,17 +4,22 @@ from __future__ import annotations
 
 import pytest
 
-from hsclass.pipeline.gri import Decision, Facts, GRIEngine, extract_facts
+from hsclass.pipeline.gri import MECHANISMS, Decision, Facts, GRIEngine, extract_facts
 from hsclass.pipeline.gri import without as without_mechanisms
 from hsclass.schedule.exclusions import build_exclusion_graph
 from hsclass.schedule.notes import Note
 
 COTTON = "6109100012"
 MAN_MADE = "6109901000"
+#: Joined with an em-dash, as ``full_description`` writes a real inherited
+#: chain. The fixtures used " - " once, which meant every rule reading a
+#: chain segment got the whole string and the segmentation went untested.
 TEXTS = {
-    COTTON: "T-shirts, singlets, tank tops, knitted or crocheted - Of cotton - men's",
-    MAN_MADE: "T-shirts, singlets, tank tops, knitted - Of other textile materials "
-              "- of man-made fibres polyester",
+    COTTON: "Section XI — Chapter 61 — T-shirts, singlets, tank tops, knitted "
+            "or crocheted — Of cotton — Men's",
+    MAN_MADE: "Section XI — Chapter 61 — T-shirts, singlets, tank tops, knitted "
+              "or crocheted — Of other textile materials — Of man-made fibres, "
+              "polyester",
 }
 
 
@@ -460,7 +465,7 @@ def test_an_unknown_mechanism_is_refused(engine):
     # come out identical to the baseline.
     with pytest.raises(ValueError, match="unknown mechanisms"):
         without_mechanisms("note-chain")
-    assert without_mechanisms("note_chain") == frozenset({"note_2a", "conditions"})
+    assert without_mechanisms("note_chain") == MECHANISMS - {"note_chain"}
 
 
 def test_switching_off_the_note_chain_removes_citations_not_decisions(engine):
@@ -512,9 +517,14 @@ def test_switching_off_note_2a_changes_the_decision(engine):
     ).adjudicate(facts, [COTTON, MAN_MADE], TEXTS)
 
     assert full.code == COTTON and not full.escalated
-    assert stripped.escalated and stripped.code is None
-    # It falls through 2(b) and 3(a) and stops at essential character.
-    assert stripped.rule_path[-1] == "GRI 3(b)"
+    # Without the note, the material-terms rule picks it up instead: the
+    # goods are of cotton, one subheading says "Of cotton" and the other
+    # says "Of other textile materials", which names no material. Same
+    # answer, a different and weaker instrument - a name rather than a
+    # weight - so the note still changes how the case is decided.
+    assert stripped.code == COTTON
+    assert stripped.rule_path == ["GRI 1", "GRI 6"]
+    assert "Note 2(A)" not in " ".join(stripped.rule_path)
 
 
 def test_switching_off_conditions_stops_threshold_elimination(engine):
@@ -556,3 +566,101 @@ def test_a_possessive_does_not_become_a_material():
         "a woman's 100% nylon lace dress with a 100% polyester slip liner"
     )
     assert "s" not in womens.materials
+
+
+# --------------------------- GRI 6 on the terms of the competing subheadings
+
+MATERIAL_TEXTS = {
+    "6110301030": "Section XI \u2014 Chapter 61 \u2014 Sweaters, pullovers \u2014 "
+                  "Of man-made fibres \u2014 Men's",
+    "6110201030": "Section XI \u2014 Chapter 61 \u2014 Sweaters, pullovers \u2014 "
+                  "Of cotton \u2014 Men's",
+    "6110901030": "Section XI \u2014 Chapter 61 \u2014 Sweaters, pullovers \u2014 "
+                  "Of other textile materials \u2014 Men's",
+}
+
+
+def test_a_named_material_picks_the_subheading_that_names_it(engine):
+    """The mechanism stage 1 made possible.
+
+    A model finds a material *name* in 111 of 200 descriptions and a
+    percentage in 25, so this is the first rule here whose input is not
+    already exhausted. Section XI Note 2(A) cannot use a name and neither
+    can the threshold layer.
+    """
+    facts = Facts(description="a men's cotton sweater", named_materials=["cotton"])
+    decision = engine.adjudicate(facts, list(MATERIAL_TEXTS), MATERIAL_TEXTS)
+    assert decision.code == "6110201030"
+    assert decision.rule_path == ["GRI 1", "GRI 6"]
+    assert not decision.escalated
+
+
+def test_the_material_is_read_from_the_terms_that_distinguish_the_candidates(engine):
+    """Not from the deepest segment, which is "Men's" for all three.
+
+    Under one heading the candidates are ten-digit lines whose own segments
+    are sex and size breakouts, while the material that separates them sits
+    a level above. A rule reading only the deepest segment would never fire
+    on real data.
+    """
+    from hsclass.pipeline.gri import _distinguishing_terms
+
+    terms = _distinguishing_terms(list(MATERIAL_TEXTS.values()))
+    assert all("Chapter 61" not in t for t in terms)   # the shared prefix is gone
+    assert "Of cotton" in terms[1]
+
+
+def test_a_residual_subheading_is_never_selected_by_naming(engine):
+    """"Of other textile materials" is where goods go *because* nothing
+    names them, so matching the word "materials" would invert the rule."""
+    facts = Facts(description="a men's ramie sweater", named_materials=["ramie"])
+    decision = engine.adjudicate(facts, list(MATERIAL_TEXTS), MATERIAL_TEXTS)
+    # Ramie is named by no subheading here, and the residual must not be
+    # picked just because it contains the word "materials".
+    assert decision.code != "6110901030"
+    assert decision.escalated
+
+
+def test_two_matching_subheadings_are_not_chosen_between(engine):
+    texts = dict(MATERIAL_TEXTS)
+    texts["6110202030"] = ("Section XI \u2014 Chapter 61 \u2014 Sweaters, pullovers \u2014 "
+                           "Of cotton \u2014 Women's")
+    facts = Facts(description="a cotton sweater", named_materials=["cotton"])
+    decision = engine.adjudicate(facts, list(texts), texts)
+    assert decision.escalated      # two name cotton; that is not this rule's call
+
+
+def test_the_rule_does_not_reach_across_headings(engine):
+    """GRI 6 compares subheadings of one heading. Two rules in this engine
+    have already decided across chapters they had no authority over."""
+    texts = {
+        "6110201030": MATERIAL_TEXTS["6110201030"],
+        "6109100012": "Section XI \u2014 Chapter 61 \u2014 T-shirts \u2014 Of cotton",
+    }
+    facts = Facts(description="a cotton garment", named_materials=["cotton"])
+    decision = engine.adjudicate(facts, list(texts), texts)
+    assert decision.escalated
+
+
+def test_a_threshold_subheading_belongs_to_the_other_rule(engine):
+    """"Containing 70 percent or more by weight of silk" mentions silk and
+    is a condition, not a term naming the goods' material. Matching it on
+    the word "silk" decided a 40%-silk suit into it - the exact answer the
+    threshold layer exists to prevent, by another route."""
+    texts = {
+        "6204194000": "Chapter 62 \u2014 Women's suits \u2014 Containing 70 percent or "
+                      "more by weight of silk",
+        "6204192000": "Chapter 62 \u2014 Women's suits \u2014 Of cotton",
+    }
+    facts = Facts(description="a suit of silk and cotton",
+                  named_materials=["silk", "cotton"])
+    decision = engine.adjudicate(facts, list(texts), texts)
+    assert decision.code == "6204192000"   # the one naming a material, not the threshold
+
+
+def test_switching_off_material_terms_restores_the_old_behaviour(engine):
+    facts = Facts(description="a men's cotton sweater", named_materials=["cotton"])
+    without = GRIEngine(
+        engine.exclusions, enabled=without_mechanisms("material_terms")
+    ).adjudicate(facts, list(MATERIAL_TEXTS), MATERIAL_TEXTS)
+    assert without.escalated
