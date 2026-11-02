@@ -1,0 +1,35 @@
+{
+  "revision": "2026HTSRev21",
+  "verdict": "not applicable: the cacheable corpus never enters a prompt",
+  "cacheable_corpus": {
+    "binding_note_provisions": 2030,
+    "characters": 587316,
+    "estimated_tokens": 146829,
+    "estimate_basis": "characters / 4, tiktoken not a dependency"
+  },
+  "what_is_sent": {
+    "stage 1 (extract)": {
+      "calls": 200,
+      "mean_input_tokens": 230.0,
+      "max_input_tokens": 264,
+      "instructions_chars": 946,
+      "cache_read_tokens": 0,
+      "below_cacheable_minimum": true
+    },
+    "stage 4 (explain)": {
+      "calls": 200,
+      "mean_input_tokens": 261.5,
+      "max_input_tokens": 618,
+      "instructions_chars": 856,
+      "cache_read_tokens": 0,
+      "below_cacheable_minimum": true
+    }
+  },
+  "caching_minimum_prefix_tokens": 1024,
+  "measured_cache_read_tokens": 0,
+  "delta": {
+    "cost_usd_per_1000": 0.0,
+    "latency_ms": 0.0,
+    "accuracy": "unchanged"
+  }
+}

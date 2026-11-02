@@ -10,6 +10,7 @@ import pytest
 
 from hsclass.obs.cost import Usage
 from hsclass.pipeline.explain import (
+    INSTRUCTIONS,
     Explainer,
     authorities_of,
     quoted_text,
@@ -462,3 +463,31 @@ def test_the_refusal_first_prompt_differs_and_is_not_the_default():
     assert "could not be classified automatically" in REFUSAL_FIRST_INSTRUCTIONS
     assert "could not be classified automatically" not in INSTRUCTIONS
     assert Explainer(StubTransport(says("x"))).instructions == INSTRUCTIONS
+
+
+# ------------------------------------------- CAG has no subject here, pinned
+
+def test_the_prompt_carries_note_citations_and_not_note_text():
+    """Why cache-augmented generation has nothing to cache in this design.
+
+    CAG keeps a large static prefix - the General Rules and the chapter notes,
+    about 147,000 estimated tokens here - resident so repeated calls do not
+    re-send it. Stage 3 is deterministic and reads the notes from a parsed
+    structure, so what reaches a model is the *citation* the engine recorded,
+    never the provision's words. If that ever stops being true, this test
+    fails and the CAG question reopens.
+    """
+    from hsclass.pipeline.explain import _prompt
+
+    note_body = (
+        "Goods classifiable in headings 6101 to 6114 are to be classified in "
+        "the heading appropriate to the material which predominates by weight"
+    )
+    decision = decided(notes_cited=["Section XI Note 2(A)"])
+    prompt = _prompt(decision, "a men's cotton pullover", TEXTS)
+
+    assert "Section XI Note 2(A)" in prompt
+    assert note_body not in prompt
+    # Nor does the instruction block carry any corpus with it.
+    assert note_body not in INSTRUCTIONS
+    assert len(INSTRUCTIONS) < 2000

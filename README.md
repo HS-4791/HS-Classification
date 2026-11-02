@@ -97,7 +97,7 @@ the component gets dropped.
 | Hierarchical traversal | Inside chapter 39, which heading — then which subheading? |
 | Note-chain traversal | This note excludes the goods into chapter 48 — does 48 send them back? |
 | KAG | Does this product satisfy the conditions in note 2(b) of chapter 39? |
-| CAG | What are the GRI and the notes for the chapters in play? |
+| CAG | What are the GRI and the notes for the chapters in play? — *answered by a deterministic stage instead, so there is no prefix to cache; [measured](#cag-the-gate-is-closed-by-showing-the-instrument-has-no-subject)* |
 | Multimodal extraction | What is this thing actually made of, and what form is it in? |
 
 ## The schedule is versioned, and that is load-bearing
@@ -691,6 +691,10 @@ python scripts/measure_retrieval.py
 
 ```bash
 python scripts/run_ablations.py
+```
+
+```bash
+python -u scripts/measure_caching.py
 ```
 
 ```bash
@@ -1292,6 +1296,49 @@ What is left is a curated material taxonomy from outside the schedule, which wou
 uncitable, in a system whose output is a citation. The material-terms rule therefore ships
 correct, guarded, ablatable and **inert**, and the vocabulary gap is recorded as a limit of the
 data rather than a gap in the implementation.
+
+## CAG: the gate is closed by showing the instrument has no subject
+
+Week 3's gate asks for "CAG latency and cost delta measured, accuracy confirmed unchanged". The
+delta is **zero on all three**, and the reason is not that the saving would be small.
+
+Cache-augmented generation keeps a large static prefix — the General Rules and the chapter notes
+— resident in a model's context so that repeated classifications do not re-send it. **In this
+architecture those texts are never sent to a model at all.** Stage 3 is deterministic and reads
+the notes from a parsed structure; what reaches a model is the *citation* the engine recorded,
+"Section XI Note 2(A)", never the provision's words.
+
+Measured by `scripts/measure_caching.py`, which sends nothing and costs nothing:
+
+| | |
+| --- | ---: |
+| binding note provisions a CAG design would keep resident | 2,030 |
+| that corpus, in characters | 587,316 |
+| …as tokens | **~146,829** *(estimated, chars/4)* |
+| what stage 1 actually sends, mean input tokens per call | **230.0** |
+| what stage 4 actually sends, mean input tokens per call | **261.5** |
+| `cache_read_tokens` over 400 real calls | **0** |
+| OpenAI's minimum cacheable prefix | 1,024 tokens |
+
+Two exact facts settle it. The first is that `cache_read_tokens` — recorded on every call by
+`obs/cost.py`, from the API's own usage field rather than estimated — is **zero across 400 real
+calls**, because every prompt is a quarter of the length a prefix needs before it is eligible to
+be cached at all. The second is the ratio: a prompt-based engine would carry roughly **560 times**
+the context this one sends per classification. The corpus token count is an estimate and labelled
+as one (`tiktoken` is not a dependency; this project runs ONNX, not the OpenAI stack), but the
+numbers the gate turns on are not estimates.
+
+So the honest entry is not "CAG was skipped" and not "CAG saved nothing". It is that **the
+deterministic stage 3 already achieves what CAG is for**, by a different route and more
+completely: the notes are not re-sent because they are never sent. `test_the_prompt_carries_note_citations_and_not_note_text`
+pins that, so if a future change starts putting provision text into a prompt, the CAG question
+reopens with a failing test rather than silently.
+
+The adjacent claim is worth separating, because it is weaker. Token cost here is already
+negligible — $0.06 per 1,000 extractions and $0.078 per 1,000 explanations — so even if there
+were a prefix to cache, optimising it would be optimising the wrong number while the engine
+answers 2.5% of cases. That argument is about priority. The one above is about applicability, and
+it is the one that closes the gate.
 
 ## Observability: the costs that are not tokens
 
