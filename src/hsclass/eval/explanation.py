@@ -33,8 +33,22 @@ from hsclass.eval.metrics import at_digits
 from hsclass.pipeline.gri import Decision
 
 #: "GRI 1", "GRI 3(b)", "General Rule of Interpretation (GRI) 2(a)".
+#: ``Rules?`` is in the alternation because a rule asserted without the token
+#: "GRI" is still a rule asserted: "Under Rule 3(b) the goods take the
+#: identity of the dominant component" applies GRI 3(b) and named no
+#: authority the first version could see. The risk of the wider form is a
+#: "Rule 1" that means something else; the number must still follow
+#: immediately, which is what keeps it narrow.
+#: ``not_gri`` catches the one thing the wider form gets wrong. An
+#: "Additional U.S. Rule of Interpretation 1(c)" is a different instrument
+#: from a General Rule, and 1(c) is not even a GRI subparagraph - GRI 1 has
+#: none. Matched and then discarded, because Python cannot look behind a
+#: variable-width prefix.
 GRI_RE = re.compile(
-    r"\b(?:GRIs?|General Rules? of Interpretation)\s*\)?\s*\(?(\d)\)?\s*(\([a-c]\))?",
+    r"\b(?P<not_gri>additional\s+u\.?\s?s\.?\s+)?"
+    r"(?:GRIs?|(?:general\s+|interpretative\s+|general\s+interpretative\s+)?"
+    r"rules?(?:\s+of\s+interpretation)?)"
+    r"\s*\)?\s*\(?(?P<num>\d)\)?\s*(?P<letter>\([a-c]\))?",
     re.I,
 )
 
@@ -51,7 +65,29 @@ NOTE_RE = re.compile(
 #: a four-digit statistical suffix. Allowing only two-digit groups truncates
 #: it to "7307.91.30" and the comparison then runs against a code that does
 #: not exist.
-HEADING_RE = re.compile(r"\b(?:sub)?heading\s+(\d{4}(?:\.\d{2,4})*)", re.I)
+#: Three alternatives, because a code is written three ways, and the narrow
+#: form let two real evasions through once this grammar was put to work as a
+#: gate on generated prose rather than only on rulings:
+#:
+#: 1. after a lead-in word - "heading 6110", "HTS 6109.10.0040";
+#: 2. bare but dotted - "the goods fall in 6405.20.6060", which names a code
+#:    as plainly as any lead-in does and was invisible to the first version;
+#: 3. bare and undotted - "subheading 6109100040". ``\d{4}`` with nothing
+#:    anchoring its end matched the first four digits of a ten-digit code and
+#:    returned "6110", so a neighbouring statistical suffix read as its own
+#:    heading and passed the gate. That is the form this project writes
+#:    internally and the form it shows a model, so it was the one that
+#:    mattered most.
+#:
+#: A bare four-digit number is deliberately not a citation: "1345 rows" is
+#: not heading 1345. Six, eight and ten digit runs are distinctive enough to
+#: stand alone; four digits are not.
+HEADING_RE = re.compile(
+    r"\b(?:(?:sub)?heading|HTSUS|HTS|tariff\s+item)\s+(\d{4}(?:\.\d{2,4})*)(?!\d)"
+    r"|\b(\d{4}(?:\.\d{2,4})+)(?!\d)"
+    r"|\b(\d{10}|\d{8}|\d{6})(?!\d)",
+    re.I,
+)
 
 #: The order the rules are applied in. The deciding rule is the furthest the
 #: ruling had to go; reaching Rule 3 where Rule 1 answered is itself an error,
@@ -98,9 +134,23 @@ def _normalise_gri(number: str, letter: str | None) -> str:
     return f"{number}{(letter or '').lower()}"
 
 
+def gri_labels(text: str) -> set[str]:
+    """Every GRI a piece of text names, in this module's vocabulary.
+
+    One function rather than three copies of the same comprehension: the gate
+    in ``pipeline/explain.py`` and the measurement script both need it, and a
+    second copy would be free to disagree with this one about what counts.
+    """
+    return {
+        _normalise_gri(m.group("num"), m.group("letter"))
+        for m in GRI_RE.finditer(text)
+        if not m.group("not_gri")
+    }
+
+
 def authorities_in(reasoning: str) -> Authorities:
     """Read the rules, notes and headings a piece of reasoning names."""
-    gris = {_normalise_gri(m.group(1), m.group(2)) for m in GRI_RE.finditer(reasoning)}
+    gris = gri_labels(reasoning)
 
     notes: set[str] = set()
     for match in NOTE_RE.finditer(reasoning):
@@ -111,7 +161,10 @@ def authorities_in(reasoning: str) -> Authorities:
         else:
             notes.add(f"{label} {number}")
 
-    headings = {m.group(1).replace(".", "") for m in HEADING_RE.finditer(reasoning)}
+    headings = {
+        (m.group(1) or m.group(2) or m.group(3)).replace(".", "")
+        for m in HEADING_RE.finditer(reasoning)
+    }
     return Authorities(frozenset(gris), frozenset(notes), frozenset(headings))
 
 
@@ -172,11 +225,7 @@ class ExplanationScore:
 
 def _rules_in_path(decision: Decision) -> set[str]:
     """The GRI numbers the engine recorded, in the oracle's vocabulary."""
-    found: set[str] = set()
-    for step in decision.rule_path:
-        for match in GRI_RE.finditer(step):
-            found.add(_normalise_gri(match.group(1), match.group(2)))
-    return found
+    return gri_labels(" ".join(decision.rule_path))
 
 
 def score_explanations(

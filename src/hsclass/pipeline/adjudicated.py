@@ -25,6 +25,7 @@ from pathlib import Path
 
 from hsclass.obs.resources import Budget, Stopwatch
 from hsclass.obs.trace import Trace, trace
+from hsclass.pipeline.explain import Explainer, Explanation
 from hsclass.pipeline.gri import Decision, GRIEngine, extract_facts
 
 #: Anything that turns a description into ranked candidate codes.
@@ -58,18 +59,48 @@ class AdjudicatedClassifier:
         schedule_version: str = "",
         sink: Path | None = None,
         budget: Budget | None = None,
+        explainer: Explainer | None = None,
     ) -> None:
         self.proposer = proposer
         self.engine = engine
         self.texts = texts or {}
         self.shortlist = shortlist
         self.schedule_version = schedule_version
+        #: Stage 4. Off by default, so the ablations - which measure accuracy
+        #: and nothing else - never pay for prose that cannot move it. A
+        #: configured explainer with no transport is still useful: it renders
+        #: the decision deterministically into the trace.
+        self.explainer = explainer
         #: Where traces are appended, one JSON line each. None disables
         #: tracing entirely rather than writing to a bin.
         self.sink = sink
         self.budget = budget or Budget()
 
     def decide(self, description: str) -> tuple[Decision, list[str]]:
+        decision, candidates, _ = self._run(description)
+        return decision, candidates
+
+    def explain(self, description: str) -> tuple[Decision, Explanation]:
+        """Classify, and say why in prose.
+
+        With no explainer configured this still answers, using the
+        deterministic rendering - which is the whole explanation, not a
+        placeholder for one. See ``pipeline/explain.py``.
+
+        ``explaining=True`` rather than building the fallback out here: the
+        first version constructed it after ``_run`` returned, which is after
+        the trace context has closed. Stage 4 ran, its text went to the
+        caller, and the trace recorded three stages - so the explanation that
+        shipped was not the explanation on record, in the one artefact week 4
+        scores explanations against.
+        """
+        decision, _, explanation = self._run(description, explaining=True)
+        assert explanation is not None  # explaining=True always produces one
+        return decision, explanation
+
+    def _run(
+        self, description: str, explaining: bool = False
+    ) -> tuple[Decision, list[str], Explanation | None]:
         # Only the sink decides whether to trace. The budget is checked
         # inside ``_decide`` regardless, so including it here bought nothing
         # and cost everything: a classifier with a budget and no sink - a
@@ -77,22 +108,25 @@ class AdjudicatedClassifier:
         # uuid, a timestamp, three timed stages and a memory syscall, and
         # then dropped all of it because there was nowhere to write it.
         if self.sink is None:
-            return self._decide(description)
+            return self._decide(description, explaining=explaining)
         with trace(
             schedule_version=self.schedule_version,
             input={"description": description},
             sink=self.sink,
             cost_ceiling_usd=self.budget.usd,
         ) as recording:
-            return self._decide(description, recording)
+            return self._decide(description, recording, explaining)
 
     def _decide(
-        self, description: str, recording: Trace | None = None
-    ) -> tuple[Decision, list[str]]:
-        """The three stages that exist, each timed and recorded.
+        self,
+        description: str,
+        recording: Trace | None = None,
+        explaining: bool = False,
+    ) -> tuple[Decision, list[str], Explanation | None]:
+        """The four stages, each timed and recorded.
 
-        Stage 4, explanation, is not built. It is absent from the trace
-        rather than present and empty, because a stage that always reports
+        Stage 4 is absent from the trace rather than present and empty when
+        no explainer is configured, because a stage that always reports
         nothing reads as a stage that ran and found nothing to say.
         """
         clock = Stopwatch()
@@ -136,7 +170,22 @@ class AdjudicatedClassifier:
                 shortlist=decision.shortlist,
             )
         self.budget.check_latency(clock.ms, "adjudicate")
-        return decision, candidates
+
+        # Stage 4 - explain. It runs after the decision is final and cannot
+        # reach back into it: ``explain`` takes a Decision and returns prose.
+        # What it writes is checked against that decision's own authorities
+        # before it is accepted, so the stage cannot justify an answer the
+        # rules did not reach. The refusals are recorded, not swallowed.
+        explanation: Explanation | None = None
+        explainer = self.explainer or (Explainer(texts=self.texts) if explaining else None)
+        if explainer is not None:
+            with _stage(recording, "explain") as payload:
+                explanation = explainer.explain(decision, description)
+                payload.update(explanation.to_dict())
+            if recording is not None and recording.ledger and explanation.usage:
+                recording.ledger.record(explanation.usage)
+            self.budget.check_latency(clock.ms, "explain")
+        return decision, candidates, explanation
 
     def __call__(self, description: str) -> tuple[Iterable[str], bool]:
         decision, candidates = self.decide(description)

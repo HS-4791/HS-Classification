@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -220,6 +221,20 @@ class ModelExtractor:
         return self.extract(description).to_facts(description)
 
 
+#: Attempts per request, and the pause before each retry. A 200-case
+#: measurement died on its first run because the server dropped one
+#: connection, which cost the whole run and the spend before it; a 2,000-case
+#: run is ten times the exposure. Only transport failures and the statuses
+#: that mean "later" are retried - a 400 is a bug in the request and retrying
+#: it just pays for the same mistake three times.
+#: The last pause is long because the failures seen here are not single
+#: dropped packets: three runs died on ``getaddrinfo failed`` while a DNS
+#: probe two seconds later resolved fine, so the outage outlasts a 5-second
+#: ladder. A caller that cannot afford the wait passes its own delays.
+RETRY_DELAYS = (1.0, 4.0, 15.0)
+RETRY_STATUSES = frozenset({408, 429, 500, 502, 503, 504})
+
+
 class OpenAITransport:
     """One POST to the chat completions endpoint, with deterministic settings."""
 
@@ -230,6 +245,7 @@ class OpenAITransport:
         url: str = OPENAI_URL,
         timeout: float = 30.0,
         client: object | None = None,
+        delays: tuple[float, ...] = RETRY_DELAYS,
     ) -> None:
         if not api_key:
             raise ValueError(
@@ -240,11 +256,28 @@ class OpenAITransport:
         self.url = url
         self.timeout = timeout
         self._client = client
+        self.delays = delays
 
-    def complete(self, instructions: str, description: str) -> tuple[str, Usage]:
+    def _post(self, payload: dict, headers: dict):
+        """POST once, retrying only what is worth retrying."""
         import httpx
 
-        client = self._client
+        poster = self._client.post if self._client is not None else httpx.post
+        for delay in (*self.delays, None):
+            try:
+                response = poster(
+                    self.url, json=payload, headers=headers, timeout=self.timeout
+                )
+            except httpx.TransportError:
+                if delay is None:
+                    raise
+            else:
+                if response.status_code not in RETRY_STATUSES or delay is None:
+                    return response
+            time.sleep(delay)
+        raise AssertionError("unreachable: the last attempt returns or raises")
+
+    def complete(self, instructions: str, description: str) -> tuple[str, Usage]:
         payload = {
             "model": self.model,
             "temperature": TEMPERATURE,
@@ -255,14 +288,7 @@ class OpenAITransport:
             ],
         }
         headers = {"Authorization": f"Bearer {self._key}"}
-        if client is None:
-            response = httpx.post(
-                self.url, json=payload, headers=headers, timeout=self.timeout
-            )
-        else:
-            response = client.post(
-                self.url, json=payload, headers=headers, timeout=self.timeout
-            )
+        response = self._post(payload, headers)
         response.raise_for_status()
         body = response.json()
         tokens = body.get("usage") or {}

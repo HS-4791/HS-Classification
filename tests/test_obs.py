@@ -114,6 +114,49 @@ def test_the_trace_reconstructs_the_decision(tmp_path):
     assert "process_working_set_mb" in record["resources"]
 
 
+def test_stage_four_is_absent_unless_an_explainer_is_configured(tmp_path):
+    """A stage that always reports nothing reads as a stage that found nothing."""
+    sink = tmp_path / "traces.jsonl"
+    _pipeline(tmp_path, sink=sink).decide("a cotton t-shirt")
+
+    record = json.loads(sink.read_text(encoding="utf-8").strip())
+    assert "explain" not in [s["name"] for s in record["stages"]]
+
+
+def test_stage_four_is_traced_with_its_source_and_refusals(tmp_path):
+    from hsclass.pipeline.explain import Explainer
+
+    sink = tmp_path / "traces.jsonl"
+    classifier = _pipeline(tmp_path, sink=sink, explainer=Explainer())
+    decision, explanation = classifier.explain("a cotton t-shirt")
+
+    record = json.loads(sink.read_text(encoding="utf-8").strip())
+    stage = next(s for s in record["stages"] if s["name"] == "explain")
+    assert stage["source"] == "rules"
+    assert stage["text"] == explanation.text
+    assert stage["duration_ms"] >= 0
+
+
+def test_explaining_does_not_change_the_decision(tmp_path):
+    """Stage 4 runs after the decision is final and cannot reach back into it."""
+    from hsclass.pipeline.explain import Explainer
+
+    description = "a t-shirt of 60% cotton and 40% polyester"
+    explained, _ = _pipeline(tmp_path, explainer=Explainer()).explain(description)
+    plain, _ = _pipeline(tmp_path).decide(description)
+    assert (explained.code, explained.rule_path, explained.escalated) == (
+        plain.code, plain.rule_path, plain.escalated,
+    )
+
+
+def test_explaining_works_with_no_explainer_configured(tmp_path):
+    decision, explanation = _pipeline(tmp_path).explain("a cotton t-shirt")
+    assert explanation.text
+    assert explanation.source == "rules"
+    if decision.code:
+        assert decision.code in explanation.text
+
+
 def test_no_sink_and_no_budget_writes_nothing(tmp_path):
     """Tracing off is the default for evaluation runs: 2,200 cases would
     otherwise write 2,200 records nobody reads."""

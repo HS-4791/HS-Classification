@@ -1309,6 +1309,170 @@ Reading that same trace back also showed `Section XI Note 1(c)` cited twice, bec
 note excludes goods from several chapters and the shortlist spanned two of them. In a trace that
 reads as an officer relying on an authority twice over. Citations are now deduplicated.
 
+## Stage 4: writing the reasoning, and the gate that has to exist for it to be safe
+
+The last stage, and the one where the whole architecture could be given away. Stages 1 and 2
+are allowed to be wrong because stage 3 checks them; stage 3 is deterministic. Stage 4 writes
+the reasoning — and a fluent model handed a code and asked why will produce a reason whether
+or not the rules ever reached it. "Under GRI 3(b), on essential character" attached to a code
+the engine resolved at GRI 1 is worse than no explanation at all: it is a legal citation for
+reasoning that never happened, and it reads exactly like the real thing.
+
+So the model never says what decided the case. It is given the decision and the authorities
+the decision already holds, and **every citation in what it writes is checked back against
+that decision before the text is returned.** Prose naming an authority the decision does not
+hold is refused, recorded, and replaced by a deterministic rendering. Same discipline as the
+`verify` guard in stage 1, where a percentage absent from the description is dropped rather
+than passed to the engine: the check is a gate, not a score.
+
+**The deterministic renderer is the product. The model is an enhancement.** `render` alone is
+a complete, citable explanation of any decision, needs no key, no network and no budget, and
+names every rule in `rule_path` because it is built from `rule_path`. If the model is
+unavailable the system still explains itself.
+
+### What "correct" means here, stated before building
+
+Not an accuracy. An explanation is correct when it is **faithful**: every rule, note and
+heading it cites is one the decision actually holds. Three numbers, kept apart because they
+answer different questions — fabrications by the renderer, which must be zero; fabrications
+the gate catches in the model's prose, which prices the risk; and completeness, the share of
+the engine's own applied rules the prose names, because omitting the deciding rule is not
+false but is useless as an audit record.
+
+What stage 4 **cannot** move, and is not reported as moving: agreement with the judgement
+oracle. That is a property of stage 3's rule path. Stage 4 only describes the path.
+
+### The first version did not hold the claim, and a cold read proved it
+
+`unsupported` was not a faithfulness gate. It was a **citation-format** gate: it caught a
+fabrication only when the fabrication was spelled the one way the grammar recognised. Sixteen
+of eighteen adversarial probes walked through it. Worse, `render` and the model's own prompt
+both wrote codes in the undotted form, so the system was *teaching the model* the format that
+evaded its heading check.
+
+| prose, against a decision resolved at GRI 1 on 6109.10.0012 | first gate |
+| --- | --- |
+| `The goods fall in 6405.20.6060, other footwear.` | **passed** |
+| `HTS 6110.30.3020 provides for these goods.` | **passed** |
+| `subheading 6109909090` (undotted — the form the prompt shows) | **passed** |
+| `subheading 6109.90.9090` (dotted — the form it never shows) | caught |
+| `Under Rule 3(b) the goods take the identity of the dominant component.` | **passed** |
+| `Classification follows the component giving them their fundamental character.` | **passed** |
+| `The predominant fibre decides the subheading.` | **passed** |
+| `No heading describes them, so they go with the goods they most closely resemble.` | **passed** |
+
+Fourteen of fifteen are caught now, and every one is a regression test. `\d{4}` with nothing
+anchoring its end had been reading the first four digits of a ten-digit code, so a
+neighbouring statistical suffix — the exact answer Section XI Note 2(A) exists to prevent —
+read as its own heading and passed.
+
+**Three of the gaps were in the fixes, not the original**, and each was found by re-running a
+measurement rather than by re-reading code:
+
+- the literal `predominat` cannot match **"predominant"** — the word is `predomin`+`ant`, the
+  pattern wanted `predomin`+`at`. It matched the renderer's own "predominating" and nothing a
+  model or a shipper actually writes.
+- `_bare` stripped the word "Note" itself, so no label could ever match and every correct
+  paraphrase of a held authority was counted as invention.
+- `REFUSAL_RE` demanded "referred to" with no words in between and "further determination"
+  rather than "further determine", so **two of eight sampled refusals were the gate's own
+  bug** — prose that plainly handed the case over ("it was necessary to refer the case to a
+  classifier for a final decision") was scored as though it had answered. Found by reading
+  the refused text, which first required keeping it: recovering it by calling the model
+  again returns a *different* generation, so the text judged and the text read were never
+  the same one.
+
+### Quoting a cross-reference is not relying on it
+
+The first `authorities_of` included the schedule text of every candidate code, so the renderer
+could quote an inherited chain verbatim. That turned every cross-reference into a licence:
+**7,331 of 29,861 provisions (24.6%)** name a heading other than their own in their chain,
+so a decision on 0207.11.0020 — chicken cuts, whose text reads "of the poultry of heading
+0105" — would have let an explanation claim the goods are classified in heading 0105, which is
+live poultry. Schedule text is now excused as *quotation* rather than granted as *authority*,
+which is a different thing and the distinction the gate turns on.
+
+### What the gate catches, and the trade-off underneath it
+
+Over the 200-case test split, with the engine deciding 4 and escalating 196:
+
+| | renderer | model, default prompt | model, refusal-first prompt |
+| --- | ---: | ---: | ---: |
+| fabricated citations | **0 / 200** | — | — |
+| refused by the gate | — | 76 and 84 / 200 (**38–42%**) | **0 / 200** |
+| applied rules the prose names | 100% *by construction* | **86.5–88.5%** | **1.5%** |
+
+The model's two columns are ranges because **`gpt-4o-mini` is not deterministic at
+temperature 0**, and two runs of the same prompt through the same gate refused 76 and 84 of
+the same 200 descriptions. A single run's figure is not reproducible, so none is quoted as
+*the* rate. That also means a refusal count cannot be used to compare two versions of the
+gate: an earlier pair of runs refused 5 and then 4 across a change that made the gate
+strictly stricter, which is only possible if the prose changed underneath it.
+
+Almost every refusal is one thing: **the model explaining an escalated case as though a code
+had been chosen.** "The classification will be determined by the most appropriate heading that
+encompasses the nature of the product" — for goods the engine refused to classify. The refusal
+is this system's product, and stage 4 was quietly softening it into a near-answer.
+
+The obvious suspicion is the prompt, which opens with "a classification that has already been
+decided". So a second prompt says what to do when nothing was decided. **It works, and it is
+worse**: refusals fall to zero and completeness collapses from 88.5% to 1.5%. Told not to say
+which heading applies, the model stops giving legal reasoning at all and writes a bare
+refusal. Faithfulness bought that way is not worth having, because an explanation that cites
+nothing cannot be audited. Both prompts are in the source and both are re-measurable
+(`--refusal-first`); the default is kept and the second is a recorded negative result.
+
+The pair is the finding: **at this model size the two properties trade against each other,
+and the deterministic renderer has both.** The model buys readability for roughly 60% of
+cases at $0.078 per 1,000, and the gate is what makes that safe rather than merely cheap.
+
+### Two numbers here were published wrong, and both are corrected
+
+- **"0 fabrications over 200 cases" was true and misleading.** `render`'s escalated branch
+  quotes no schedule text, so the surface that *can* fabricate is exercised once per decided
+  case — **4 times, not 200**. The report now prints that denominator beside the zero. This is
+  the project's own rule about saying how many cases a number rests on, broken here.
+- **A reported 100% rule completeness for the renderer was tautological** and is withdrawn.
+  `render` joins `rule_path` into its text verbatim and the metric then re-parsed that same
+  string, so it could only fall below 100% if the grammar failed to read back a label the
+  renderer had just copied. It measured regex round-tripping and sat in the report beside a
+  real measurement looking like one. The renderer does name every applied rule — but that is a
+  property of how it is built, not a result, and it is stated that way now.
+
+### The judgement oracle was undercounting, and its headline moves
+
+Widening the grammar to catch a rule named without the token "GRI" changed the oracle too,
+since it reads CBP reasoning with the same parser. That is the point of one grammar, and it
+cuts both ways:
+
+| | before | after |
+| --- | ---: | ---: |
+| rulings naming a GRI beyond 1 | 903 | **964** |
+| of those, the engine decided | 9 | 10 |
+| agreed on the deciding rule | 4 | **3** |
+
+Sixty-one more rulings name a rule the narrow grammar could not see — "General Interpretative
+Rule 3(c)", "Rule 2(a) of the General Rules of Interpretation". Agreement falls because the
+deciding rule is the *furthest* one reached, and the narrow grammar had been missing the
+furthest one. Verifying the widening against real ruling text is also what exposed a false
+positive worth keeping out: an **"Additional U.S. Rule of Interpretation 1(c)"** is a
+different instrument from a General Rule, and 1(c) is not even a GRI subparagraph.
+
+**3 of 10 is far too small to carry any weight**, and no claim is made on it. The denominator
+is the real finding: the engine decides 10 of 964 cases where the ruling named a rule beyond
+GRI 1, which is the same coverage story the rest of this README tells.
+
+### A bug in stage 3, found by reading stage 4's output
+
+Not an explanation problem, and recorded rather than fixed here. For "a men's knit pullover
+made of 60% cotton and 40% modal" the engine chose **6110.20.1010**, whose own chain reads
+"Of cotton — **Containing 36 percent or more by weight of flax fibers**". The goods contain no
+flax; the stated percentages sum to 100, so flax is necessarily zero. `conditions.py` sees no
+`flax` key, returns *unevaluable* rather than false, and the provision survives by
+untestability — the cardigan failure mode in a new place. The correct line is 6110.20.2069,
+"Of cotton — Other — Other — Other — Men's or boys'". Reading real output found it; the tests
+did not.
+
 ## Production concerns
 
 - **Tracing** — every classification is reconstructable after the fact: candidates considered,

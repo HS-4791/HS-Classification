@@ -1,0 +1,1471 @@
+{
+  "revision": "2026HTSRev21",
+  "set": "test-200",
+  "n": 200,
+  "model": "gpt-4o-mini",
+  "prompt": "default",
+  "decided": 4,
+  "escalated": 196,
+  "deterministic_renderer": {
+    "fabrications": 0,
+    "examples": [],
+    "decided_cases_exercising_the_quoting_branch": 4
+  },
+  "model_prose": {
+    "attempted": 200,
+    "accepted": 116,
+    "refused": 84,
+    "refusal_rate": 0.42,
+    "authorities_invented": {
+      "a refusal written as though the goods had been classified": 83,
+      "specificity, which is GRI 3(a)": 40,
+      "GRI 3": 1,
+      "predominance by weight, which is Section XI Note 2(A)": 1
+    },
+    "examples": [
+      {
+        "description": "cast carbon steel fittings made to ASTM A216 specification, comprised ",
+        "cited": [
+          "a refusal written as though the goods had been classified"
+        ]
+      },
+      {
+        "description": "a polyurethane aqueous dispersion used in cosmetic formulations",
+        "cited": [
+          "a refusal written as though the goods had been classified"
+        ]
+      },
+      {
+        "description": "a hydrogen gas sensor printed circuit board assembly",
+        "cited": [
+          "specificity, which is GRI 3(a)",
+          "a refusal written as though the goods had been classified"
+        ]
+      },
+      {
+        "description": "polyvinyl chloride (PVC) flooring with click-lock installation, consis",
+        "cited": [
+          "a refusal written as though the goods had been classified"
+        ]
+      },
+      {
+        "description": "a girls' pullover sweater made of knitted fabric with 90% acrylic and ",
+        "cited": [
+          "a refusal written as though the goods had been classified"
+        ]
+      }
+    ],
+    "mean_rule_completeness": 0.865,
+    "unreachable": 0,
+    "unreachable_examples": []
+  },
+  "cost": {
+    "total_usd": 0.015503,
+    "total_tokens": 65058,
+    "ceiling_usd": null,
+    "calls": [
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 269,
+        "output_tokens": 61,
+        "cache_read_tokens": 0,
+        "usd": 7.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 274,
+        "output_tokens": 84,
+        "cache_read_tokens": 0,
+        "usd": 9.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 256,
+        "output_tokens": 68,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 260,
+        "output_tokens": 49,
+        "cache_read_tokens": 0,
+        "usd": 6.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 255,
+        "output_tokens": 87,
+        "cache_read_tokens": 0,
+        "usd": 9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 301,
+        "output_tokens": 78,
+        "cache_read_tokens": 0,
+        "usd": 9.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 240,
+        "output_tokens": 52,
+        "cache_read_tokens": 0,
+        "usd": 6.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 276,
+        "output_tokens": 53,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 240,
+        "output_tokens": 64,
+        "cache_read_tokens": 0,
+        "usd": 7.4e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 247,
+        "output_tokens": 72,
+        "cache_read_tokens": 0,
+        "usd": 8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 289,
+        "output_tokens": 80,
+        "cache_read_tokens": 0,
+        "usd": 9.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 296,
+        "output_tokens": 68,
+        "cache_read_tokens": 0,
+        "usd": 8.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 271,
+        "output_tokens": 67,
+        "cache_read_tokens": 0,
+        "usd": 8.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 237,
+        "output_tokens": 53,
+        "cache_read_tokens": 0,
+        "usd": 6.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 276,
+        "output_tokens": 70,
+        "cache_read_tokens": 0,
+        "usd": 8.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 252,
+        "output_tokens": 68,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 271,
+        "output_tokens": 65,
+        "cache_read_tokens": 0,
+        "usd": 8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 237,
+        "output_tokens": 61,
+        "cache_read_tokens": 0,
+        "usd": 7.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 255,
+        "output_tokens": 70,
+        "cache_read_tokens": 0,
+        "usd": 8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 246,
+        "output_tokens": 60,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 236,
+        "output_tokens": 55,
+        "cache_read_tokens": 0,
+        "usd": 6.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 278,
+        "output_tokens": 69,
+        "cache_read_tokens": 0,
+        "usd": 8.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 254,
+        "output_tokens": 65,
+        "cache_read_tokens": 0,
+        "usd": 7.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 238,
+        "output_tokens": 57,
+        "cache_read_tokens": 0,
+        "usd": 7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 270,
+        "output_tokens": 63,
+        "cache_read_tokens": 0,
+        "usd": 7.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 237,
+        "output_tokens": 58,
+        "cache_read_tokens": 0,
+        "usd": 7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 256,
+        "output_tokens": 66,
+        "cache_read_tokens": 0,
+        "usd": 7.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 239,
+        "output_tokens": 69,
+        "cache_read_tokens": 0,
+        "usd": 7.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 243,
+        "output_tokens": 60,
+        "cache_read_tokens": 0,
+        "usd": 7.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 240,
+        "output_tokens": 56,
+        "cache_read_tokens": 0,
+        "usd": 7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 618,
+        "output_tokens": 66,
+        "cache_read_tokens": 0,
+        "usd": 0.000132
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 247,
+        "output_tokens": 69,
+        "cache_read_tokens": 0,
+        "usd": 7.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 293,
+        "output_tokens": 69,
+        "cache_read_tokens": 0,
+        "usd": 8.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 280,
+        "output_tokens": 70,
+        "cache_read_tokens": 0,
+        "usd": 8.4e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 247,
+        "output_tokens": 59,
+        "cache_read_tokens": 0,
+        "usd": 7.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 244,
+        "output_tokens": 61,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 239,
+        "output_tokens": 58,
+        "cache_read_tokens": 0,
+        "usd": 7.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 266,
+        "output_tokens": 78,
+        "cache_read_tokens": 0,
+        "usd": 8.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 261,
+        "output_tokens": 80,
+        "cache_read_tokens": 0,
+        "usd": 8.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 256,
+        "output_tokens": 54,
+        "cache_read_tokens": 0,
+        "usd": 7.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 271,
+        "output_tokens": 68,
+        "cache_read_tokens": 0,
+        "usd": 8.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 361,
+        "output_tokens": 73,
+        "cache_read_tokens": 0,
+        "usd": 9.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 289,
+        "output_tokens": 65,
+        "cache_read_tokens": 0,
+        "usd": 8.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 255,
+        "output_tokens": 81,
+        "cache_read_tokens": 0,
+        "usd": 8.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 279,
+        "output_tokens": 73,
+        "cache_read_tokens": 0,
+        "usd": 8.6e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 258,
+        "output_tokens": 72,
+        "cache_read_tokens": 0,
+        "usd": 8.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 271,
+        "output_tokens": 66,
+        "cache_read_tokens": 0,
+        "usd": 8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 240,
+        "output_tokens": 55,
+        "cache_read_tokens": 0,
+        "usd": 6.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 244,
+        "output_tokens": 74,
+        "cache_read_tokens": 0,
+        "usd": 8.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 239,
+        "output_tokens": 63,
+        "cache_read_tokens": 0,
+        "usd": 7.4e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 240,
+        "output_tokens": 75,
+        "cache_read_tokens": 0,
+        "usd": 8.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 252,
+        "output_tokens": 68,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 265,
+        "output_tokens": 66,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 240,
+        "output_tokens": 57,
+        "cache_read_tokens": 0,
+        "usd": 7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 239,
+        "output_tokens": 56,
+        "cache_read_tokens": 0,
+        "usd": 6.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 239,
+        "output_tokens": 54,
+        "cache_read_tokens": 0,
+        "usd": 6.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 248,
+        "output_tokens": 69,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 257,
+        "output_tokens": 60,
+        "cache_read_tokens": 0,
+        "usd": 7.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 261,
+        "output_tokens": 57,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 262,
+        "output_tokens": 62,
+        "cache_read_tokens": 0,
+        "usd": 7.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 236,
+        "output_tokens": 52,
+        "cache_read_tokens": 0,
+        "usd": 6.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 413,
+        "output_tokens": 76,
+        "cache_read_tokens": 0,
+        "usd": 0.000108
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 283,
+        "output_tokens": 63,
+        "cache_read_tokens": 0,
+        "usd": 8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 239,
+        "output_tokens": 52,
+        "cache_read_tokens": 0,
+        "usd": 6.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 362,
+        "output_tokens": 66,
+        "cache_read_tokens": 0,
+        "usd": 9.4e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 239,
+        "output_tokens": 56,
+        "cache_read_tokens": 0,
+        "usd": 6.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 256,
+        "output_tokens": 58,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 263,
+        "output_tokens": 63,
+        "cache_read_tokens": 0,
+        "usd": 7.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 235,
+        "output_tokens": 50,
+        "cache_read_tokens": 0,
+        "usd": 6.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 239,
+        "output_tokens": 74,
+        "cache_read_tokens": 0,
+        "usd": 8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 247,
+        "output_tokens": 59,
+        "cache_read_tokens": 0,
+        "usd": 7.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 237,
+        "output_tokens": 52,
+        "cache_read_tokens": 0,
+        "usd": 6.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 299,
+        "output_tokens": 54,
+        "cache_read_tokens": 0,
+        "usd": 7.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 291,
+        "output_tokens": 59,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 238,
+        "output_tokens": 68,
+        "cache_read_tokens": 0,
+        "usd": 7.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 239,
+        "output_tokens": 52,
+        "cache_read_tokens": 0,
+        "usd": 6.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 238,
+        "output_tokens": 52,
+        "cache_read_tokens": 0,
+        "usd": 6.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 282,
+        "output_tokens": 64,
+        "cache_read_tokens": 0,
+        "usd": 8.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 251,
+        "output_tokens": 65,
+        "cache_read_tokens": 0,
+        "usd": 7.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 250,
+        "output_tokens": 63,
+        "cache_read_tokens": 0,
+        "usd": 7.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 272,
+        "output_tokens": 46,
+        "cache_read_tokens": 0,
+        "usd": 6.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 241,
+        "output_tokens": 57,
+        "cache_read_tokens": 0,
+        "usd": 7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 257,
+        "output_tokens": 76,
+        "cache_read_tokens": 0,
+        "usd": 8.4e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 263,
+        "output_tokens": 86,
+        "cache_read_tokens": 0,
+        "usd": 9.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 247,
+        "output_tokens": 54,
+        "cache_read_tokens": 0,
+        "usd": 6.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 253,
+        "output_tokens": 70,
+        "cache_read_tokens": 0,
+        "usd": 8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 338,
+        "output_tokens": 58,
+        "cache_read_tokens": 0,
+        "usd": 8.6e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 252,
+        "output_tokens": 85,
+        "cache_read_tokens": 0,
+        "usd": 8.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 254,
+        "output_tokens": 61,
+        "cache_read_tokens": 0,
+        "usd": 7.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 242,
+        "output_tokens": 59,
+        "cache_read_tokens": 0,
+        "usd": 7.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 256,
+        "output_tokens": 57,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 299,
+        "output_tokens": 82,
+        "cache_read_tokens": 0,
+        "usd": 9.4e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 250,
+        "output_tokens": 54,
+        "cache_read_tokens": 0,
+        "usd": 7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 248,
+        "output_tokens": 62,
+        "cache_read_tokens": 0,
+        "usd": 7.4e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 263,
+        "output_tokens": 70,
+        "cache_read_tokens": 0,
+        "usd": 8.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 285,
+        "output_tokens": 53,
+        "cache_read_tokens": 0,
+        "usd": 7.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 254,
+        "output_tokens": 63,
+        "cache_read_tokens": 0,
+        "usd": 7.6e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 274,
+        "output_tokens": 82,
+        "cache_read_tokens": 0,
+        "usd": 9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 271,
+        "output_tokens": 65,
+        "cache_read_tokens": 0,
+        "usd": 8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 269,
+        "output_tokens": 51,
+        "cache_read_tokens": 0,
+        "usd": 7.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 249,
+        "output_tokens": 70,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 257,
+        "output_tokens": 68,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 240,
+        "output_tokens": 58,
+        "cache_read_tokens": 0,
+        "usd": 7.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 317,
+        "output_tokens": 61,
+        "cache_read_tokens": 0,
+        "usd": 8.4e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 248,
+        "output_tokens": 60,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 234,
+        "output_tokens": 49,
+        "cache_read_tokens": 0,
+        "usd": 6.4e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 258,
+        "output_tokens": 57,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 236,
+        "output_tokens": 71,
+        "cache_read_tokens": 0,
+        "usd": 7.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 270,
+        "output_tokens": 53,
+        "cache_read_tokens": 0,
+        "usd": 7.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 247,
+        "output_tokens": 64,
+        "cache_read_tokens": 0,
+        "usd": 7.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 297,
+        "output_tokens": 55,
+        "cache_read_tokens": 0,
+        "usd": 7.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 236,
+        "output_tokens": 53,
+        "cache_read_tokens": 0,
+        "usd": 6.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 277,
+        "output_tokens": 76,
+        "cache_read_tokens": 0,
+        "usd": 8.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 273,
+        "output_tokens": 94,
+        "cache_read_tokens": 0,
+        "usd": 9.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 276,
+        "output_tokens": 59,
+        "cache_read_tokens": 0,
+        "usd": 7.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 243,
+        "output_tokens": 60,
+        "cache_read_tokens": 0,
+        "usd": 7.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 287,
+        "output_tokens": 78,
+        "cache_read_tokens": 0,
+        "usd": 9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 241,
+        "output_tokens": 71,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 250,
+        "output_tokens": 53,
+        "cache_read_tokens": 0,
+        "usd": 6.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 243,
+        "output_tokens": 54,
+        "cache_read_tokens": 0,
+        "usd": 6.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 269,
+        "output_tokens": 69,
+        "cache_read_tokens": 0,
+        "usd": 8.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 261,
+        "output_tokens": 52,
+        "cache_read_tokens": 0,
+        "usd": 7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 261,
+        "output_tokens": 56,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 271,
+        "output_tokens": 57,
+        "cache_read_tokens": 0,
+        "usd": 7.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 237,
+        "output_tokens": 54,
+        "cache_read_tokens": 0,
+        "usd": 6.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 254,
+        "output_tokens": 66,
+        "cache_read_tokens": 0,
+        "usd": 7.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 246,
+        "output_tokens": 71,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 256,
+        "output_tokens": 47,
+        "cache_read_tokens": 0,
+        "usd": 6.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 242,
+        "output_tokens": 55,
+        "cache_read_tokens": 0,
+        "usd": 6.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 258,
+        "output_tokens": 64,
+        "cache_read_tokens": 0,
+        "usd": 7.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 239,
+        "output_tokens": 57,
+        "cache_read_tokens": 0,
+        "usd": 7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 246,
+        "output_tokens": 48,
+        "cache_read_tokens": 0,
+        "usd": 6.6e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 260,
+        "output_tokens": 52,
+        "cache_read_tokens": 0,
+        "usd": 7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 244,
+        "output_tokens": 60,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 255,
+        "output_tokens": 74,
+        "cache_read_tokens": 0,
+        "usd": 8.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 256,
+        "output_tokens": 67,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 263,
+        "output_tokens": 80,
+        "cache_read_tokens": 0,
+        "usd": 8.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 253,
+        "output_tokens": 66,
+        "cache_read_tokens": 0,
+        "usd": 7.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 309,
+        "output_tokens": 47,
+        "cache_read_tokens": 0,
+        "usd": 7.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 257,
+        "output_tokens": 54,
+        "cache_read_tokens": 0,
+        "usd": 7.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 239,
+        "output_tokens": 69,
+        "cache_read_tokens": 0,
+        "usd": 7.7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 255,
+        "output_tokens": 57,
+        "cache_read_tokens": 0,
+        "usd": 7.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 259,
+        "output_tokens": 71,
+        "cache_read_tokens": 0,
+        "usd": 8.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 248,
+        "output_tokens": 60,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 239,
+        "output_tokens": 54,
+        "cache_read_tokens": 0,
+        "usd": 6.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 257,
+        "output_tokens": 69,
+        "cache_read_tokens": 0,
+        "usd": 8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 286,
+        "output_tokens": 65,
+        "cache_read_tokens": 0,
+        "usd": 8.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 265,
+        "output_tokens": 58,
+        "cache_read_tokens": 0,
+        "usd": 7.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 240,
+        "output_tokens": 61,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 258,
+        "output_tokens": 58,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 275,
+        "output_tokens": 79,
+        "cache_read_tokens": 0,
+        "usd": 8.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 254,
+        "output_tokens": 75,
+        "cache_read_tokens": 0,
+        "usd": 8.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 292,
+        "output_tokens": 83,
+        "cache_read_tokens": 0,
+        "usd": 9.4e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 244,
+        "output_tokens": 56,
+        "cache_read_tokens": 0,
+        "usd": 7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 248,
+        "output_tokens": 63,
+        "cache_read_tokens": 0,
+        "usd": 7.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 391,
+        "output_tokens": 77,
+        "cache_read_tokens": 0,
+        "usd": 0.000105
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 236,
+        "output_tokens": 56,
+        "cache_read_tokens": 0,
+        "usd": 6.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 237,
+        "output_tokens": 54,
+        "cache_read_tokens": 0,
+        "usd": 6.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 252,
+        "output_tokens": 76,
+        "cache_read_tokens": 0,
+        "usd": 8.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 252,
+        "output_tokens": 72,
+        "cache_read_tokens": 0,
+        "usd": 8.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 258,
+        "output_tokens": 69,
+        "cache_read_tokens": 0,
+        "usd": 8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 243,
+        "output_tokens": 79,
+        "cache_read_tokens": 0,
+        "usd": 8.4e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 259,
+        "output_tokens": 79,
+        "cache_read_tokens": 0,
+        "usd": 8.6e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 272,
+        "output_tokens": 49,
+        "cache_read_tokens": 0,
+        "usd": 7e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 272,
+        "output_tokens": 70,
+        "cache_read_tokens": 0,
+        "usd": 8.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 245,
+        "output_tokens": 57,
+        "cache_read_tokens": 0,
+        "usd": 7.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 254,
+        "output_tokens": 66,
+        "cache_read_tokens": 0,
+        "usd": 7.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 257,
+        "output_tokens": 54,
+        "cache_read_tokens": 0,
+        "usd": 7.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 283,
+        "output_tokens": 79,
+        "cache_read_tokens": 0,
+        "usd": 9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 247,
+        "output_tokens": 59,
+        "cache_read_tokens": 0,
+        "usd": 7.2e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 288,
+        "output_tokens": 103,
+        "cache_read_tokens": 0,
+        "usd": 0.000105
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 260,
+        "output_tokens": 53,
+        "cache_read_tokens": 0,
+        "usd": 7.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 246,
+        "output_tokens": 63,
+        "cache_read_tokens": 0,
+        "usd": 7.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 238,
+        "output_tokens": 55,
+        "cache_read_tokens": 0,
+        "usd": 6.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 264,
+        "output_tokens": 60,
+        "cache_read_tokens": 0,
+        "usd": 7.6e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 261,
+        "output_tokens": 62,
+        "cache_read_tokens": 0,
+        "usd": 7.6e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 256,
+        "output_tokens": 59,
+        "cache_read_tokens": 0,
+        "usd": 7.4e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 246,
+        "output_tokens": 57,
+        "cache_read_tokens": 0,
+        "usd": 7.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 236,
+        "output_tokens": 56,
+        "cache_read_tokens": 0,
+        "usd": 6.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 236,
+        "output_tokens": 60,
+        "cache_read_tokens": 0,
+        "usd": 7.1e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 243,
+        "output_tokens": 55,
+        "cache_read_tokens": 0,
+        "usd": 6.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 249,
+        "output_tokens": 69,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 278,
+        "output_tokens": 74,
+        "cache_read_tokens": 0,
+        "usd": 8.6e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 259,
+        "output_tokens": 61,
+        "cache_read_tokens": 0,
+        "usd": 7.5e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 270,
+        "output_tokens": 75,
+        "cache_read_tokens": 0,
+        "usd": 8.6e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 242,
+        "output_tokens": 62,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 267,
+        "output_tokens": 76,
+        "cache_read_tokens": 0,
+        "usd": 8.6e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 252,
+        "output_tokens": 59,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 239,
+        "output_tokens": 72,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 247,
+        "output_tokens": 61,
+        "cache_read_tokens": 0,
+        "usd": 7.4e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 235,
+        "output_tokens": 57,
+        "cache_read_tokens": 0,
+        "usd": 6.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 311,
+        "output_tokens": 52,
+        "cache_read_tokens": 0,
+        "usd": 7.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 248,
+        "output_tokens": 70,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 241,
+        "output_tokens": 62,
+        "cache_read_tokens": 0,
+        "usd": 7.3e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 256,
+        "output_tokens": 68,
+        "cache_read_tokens": 0,
+        "usd": 7.9e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 244,
+        "output_tokens": 53,
+        "cache_read_tokens": 0,
+        "usd": 6.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 238,
+        "output_tokens": 67,
+        "cache_read_tokens": 0,
+        "usd": 7.6e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 270,
+        "output_tokens": 76,
+        "cache_read_tokens": 0,
+        "usd": 8.6e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 278,
+        "output_tokens": 60,
+        "cache_read_tokens": 0,
+        "usd": 7.8e-05
+      },
+      {
+        "model": "gpt-4o-mini",
+        "input_tokens": 236,
+        "output_tokens": 60,
+        "cache_read_tokens": 0,
+        "usd": 7.1e-05
+      }
+    ],
+    "per_1000_explanations": 0.0775
+  },
+  "seconds": 1016.6
+}

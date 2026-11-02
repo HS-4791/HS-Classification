@@ -208,3 +208,79 @@ def test_an_extraction_round_trips_to_a_trace():
     assert recorded["materials"] == {"cotton": 60.0}
     assert recorded["form"] == "knitted"
     assert recorded["dropped"] == []
+
+
+# ------------------------------------------------ retrying only what is worth it
+
+class FlakyClient:
+    """Fails a given number of times, then succeeds."""
+
+    def __init__(self, failures, body=None, status=200):
+        self.failures = failures
+        self.calls = 0
+        self.body = body or {
+            "choices": [{"message": {"content": '{"materials": {}}'}}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 2},
+        }
+        self.status = status
+
+    def post(self, url, json, headers, timeout):
+        import httpx
+        self.calls += 1
+        if self.calls <= self.failures:
+            raise httpx.ConnectError("dropped")
+        return httpx.Response(
+            self.status, json=self.body, request=httpx.Request("POST", url)
+        )
+
+
+class StatusClient:
+    def __init__(self, statuses):
+        self.statuses = list(statuses)
+        self.calls = 0
+
+    def post(self, url, json, headers, timeout):
+        import httpx
+        status = self.statuses[min(self.calls, len(self.statuses) - 1)]
+        self.calls += 1
+        body = {
+            "choices": [{"message": {"content": '{"materials": {}}'}}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 2},
+        }
+        return httpx.Response(status, json=body, request=httpx.Request("POST", url))
+
+
+def _transport(client):
+    from hsclass.pipeline.extract import OpenAITransport
+    return OpenAITransport(api_key="k", client=client, delays=(0.0, 0.0))
+
+
+def test_a_dropped_connection_is_retried():
+    """One dropped connection cost a whole 200-case run and its spend."""
+    client = FlakyClient(failures=2)
+    content, usage = _transport(client).complete("i", "d")
+    assert client.calls == 3
+    assert usage.input_tokens == 10
+
+
+def test_a_connection_that_never_comes_back_still_raises():
+    import httpx
+    client = FlakyClient(failures=99)
+    with pytest.raises(httpx.TransportError):
+        _transport(client).complete("i", "d")
+    assert client.calls == 3
+
+
+def test_a_rate_limit_is_retried():
+    client = StatusClient([429, 429, 200])
+    _transport(client).complete("i", "d")
+    assert client.calls == 3
+
+
+def test_a_bad_request_is_not_retried():
+    """A 400 is a bug in the request; retrying pays for it three times."""
+    import httpx
+    client = StatusClient([400])
+    with pytest.raises(httpx.HTTPStatusError):
+        _transport(client).complete("i", "d")
+    assert client.calls == 1
