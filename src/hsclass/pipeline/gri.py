@@ -59,7 +59,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from hsclass.pipeline.conditions import consistent_conditions
+from hsclass.pipeline.conditions import consistent_conditions, evaluate
 from hsclass.schedule.exclusions import ExclusionGraph
 
 #: "60% cotton", "60 percent cotton", "cotton 60%".
@@ -338,6 +338,17 @@ class GRIEngine:
         if "conditions" not in self.enabled or not facts.materials:
             return candidates, []
         kept, failed, untested = [], [], set()
+        # Only conditions the facts can actually test. Reading a material
+        # absent from the facts as zero was built and removed - see
+        # ``Condition.satisfied_by`` for why - and the second reason it had to
+        # go is here rather than there. Making thresholds evaluable means more
+        # candidates fail outright, and an elimination promotes whatever is
+        # left standing: over the held-out 2,000 it decided 11 further cases
+        # of which 2 were right, because the provision left standing is the
+        # one whose text carries no percentage to test. A 100 percent
+        # polyester poncho came out as "Wholly of cashmere". Coverage rose
+        # from 17 to 28 and accuracy on decided from 29.41% to 35.71%, so the
+        # totals endorsed it; listing the cases showed what they contained.
         for code in candidates:
             text = texts.get(code, "")
             results = [
@@ -347,7 +358,26 @@ class GRIEngine:
             if False in results:
                 failed.append(f"{code}: {text}")
                 continue
-            if None in results:
+            # A survivor must have *passed* something. "Not failed" covers a
+            # provision whose conditions could not be tested and a provision
+            # that states none at all, and neither has been tested on these
+            # terms, so neither can win by them.
+            #
+            # Reading only ``None in results`` missed the empty case, and
+            # making thresholds evaluable is what exposed it: more candidates
+            # now fail outright, so more often the one left standing is the
+            # one that said nothing. Over the held-out 2,000 that decided 11
+            # further cases and only 2 were right - a 100 percent polyester
+            # poncho classified as "Wholly of cashmere" and 65 percent
+            # polyester sleepwear as "Of wool or fine animal hair", each
+            # surviving because its text carries no percentage to test.
+            # A residual provision is the exception, because "Other" is
+            # *defined* by what its siblings exclude: a suit of 40 percent
+            # silk whose "70 percent or more of silk" sibling is eliminated
+            # belongs in "Other", and that is the whole point of the rule.
+            # A provision making a positive claim - "Wholly of cashmere" -
+            # does not get the same licence.
+            if True not in results and not _is_residual(text):
                 untested.add(code)
             kept.append(code)
         if not failed or not kept:
@@ -570,6 +600,77 @@ class GRIEngine:
 
         decision = self._walk(facts, narrowed, texts)
         decision.conditions_applied = failed
+        return self._back_off(decision, facts, texts)
+
+    def _contradicted(
+        self, code: str, facts: Facts, texts: dict[str, str]
+    ) -> bool:
+        """Do the goods contradict a condition this provision states itself?
+
+        Only a condition the facts can actually test. Reading an absent
+        material as zero would make this fire far more often and would be
+        wrong far more often - see ``Condition.satisfied_by``.
+        """
+        return evaluate(texts.get(code, ""), facts.materials) is False
+
+    def _back_off(
+        self, decision: Decision, facts: Facts, texts: dict[str, str]
+    ) -> Decision:
+        """Never assert a line whose own terms the goods contradict.
+
+        The ten-digit line can be wrong while the six-digit subheading above
+        it is right, and the two are different claims. A suit of 40 percent
+        silk decided under "Containing 70 percent or more by weight of silk"
+        misses the threshold by 30 points, while the subheading above states
+        none and still holds.
+
+        Reachable because ``_condition_rule`` abandons an elimination that
+        would empty the candidate list: every candidate failing means the
+        facts or the reading are wrong rather than the goods being
+        unclassifiable, so the narrowing is set aside - and the walk can then
+        decide a candidate that *is* contradicted. This is the backstop for
+        that path, and it only ever shortens an answer.
+
+        It is not a new rule and does not enter ``rule_path``: it is GRI 6
+        declining to go deeper. Note what that means for the trace - the
+        subheading it lands on was not itself compared with its siblings, so
+        the honest record is the path that reached the line, plus the
+        condition that withdrew it.
+        """
+        # Part of the ``conditions`` mechanism, so the ablation that switches
+        # that off has to switch this off too - otherwise row 7 prices a
+        # configuration it does not describe.
+        code = decision.code
+        if (
+            "conditions" not in self.enabled
+            or code is None
+            or not facts.materials
+            or not self._contradicted(code, facts, texts)
+        ):
+            return decision
+        failed_line = f"{code}: {texts.get(code, '')}"
+        for length in (8, 6):
+            prefix = code[:length]
+            if (
+                len(code) > length
+                and prefix in texts
+                and not self._contradicted(prefix, facts, texts)
+            ):
+                decision.code = prefix
+                decision.conditions_applied = [*decision.conditions_applied, failed_line]
+                decision.reason = (
+                    f"{decision.reason}; the lines beneath it state conditions these "
+                    "goods fail, so the subheading is answered and the tariff line "
+                    "is not"
+                )
+                return decision
+        decision.code = None
+        decision.escalated = True
+        decision.shortlist = decision.shortlist or [code]
+        decision.conditions_applied = [*decision.conditions_applied, failed_line]
+        decision.reason = (
+            "every provision proposed states a condition these goods contradict"
+        )
         return decision
 
     def _notes_for(self, candidates: list[str], facts: Facts) -> list[str]:

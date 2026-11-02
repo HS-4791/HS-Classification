@@ -438,7 +438,7 @@
           "signal_slice_cut_through_ties": true
         }
       },
-      "seconds": 6.6
+      "seconds": 10.0
     },
     "heldout-2000": {
       "n": 2000,
@@ -909,7 +909,7 @@
           "signal_slice_cut_through_ties": true
         }
       },
-      "seconds": 71.2
+      "seconds": 124.8
     }
   }
 }

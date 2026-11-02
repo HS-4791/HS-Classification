@@ -316,10 +316,35 @@ def test_a_survivor_that_survived_by_ignorance_does_not_decide(engine):
 
 
 def test_an_untestable_condition_never_removes_a_candidate(engine):
-    """Nothing is known about silk, so nothing about silk can be concluded."""
-    facts = Facts(description="a cotton suit", materials={"cotton": 100.0})
+    """Nothing is known about silk, so nothing about silk can be concluded.
+
+    The composition has to be *open* for that to hold: 60 percent cotton
+    leaves 40 percent unaccounted for, and the rest could be silk.
+    """
+    facts = Facts(description="a mostly cotton suit", materials={"cotton": 60.0})
     decision = engine.adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
     assert decision.conditions_applied == []
+
+
+def test_a_closed_composition_does_not_eliminate_a_competing_subheading(engine):
+    """The inference may withdraw a claim, and may not create one.
+
+    100 percent cotton leaves no room for silk, so "70 percent or more by
+    weight of silk" is arithmetically false - and the engine still does not
+    use that to eliminate. An elimination promotes whatever is left standing,
+    and over the held-out 2,000 what was left standing was the provision
+    whose text carries no percentage to test: a 100 percent polyester poncho
+    came out as "Wholly of cashmere", 65 percent polyester sleepwear as "Of
+    wool or fine animal hair". Eleven further cases decided, two of them
+    right.
+
+    The same inference is used in ``_back_off``, where it can only shorten an
+    answer. See ``test_a_decided_line_the_goods_contradict_backs_off``.
+    """
+    facts = Facts(description="a 100% cotton suit", materials={"cotton": 100.0})
+    decision = engine.adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
+    assert decision.conditions_applied == []
+    assert decision.code is None and decision.escalated
 
 
 # ------------------------------- what reranking stage 2 can and cannot change
@@ -664,3 +689,69 @@ def test_switching_off_material_terms_restores_the_old_behaviour(engine):
         engine.exclusions, enabled=without_mechanisms("material_terms")
     ).adjudicate(facts, list(MATERIAL_TEXTS), MATERIAL_TEXTS)
     assert without.escalated
+
+
+# ------------------- backing off a line whose own terms the goods contradict
+
+#: A ten-digit line carrying a threshold its six-digit parent does not. This
+#: is the shape at the point where the engine went wrong.
+SILK_LINE = "6204194000"
+SILK_PARENT = "620419"
+BACKOFF_TEXTS = {
+    SILK_PARENT: "Women's suits — Of other textile materials",
+    SILK_LINE: "Women's suits — Of other textile materials — Containing 70 "
+               "percent or more by weight of silk or silk waste",
+}
+
+
+def test_a_decided_line_the_goods_contradict_backs_off_to_the_subheading(engine):
+    """Reachable because ``_condition_rule`` abandons an elimination that
+    would empty the list, after which the walk can decide a candidate the
+    goods demonstrably fail.
+
+    A suit of 40 percent silk against a line requiring 70 percent or more:
+    the only candidate fails, so nothing is eliminated, GRI 1 decides it for
+    want of an alternative, and the answer asserts a threshold the goods miss
+    by 30 points. The six-digit subheading above it states no threshold.
+    """
+    facts = Facts(description="a suit of 40% silk and 60% wool",
+                  materials={"silk": 40.0, "wool": 60.0})
+    decision = engine.adjudicate(facts, [SILK_LINE], BACKOFF_TEXTS)
+    assert decision.code == SILK_PARENT
+    assert not decision.escalated
+    assert any("silk" in entry for entry in decision.conditions_applied)
+    # Backing off is GRI 6 declining to go deeper, not a rule that ran.
+    assert decision.rule_path == ["GRI 1"]
+
+
+def test_backing_off_escalates_when_no_level_is_supported(engine):
+    """If the subheading contradicts the goods too, there is nothing to answer."""
+    texts = {
+        SILK_PARENT: BACKOFF_TEXTS[SILK_LINE],
+        SILK_LINE: BACKOFF_TEXTS[SILK_LINE],
+    }
+    facts = Facts(description="a suit of 40% silk", materials={"silk": 40.0})
+    decision = engine.adjudicate(facts, [SILK_LINE], texts)
+    assert decision.code is None
+    assert decision.escalated
+
+
+def test_an_untestable_condition_does_not_trigger_the_back_off(engine):
+    """The flax case, and the reason the closed-composition inference is gone.
+
+    "60% cotton and 40% modal" leaves nothing for flax arithmetically, but
+    reading an absent material as zero contradicted the *correct* provision
+    in 103 train rows - 71 of them because a shipper writes spandex where the
+    schedule writes "elastomeric yarn". So the line stands and the case is
+    recorded as a limit of the data.
+    """
+    texts = {
+        "611020": "Sweaters — Of cotton",
+        "6110201010": "Sweaters — Of cotton — Containing 36 percent or more by "
+                      "weight of flax fibers — Men's or boys'",
+    }
+    facts = Facts(description="a men's pullover of 60% cotton and 40% modal",
+                  materials={"cotton": 60.0, "modal": 40.0})
+    decision = engine.adjudicate(facts, ["6110201010"], texts)
+    assert decision.code == "6110201010"
+    assert decision.conditions_applied == []

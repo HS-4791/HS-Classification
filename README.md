@@ -757,7 +757,94 @@ Two of those three rows were predicted before the run and are not failures:
   code, same rule path, no citations.
 - **The KAG layer's reach was already measured at zero** and the ablation confirms it from the
   other direction. Of 21 test cases where a candidate carries an evaluable threshold, only four
-  ask about a material the description quantifies.
+  ask about a material the description quantifies. It still decides nothing — ablations 5 and 7
+  remain identical at 17 covered and 29.41%. An attempt to widen its reach is set out below; it
+  was reverted, and the ablation row is unchanged because of that.
+
+#### Making a threshold evaluable: built, measured, reverted
+
+A pullover of "60% cotton and 40% modal" was classified 6110.20.1010, whose own chain reads "Of
+cotton — **Containing 36 percent or more by weight of flax fibers**". The goods contain no flax.
+The facts carried no `flax` key, so the threshold read as *untested* rather than false and the
+provision survived by silence — the cardigan failure in a new place, and found by reading stage
+4's prose rather than by any test.
+
+The stated shares sum to 100, so the composition is **closed**: nothing is left for flax, and
+the condition is evaluable and false. `composition_is_closed` accepts 99–101, which admits a
+shipper's rounding and rejects the case that matters — "a 100% nylon lace dress with a 100%
+polyester slip" sums to 200, states no whole-garment composition, and must not be read as
+excluding anything. The inference is confined to Section XI, and that is a legal limit rather
+than a cautious one: Note 2 makes textile material by weight *the* classification dimension, so
+a complete fibre list excludes every other fibre, whereas "over 5.5 percent by weight of
+butterfat" measures a constituent *of* the components and a complete component list says nothing
+about it.
+
+**It broke more than it fixed, and the reason is the oldest finding in this project.** Two
+independent measurements killed it.
+
+*It promotes whatever is left standing.* Used to eliminate candidates, it looked like a clear
+win — held-out coverage rose 17 → 28 and accuracy on decided rose 29.41% → 35.71%, both the
+right direction, with the mechanism's own ablation row confirming the gain belonged to it.
+Listing the cases rather than totalling them showed **11 further decisions of which 2 were
+right**:
+
+```
+ladies' sleepwear, 65% polyester  ->  "pajamas ... Of wool or fine animal hair"
+women's poncho, 100% polyester    ->  "(cashmere) goats - Wholly of cashmere - Vests"
+women's knit pants, 92% cotton    ->  6115.95.6000, hosiery
+```
+
+Making thresholds evaluable means more candidates fail outright, so the one left standing is
+more often **the provision whose text carries no percentage to test**. "Wholly of cashmere"
+states no number, is never tested, and wins by silence. 100% polyester classified as cashmere
+with a citation attached is the exact failure this project exists to prevent, and the totals
+endorsed it.
+
+*And "not named" is not "absent".* This is the decisive one, and it holds however carefully the
+inference is placed. A shipper writes **spandex** or **elastane** where the schedule writes
+"elastomeric yarn", so `_share_of` finds no overlap for goods of "95% cotton and 5% elastane"
+and the inference declares "Containing 5 percent or more by weight of elastomeric yarn" false —
+against gold **6104.62.20.06**, which *is* that provision. Over the train split it contradicts
+the provision the ruling calls right in **103 rows, 4.8% of those with a closed composition**:
+
+| attribute of the falsely-failed condition | rows |
+| --- | ---: |
+| `elastomeric yarn` | 71 |
+| `wool` | 24 |
+| `flax fibers` | 4 |
+| `silk`, `cotton` | 4 |
+
+It costs nothing today only because stage 2 proposes the gold provision in none of those cases —
+so it is a defect that fires precisely as retrieval improves, which is this project's main open
+lever. The `None` return it replaced is what kept the vocabulary gap harmless.
+
+So **one vocabulary gap has now defeated four mechanisms**: retrieval ("cardigan" is nowhere in
+the schedule), the GRI 6 material-terms rule ("acrylic" against "Of man-made fibers"), the KAG
+threshold layer (the numbers are absent), and this. Deciding that a material is genuinely absent
+needs a synonym map from the schedule's vocabulary to a shipper's, and that map is measured
+elsewhere as underivable — the notes supply 12.7% of the names descriptions use, and asking a
+model for the category instead scores 76.5% while handing it Section XI Note 2(A) to apply.
+Reverted, and recorded as a limit of the data.
+
+**What survived.** `_back_off` stays, because it is sound without the inference and guards a real
+path: `_condition_rule` sets aside an elimination that would empty the candidate list, and the
+walk can then decide a candidate that *is* demonstrably contradicted. A suit of 40 percent silk
+decided under "Containing 70 percent or more by weight of silk" misses by 30 points, and the
+subheading above states no threshold and still holds — the six-digit and ten-digit answers are
+different claims. Backing off does not enter `rule_path`: it is GRI 6 declining to go deeper, and
+the subheading it lands on was not itself compared with its siblings, which the trace says rather
+than hides.
+
+Alongside it, a lone survivor must now have *passed* a condition rather than merely not failed
+one, since "nothing tested" covered both an untestable condition and a provision stating none; a
+residual "Other" is exempt, because "Other" is defined by what its siblings exclude and a suit of
+40 percent silk belongs there once its "70 percent or more" sibling is eliminated. And
+`_back_off` is gated on the `conditions` mechanism, or ablation 7 would price a configuration it
+does not describe — caught by that ablation's own test.
+
+**Every published number is unchanged**: all four adjudicated configurations, both eval sets,
+coverage and accuracy alike. Both survivors fire zero times on the current corpus, so they are
+backstops rather than contributors, and they are reported as that.
 
 The third was not predicted and is the useful one. An engine whose coverage depends on a single
 textile note is not a general GRI engine yet, whatever its rule paths say — and that is an
@@ -1464,14 +1551,19 @@ GRI 1, which is the same coverage story the rest of this README tells.
 
 ### A bug in stage 3, found by reading stage 4's output
 
-Not an explanation problem, and recorded rather than fixed here. For "a men's knit pullover
-made of 60% cotton and 40% modal" the engine chose **6110.20.1010**, whose own chain reads
-"Of cotton — **Containing 36 percent or more by weight of flax fibers**". The goods contain no
-flax; the stated percentages sum to 100, so flax is necessarily zero. `conditions.py` sees no
-`flax` key, returns *unevaluable* rather than false, and the provision survives by
-untestability — the cardigan failure mode in a new place. The correct line is 6110.20.2069,
-"Of cotton — Other — Other — Other — Men's or boys'". Reading real output found it; the tests
-did not.
+Not an explanation problem. For "a men's knit pullover made of 60% cotton and 40% modal" the
+engine chose **6110.20.1010**, whose own chain reads "Of cotton — **Containing 36 percent or
+more by weight of flax fibers**". The goods contain no flax, and the stated percentages sum to
+100, so flax is necessarily zero — but `conditions.py` saw no `flax` key, returned *unevaluable*
+rather than false, and the provision survived by untestability. The correct line is 6110.20.2069.
+Note that at six digits the engine was already right: this is a ten-digit error, and the two are
+different claims.
+
+Reading real output found it; no test did. **It is not fixed**, and the attempt is written up
+under [making a threshold evaluable](#making-a-threshold-evaluable-built-measured-reverted) —
+reading an absent material as zero contradicted the *correct* provision in 103 train rows, 71 of
+them because a shipper writes spandex where the schedule writes "elastomeric yarn". What the
+measurement said about that is worth more than the bug.
 
 ## Production concerns
 

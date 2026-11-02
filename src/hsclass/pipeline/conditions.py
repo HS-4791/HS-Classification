@@ -154,6 +154,31 @@ class Condition:
         something the facts do not carry. A condition on a material the
         description never mentions has not failed - it has not been tested -
         and the caller must not treat the two alike.
+
+        **A closed composition does not change that, and it was tried.** For
+        "a men's knit pullover made of 60% cotton and 40% modal" the engine
+        chose 6110.20.1010, "Of cotton - Containing 36 percent or more by
+        weight of flax fibers". The goods contain no flax, the stated shares
+        sum to 100, so nothing is left for flax and the threshold looks
+        evaluable and false. Reading an absent material as zero fixed that
+        case and broke 103 others: it contradicted the provision the ruling
+        says is *right* in 103 train rows, 4.8% of those with a closed
+        composition.
+
+        The reason is this project's oldest finding. "Not named" is not
+        "absent" - it is usually the vocabulary gap. A shipper writes spandex
+        or elastane where the schedule writes "elastomeric yarn", so
+        ``_share_of`` finds no overlap for goods of "95% cotton and 5%
+        elastane" and the inference declares "Containing 5 percent or more by
+        weight of elastomeric yarn" false, against gold 6104.62.20.06, which
+        is exactly that provision. 71 of the 103 are that one substitution.
+        Deciding that a material is genuinely absent needs a synonym map from
+        the schedule's vocabulary to a shipper's, and that map is measured
+        elsewhere as underivable: the notes supply 12.7% of the names used,
+        and asking a model for the category instead gets 76.5% while handing
+        it Section XI Note 2(A) to apply. See the README.
+
+        So ``None`` stands, and the gap is recorded as a limit of the data.
         """
         if self.basis != "weight":
             return None

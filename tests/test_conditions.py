@@ -185,3 +185,36 @@ def test_every_stated_condition_must_hold():
 def test_the_attribute_matches_a_fuller_name_in_the_facts():
     """"silk or silk waste" is one provision; the goods say "silk noil"."""
     assert evaluate("Containing 70 percent or more by weight of silk", {"silk noil": 90.0}) is True
+
+
+# ---------------- an absent material stays untestable, and that was measured
+
+def test_an_absent_material_is_untestable():
+    """"Not named" is not "absent" - it is usually the vocabulary gap.
+
+    Reading an absent material as zero when the stated shares sum to 100 was
+    built, measured and removed. It fixed one case - a pullover of 60 percent
+    cotton and 40 percent modal classified under a line requiring 36 percent
+    flax - and contradicted the provision the ruling calls right in 103 train
+    rows, 4.8% of those with a closed composition. 71 of the 103 are one
+    substitution: a shipper writes spandex or elastane where the schedule
+    writes "elastomeric yarn".
+    """
+    c = Condition("flax fibers", ">=", 36.0)
+    assert c.satisfied_by({"cotton": 60.0, "modal": 40.0}) is None
+    # The case that made the inference unsound, kept as the reason it is gone.
+    elastomeric = Condition("elastomeric yarn", ">=", 5.0)
+    assert elastomeric.satisfied_by({"cotton": 95.0, "elastane": 5.0}) is None
+
+
+def test_a_testable_threshold_still_fails_outright():
+    """Removing the inference must not stop real arithmetic working."""
+    c = Condition("silk", ">=", 70.0)
+    assert c.satisfied_by({"silk": 40.0, "wool": 60.0}) is False
+    assert c.satisfied_by({"silk": 80.0}) is True
+
+
+def test_evaluate_reports_untestable_rather_than_false():
+    text = "Containing 36 percent or more by weight of flax fibers"
+    assert evaluate(text, {"cotton": 60.0, "modal": 40.0}) is None
+    assert evaluate(text, {"flax": 10.0}) is False
