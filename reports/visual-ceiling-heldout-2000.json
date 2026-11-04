@@ -1,0 +1,58 @@
+{
+  "revision": "2026HTSRev21",
+  "set": "heldout-2000",
+  "n": 2000,
+  "top1_right_at_6": 275,
+  "errors_with_comparable_chain": 1541,
+  "gold_absent_from_tree": 184,
+  "chains_never_diverge": 0,
+  "buckets": {
+    "already in the description": {
+      "n": 874,
+      "share": 0.5672,
+      "visible_in_a_photograph": false
+    },
+    "absent: unclassified": {
+      "n": 205,
+      "share": 0.133,
+      "visible_in_a_photograph": null
+    },
+    "absent: chemical identity": {
+      "n": 142,
+      "share": 0.0921,
+      "visible_in_a_photograph": false
+    },
+    "absent: fibre or material identity": {
+      "n": 114,
+      "share": 0.074,
+      "visible_in_a_photograph": false
+    },
+    "absent: construction or visible feature": {
+      "n": 63,
+      "share": 0.0409,
+      "visible_in_a_photograph": true
+    },
+    "absent: use, entry or legal reference": {
+      "n": 61,
+      "share": 0.0396,
+      "visible_in_a_photograph": false
+    },
+    "absent: residual \u2014 other": {
+      "n": 54,
+      "share": 0.035,
+      "visible_in_a_photograph": null
+    },
+    "absent: article type": {
+      "n": 28,
+      "share": 0.0182,
+      "visible_in_a_photograph": true
+    }
+  },
+  "ceiling": {
+    "an_image_could_settle": 91,
+    "an_image_cannot_settle": 317,
+    "ambiguous": 259,
+    "share_settleable": 0.0591,
+    "caveat": "upper bound: first divergence only, and class-level images"
+  }
+}

@@ -98,7 +98,7 @@ the component gets dropped.
 | Note-chain traversal | This note excludes the goods into chapter 48 — does 48 send them back? |
 | KAG | Does this product satisfy the conditions in note 2(b) of chapter 39? |
 | CAG | What are the GRI and the notes for the chapters in play? — *answered by a deterministic stage instead, so there is no prefix to cache; [measured](#cag-the-gate-is-closed-by-showing-the-instrument-has-no-subject)* |
-| Multimodal extraction | What is this thing actually made of, and what form is it in? |
+| Multimodal extraction | What is this thing actually made of, and what form is it in? — *document multimodality is built; a product image has a [measured ceiling of ~6% of errors](#multimodal-the-ceiling-on-a-product-image-measured-before-sourcing-one)* |
 
 ## The schedule is versioned, and that is load-bearing
 
@@ -695,6 +695,10 @@ python scripts/run_ablations.py
 
 ```bash
 python -u scripts/measure_caching.py
+```
+
+```bash
+python -u scripts/measure_visual_ceiling.py heldout-2000
 ```
 
 ```bash
@@ -1296,6 +1300,62 @@ What is left is a curated material taxonomy from outside the schedule, which wou
 uncitable, in a system whose output is a citation. The material-terms rule therefore ships
 correct, guarded, ablatable and **inert**, and the vocabulary gap is recorded as a limit of the
 data rather than a gap in the implementation.
+
+## Multimodal: the ceiling on a product image, measured before sourcing one
+
+Week 3 lists "multimodal on thin descriptions". The labelled data is text — CROSS letters
+describe the photographs submitted to the officer without embedding them — so a product-image
+slice has to be **constructed**, at a budget of roughly three days. Two sources were checked
+before spending any of it.
+
+**HSCodeComp has no image field.** It is the one expert-annotated alternative corpus — 632
+products, 27 chapters, >98% inter-annotator agreement, and a published gap worth knowing: the
+best agent reaches 46.8% against 95.0% for human experts. Its columns are `product_name`,
+`product_attributes`, `price`, `currency_code`, `cate_lv1..5_desc` and `hs_code`. The paper
+writes the input tuple as `(t, A, c, i, p, u, r)` and its strongest baseline is a vision-capable
+model, so an image field looked likely; there is none in the released data, and the vision was
+for reading web pages during search. **GLAMI-1M** remains viable — 1M fashion image–text pairs
+over 191 human-labelled classes, 11 GB — but it pairs at *class* level, giving an image of *a*
+pullover rather than *the* pullover in the ruling.
+
+So the question worth answering first is how much an image could possibly buy. For every case
+the pipeline gets wrong, `scripts/measure_visual_ceiling.py` finds the first segment where the
+gold provision's chain parts from the top-1 candidate's and asks what the system needed to know
+there. Section and chapter titles are dropped before comparing, because GRI 1 gives them no
+legal force — leaving them in made a cross-chapter error report its divergence as "Chapter 29",
+which names no fact at all.
+
+| at the point the chains diverge | test-200 | held-out 2,000 | |
+| --- | ---: | ---: | --- |
+| **the text already said it** | 61.0% | **56.7%** | an image adds nothing |
+| absent, and not visible | 15.8% | 20.6% | only the importer can supply it |
+| **absent, and visible** | **6.2%** | **5.9%** | the only bucket an image serves |
+| ambiguous or unclassified | 17.1% | 16.8% | |
+| *errors with a comparable chain* | *146* | *1,541* | |
+
+**An image's ceiling is about 6% of errors**, and it is an upper bound twice over: only the
+first divergence is read, so settling it would not guarantee the rest of the chain resolves, and
+a class-level image depicts the class rather than the goods. The stem match that decides
+"already said it" is also imperfect — "Handsaws" does not match "Jab Saw" — which pushes cases
+out of that bucket and into "unclassified", so the bias runs *in favour* of images and 6% is
+generous rather than flattering to the conclusion.
+
+Against that, **57–61% of errors are cases where the discriminating words are already in the
+description and retrieval missed them anyway**: "Cast fittings", for goods described as "cast
+carbon steel fittings made to ASTM A216". The lever is ranking, not another input modality —
+which extends the stage 1 finding rather than contradicting it. The constraint was never the
+facts, and it is not the facts' *format* either.
+
+What is **not** claimed: that images are worthless in production. Invoice descriptions really
+are thinner than the ruling prose ATLAS is built from, so this corpus understates the case the
+spec had in mind. Bounding that needs no images at all — truncate the descriptions to
+invoice-like thinness and measure what is lost, which is the honest next experiment and costs
+nothing.
+
+Two consistency checks fell out of the run. Top-1 at six digits reproduces the published 15.00%
+and 13.75% exactly. And **184 of 2,000 held-out gold lines, 9.2%, do not exist in revision
+2026HTSRev21 at all** — counted and reported rather than dropped, which is the schedule-version
+problem appearing inside the evaluation data itself.
 
 ## CAG: the gate is closed by showing the instrument has no subject
 
