@@ -755,3 +755,54 @@ def test_an_untestable_condition_does_not_trigger_the_back_off(engine):
     decision = engine.adjudicate(facts, ["6110201010"], texts)
     assert decision.code == "6110201010"
     assert decision.conditions_applied == []
+
+
+# ------------------------------------------------------- determinism, repeated
+
+def test_the_same_candidates_give_the_same_decision_every_time(engine):
+    """The spec asks for zero code variance over 100 repeats.
+
+    The permutation test next to this one says *order* cannot change the
+    answer; this says *repetition* cannot. Both are needed: a set-reading rule
+    could still be non-deterministic if it consulted anything mutable, and
+    stage 3 is where the project's whole claim sits.
+    """
+    import json
+
+    facts = Facts(
+        description="a suit of 40% silk and 60% wool",
+        materials={"silk": 40.0, "wool": 60.0},
+    )
+
+    def fingerprint():
+        d = engine.adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
+        return json.dumps(
+            {
+                "code": d.code,
+                "rule_path": d.rule_path,
+                "notes_cited": d.notes_cited,
+                "conditions_applied": d.conditions_applied,
+                "escalated": d.escalated,
+                "shortlist": d.shortlist,
+                "reason": d.reason,
+            },
+            sort_keys=True,
+        )
+
+    assert len({fingerprint() for _ in range(100)}) == 1
+
+
+def test_a_fresh_engine_decides_identically(engine):
+    """No state accumulates across decisions, so a second engine agrees.
+
+    Caught nothing, kept because the opposite would be invisible in a single
+    process: an engine that cached a note lookup keyed on the wrong thing
+    would pass the repeat test above and still drift between deployments.
+    """
+    from hsclass.schedule.exclusions import build_exclusion_graph
+
+    other = GRIEngine(build_exclusion_graph([]))
+    facts = Facts(description="a cotton suit", materials={"cotton": 100.0})
+    first = engine.adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
+    second = other.adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
+    assert (first.code, first.rule_path) == (second.code, second.rule_path)

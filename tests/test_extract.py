@@ -284,3 +284,50 @@ def test_a_bad_request_is_not_retried():
     with pytest.raises(httpx.HTTPStatusError):
         _transport(client).complete("i", "d")
     assert client.calls == 1
+
+
+# ------------------------------------------------- temperature, for determinism
+
+class PayloadClient:
+    """Captures the request body rather than sending it."""
+
+    def __init__(self):
+        self.payloads = []
+
+    def post(self, url, json, headers, timeout):
+        import httpx
+        self.payloads.append(json)
+        body = {
+            "choices": [{"message": {"content": '{"materials": {}}'}}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 2},
+        }
+        return httpx.Response(200, json=body, request=httpx.Request("POST", url))
+
+
+def test_temperature_zero_is_sent():
+    from hsclass.pipeline.extract import OpenAITransport
+
+    client = PayloadClient()
+    OpenAITransport(api_key="k", client=client, temperature=0.0).complete("i", "d")
+    assert client.payloads[0]["temperature"] == 0.0
+
+
+def test_temperature_none_omits_the_field():
+    """The spec asks for zero code variance at *default* temperature too.
+
+    Sending a guess at the provider's default would test the guess. Omitting
+    the field is the only way to exercise the real one.
+    """
+    from hsclass.pipeline.extract import OpenAITransport
+
+    client = PayloadClient()
+    OpenAITransport(api_key="k", client=client, temperature=None).complete("i", "d")
+    assert "temperature" not in client.payloads[0]
+
+
+def test_temperature_defaults_to_zero():
+    from hsclass.pipeline.extract import TEMPERATURE, OpenAITransport
+
+    client = PayloadClient()
+    OpenAITransport(api_key="k", client=client).complete("i", "d")
+    assert client.payloads[0]["temperature"] == TEMPERATURE

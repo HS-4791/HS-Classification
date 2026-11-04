@@ -246,6 +246,7 @@ class OpenAITransport:
         timeout: float = 30.0,
         client: object | None = None,
         delays: tuple[float, ...] = RETRY_DELAYS,
+        temperature: float | None = TEMPERATURE,
     ) -> None:
         if not api_key:
             raise ValueError(
@@ -257,6 +258,10 @@ class OpenAITransport:
         self.timeout = timeout
         self._client = client
         self.delays = delays
+        #: None omits the field entirely, which is how the provider's own
+        #: default is tested rather than a guess at what it is. The spec
+        #: requires zero code variance at temperature 0 *and* at default.
+        self.temperature = temperature
 
     def _post(self, payload: dict, headers: dict):
         """POST once, retrying only what is worth retrying."""
@@ -280,13 +285,14 @@ class OpenAITransport:
     def complete(self, instructions: str, description: str) -> tuple[str, Usage]:
         payload = {
             "model": self.model,
-            "temperature": TEMPERATURE,
             "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": instructions},
                 {"role": "user", "content": description},
             ],
         }
+        if self.temperature is not None:
+            payload["temperature"] = self.temperature
         headers = {"Authorization": f"Bearer {self._key}"}
         response = self._post(payload, headers)
         response.raise_for_status()
