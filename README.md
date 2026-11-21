@@ -545,6 +545,13 @@ system not at all. Both halves are the result. Everything here comes from
 | **adjudicated**, no reranker | 1.50% | 1.50% | 4 of 200 | 3/4 = 75.0% | 18ms |
 | **adjudicated**, cross-encoder | 1.50% | 1.50% | 4 of 200 | 3/4 = 75.0% | 1,308-1,810ms |
 
+The two adjudicated rows here were measured **before** the
+[note-scope fix](#one-section-two-notes-and-a-cape-classified-as-yarn), which takes the test
+split to 3 of 3, and have not been re-run. They are left as measured rather than quietly
+adjusted; the reranker's effect on the adjudicated slice is due a re-measurement, and that
+matters more now than it did, because the pool recall the reranker would work on is the one
+lever with headroom left.
+
 **+4.5 points of top-1 on the proposer, and nothing whatever on the adjudicated system.** Not a
 regression, not noise — the same four cases, the same three correct, verified case by case
 rather than inferred from matching totals.
@@ -737,10 +744,61 @@ the question an operator has: what do I lose if this is off?
 
 | configuration | test: decided / right | held-out: decided / right |
 | --- | ---: | ---: |
-| full engine (5 · hybrid + GRI) | 4 / 75.0% | 17 / 29.4% |
-| 6 · without the note-chain | 4 / 75.0% | 17 / 29.4% |
-| 7 · without KAG conditions | 4 / 75.0% | 17 / 29.4% |
+| full engine (5 · hybrid + GRI) | 3 / **100.0%** | 12 / **41.7%** |
+| 6 · without the note-chain | 3 / 100.0% | 12 / 41.7% |
+| 7 · without KAG conditions | 3 / 100.0% | 12 / 41.7% |
 | 8 · without Section XI Note 2(A) | **0 / —** | **1 / 0.0%** |
+
+Those figures are after the [note-scope fix](#one-section-two-notes-and-a-cape-classified-as-yarn).
+Before it the full engine decided 4 at 75.0% and 17 at 29.4%: five more held-out answers, every
+one of them wrong.
+
+### One section, two notes, and a cape classified as yarn
+
+The largest accuracy defect found in this project, and it was a legal error rather than a
+modelling one. On the held-out 2,000 the engine was answering with **raw fibre and yarn
+provisions for garments**:
+
+```
+a bolero for ladies wear, finely knit   ->  5504.10.00   artificial staple fibres
+a woman's cape, 70% acrylic             ->  5511.10.00   yarn of synthetic staple fibres
+a women's sleeveless garment, 60% ...   ->  5504.10.00   artificial staple fibres
+```
+
+Each with a GRI citation attached, which is the failure this architecture exists to prevent.
+
+The cause is that **Section XI contains two different instruments for two different kinds of
+goods**, and the code pooled them. Note 2(A) subdivides goods *of chapters 50 to 55* — fibre,
+yarn, fabric — by the material predominating by weight. Subheading Note 2(A) does the same for
+goods *of chapters 56 to 63*, the made-up articles. An earlier fix had restricted the rule to
+Section XI after it put a dress in chapter 64, and that was necessary without being sufficient:
+the union of the two scopes still let a chapter 55 yarn compete against a chapter 61 coat. Asking
+which of a yarn and a coat the goods *are* is a GRI 1 question about the terms of the headings,
+and neither note answers it. The rule now declines when the candidates straddle the two scopes.
+
+| held-out 2,000 | decided | right | accuracy on decided |
+| --- | ---: | ---: | ---: |
+| before | 17 | 5 | 29.41% |
+| **after** | **12** | **5** | **41.67%** |
+
+Five answers removed, all five wrong, and the right ones untouched. On the test split it is 3 of
+3. Retrieval is unchanged at 13.75% top-1 and 24.75% top-5, because nothing about the candidate
+pool changed — only which of them a note is allowed to choose between.
+
+**It was found by a measurement that was looking for something else.** A retrieval change widened
+the candidate pool, and the ablation totals were *identical* before and after — 17 decided both
+times — while the right answers fell from 5 to 3. Only listing the individual decided cases
+showed the new ones were garments-as-yarn. That is the third time in this project that an
+unchanged total concealed a changed set, and the third time a GRI rule has been caught reaching
+outside its legal scope.
+
+The retrieval change itself was then **reverted**, measured and documented under
+[`DEFAULT_PER_HEADING`](src/hsclass/pipeline/traversal.py): pruning per parent rather than per
+heading raises pool recall from 46.65% to 59.25% and top-5 by half a point, and costs two of the
+five right adjudicated answers by reordering the five candidates stage 3 receives. It is kept as
+a parameter because a reranker is exactly what could convert that recall into top-1, which is the
+one lever with real headroom left — the gold subheading sits in the pool 46.65% of the time at
+median rank 4, against 13.75% top-1.
 
 **The adjudication rests almost entirely on one note.** Remove Section XI Note 2(A) — the
 predominant-weight test — and the engine answers *one* case in 2,200, by GRI 2(a), and gets it
@@ -766,7 +824,7 @@ Two of those three rows were predicted before the run and are not failures:
 - **The KAG layer's reach was already measured at zero** and the ablation confirms it from the
   other direction. Of 21 test cases where a candidate carries an evaluable threshold, only four
   ask about a material the description quantifies. It still decides nothing — ablations 5 and 7
-  remain identical at 17 covered and 29.41%. An attempt to widen its reach is set out below; it
+  remain identical at 12 covered and 41.67%. An attempt to widen its reach is set out below; it
   was reverted, and the ablation row is unchanged because of that.
 
 #### Making a threshold evaluable: built, measured, reverted
@@ -1014,6 +1072,10 @@ cautious. That test is one line and it is the clearest result here:
 | | answered by the rules | forced on the declined | ratio |
 | --- | ---: | ---: | ---: |
 | test split | **75.0%** (4 cases, 95% low 30.1%) | 15.3% (196 cases, 95% low 10.9%) | 0.20 |
+
+*Calibration was measured before the [note-scope fix](#one-section-two-notes-and-a-cape-classified-as-yarn)
+and is due a re-run: the decided slice is now 3 cases on the test split and 12 held-out, so every
+figure in this section rests on a smaller n than it states.*
 | held-out 2,000 | **29.4%** (17 cases, 95% low 13.3%) | 13.7% (1,983 cases, 95% low 12.2%) | 0.46 |
 
 The cases the rules answer are two to five times as accurate as the ones they decline would

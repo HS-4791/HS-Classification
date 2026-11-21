@@ -806,3 +806,44 @@ def test_a_fresh_engine_decides_identically(engine):
     first = engine.adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
     second = other.adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
     assert (first.code, first.rule_path) == (second.code, second.rule_path)
+
+
+# ------------- Note 2(A) and Subheading Note 2(A) govern different goods
+
+#: A yarn provision and a garment provision, both inside Section XI, both
+#: "of acrylic". Nothing in either note chooses between a yarn and a coat.
+YARN = "5511100030"
+COAT = "6102301000"
+SCOPE_TEXTS = {
+    YARN: "Section XI — Chapter 55 — Yarn of synthetic staple fibres — "
+          "Containing 85 percent or more by weight of acrylic",
+    COAT: "Section XI — Chapter 61 — Women's overcoats, knitted — "
+          "Of man-made fibres",
+}
+
+
+def test_the_material_rule_declines_across_the_two_note_scopes(engine):
+    """A cape came out as 5511.10.00, yarn, because the material matched.
+
+    Note 2(A) subdivides goods of chapters 50 to 55; Subheading Note 2(A)
+    subdivides goods of chapters 56 to 63. Which of those the goods *are* is
+    a GRI 1 question about the terms of the headings, so a rule that compares
+    across the two scopes is answering a question neither note asks.
+    """
+    facts = Facts(
+        description="a woman's cape made of 70% acrylic and 30% polyester",
+        materials={"acrylic": 70.0, "polyester": 30.0},
+    )
+    decision = engine.adjudicate(facts, [YARN, COAT], SCOPE_TEXTS)
+    assert "Section XI Note 2(A)" not in decision.rule_path
+    assert decision.code != YARN
+
+
+def test_the_material_rule_still_fires_inside_one_scope(engine):
+    """Declining across scopes must not disable the rule within one."""
+    facts = Facts(
+        description="a women's suit of 40% silk and 60% wool",
+        materials={"silk": 40.0, "wool": 60.0},
+    )
+    decision = engine.adjudicate(facts, [SILK_HIGH, SILK_LOW], CONDITION_TEXTS)
+    assert decision.code is not None

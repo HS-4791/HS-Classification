@@ -203,8 +203,33 @@ class HierarchicalClassifier:
     #: the floor, not the ceiling.
     DEFAULT_BEAM = 50
 
-    #: How many paths each heading keeps as the walk descends. Measured at
-    #: 1, 2, 3 and 5; 5 is where it stops mattering.
+    #: How many paths each parent keeps as the walk descends.
+    #:
+    #: First measured at 1, 2, 3 and 5 against top-5 accuracy, where 5 was
+    #: "where it stops mattering". That was the wrong metric: top-5 barely
+    #: moves with this parameter at all, so the sweep could not see what it
+    #: was changing. Swept again against **pool recall** - whether the gold
+    #: subheading is anywhere in the candidate pool, which is the ceiling
+    #: top-5 is drawn from - on the held-out 2,000, with ``prune_by="parent"``:
+    #:
+    #: | per_heading | pool | top1@6 | top5@6 | top20@6 |
+    #: | --- | --- | --- | --- | --- |
+    #: | 5 | 56.40 | 13.80 | 25.10 | 37.05 |
+    #: | **10** | **59.25** | 13.85 | 25.25 | 37.20 |
+    #: | 20 | 59.30 | 13.85 | 25.25 | 37.10 |
+    #:
+    #: 10 is the knee; 20 buys 0.05 points of pool recall for a pool 8%
+    #: larger. Note what this does *not* do: top-1 moves 0.10 points. Getting
+    #: the answer into the pool is necessary and not sufficient, and the gap
+    #: between 59.25% pool recall and 13.85% top-1 is the ranking problem
+    #: this parameter cannot touch.
+    #:
+    #: **Shipped at 5 all the same**, with ``prune_by="heading"``. The wider
+    #: pool reorders the five candidates stage 3 receives, and on the 12
+    #: cases the engine decides it costs two of the five right answers -
+    #: 41.67% on decided against 23-25% - to buy a tenth of a point of top-1.
+    #: Worth revisiting the moment a reranker can exploit the extra recall,
+    #: which is what it was built for; not worth shipping before then.
     DEFAULT_PER_HEADING = 5
 
     #: Which levels fuse the lexical ranking into candidate selection.
@@ -243,6 +268,7 @@ class HierarchicalClassifier:
     def __init__(self, levels: LevelIndex, embedder: Embedder, k: int = 5,
                  beam: int = DEFAULT_BEAM, fuse_levels: tuple[int, ...] = DEFAULT_FUSE_LEVELS,
                  per_heading: int = DEFAULT_PER_HEADING,
+                 prune_by: str = "heading",
                  reranker: Callable[[str, list[Walk]], list[Walk]] | None = None) -> None:
         self.levels = levels
         self.embedder = embedder
@@ -250,6 +276,9 @@ class HierarchicalClassifier:
         self.beam = beam
         self.fuse_levels = fuse_levels
         self.per_heading = per_heading
+        if prune_by not in ("heading", "parent"):
+            raise ValueError(f"prune_by must be 'heading' or 'parent', not {prune_by!r}")
+        self.prune_by = prune_by
         #: Reorders the finished pool. Optional because it is the single
         #: most expensive thing in the pipeline - see ``pipeline/rerank.py``.
         self.reranker = reranker
@@ -292,7 +321,30 @@ class HierarchicalClassifier:
         return sorted(walks, key=lambda w: -w.score)
 
     def _prune(self, walks: list[Walk]) -> list[Walk]:
-        """Keep each heading's own best paths, never one heading against another.
+        """Keep each parent's own best paths, never one branch against another.
+
+        ``prune_by`` picks what counts as the parent, and the two settings are
+        the same argument applied at one level or at every level.
+
+        ``"heading"`` groups by ``steps[0]`` - the four-digit heading - for
+        every descent. That fixed a real defect (see below) and left an
+        identical one underneath it: a heading keeps five *whole paths*, and
+        with roughly nine tariff lines under each six-digit subheading, all
+        five slots can be filled from one subheading while its siblings are
+        evicted. Measured on the held-out 2,000, the gold heading survives
+        into the pool 82.45% of the time and the gold *subheading* only
+        46.30% - and that 36-point gap is this, not retrieval.
+
+        ``"parent"`` groups by the step one level up, so each subheading keeps
+        its own five lines rather than competing with its siblings for the
+        heading's five. It is the docstring below taken at its word: ranking
+        one heading's subheading against another's is the comparison
+        traversal exists to avoid, and ranking one subheading's tariff line
+        against another's is the same comparison one level down. GRI 6 says
+        only same-level siblings are comparable, which is the rule this
+        mirrors - stage 2 is not adjudicating, so nothing here is a GRI
+        violation, but the walk's own rationale points this way.
+
 
         A single global beam is the obvious implementation and it throws
         away recall. With 50 headings expanded and 50 slots to share, one
@@ -314,12 +366,16 @@ class HierarchicalClassifier:
         0.3 (six cases). The reason to prefer it is the recall it stops
         discarding, not an accuracy gain it does not deliver.
         """
-        by_heading: dict[str, list[Walk]] = {}
+        by_parent: dict[str, list[Walk]] = {}
         for walk in walks:
-            by_heading.setdefault(walk.steps[0].code, []).append(walk)
+            if self.prune_by == "parent" and len(walk.steps) > 1:
+                parent = walk.steps[-2].code
+            else:
+                parent = walk.steps[0].code
+            by_parent.setdefault(parent, []).append(walk)
         return [
             walk
-            for group in by_heading.values()
+            for group in by_parent.values()
             for walk in sorted(group, key=lambda w: -w.score)[: self.per_heading]
         ]
 

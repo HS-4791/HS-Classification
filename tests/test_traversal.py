@@ -105,3 +105,50 @@ def test_candidates_cover_every_level_not_just_the_leaves(tree):
     assert "610990" in codes      # a six-digit subheading
     assert "61091000" in codes    # an eight-digit tariff line
     assert "6109100012" in codes  # a ten-digit statistical line
+
+
+# ------------------- pruning: siblings must not evict one another
+
+
+def test_pruning_per_parent_keeps_every_surviving_subheading(levels):
+    """Heading 6109 has two subheadings; both must reach the bottom.
+
+    With ``prune_by="heading"`` a heading keeps its best N whole paths, so
+    one subheading's tariff lines can fill every slot and evict its sibling.
+    Measured on the held-out 2,000 that cost 12.6 points of pool recall: the
+    gold heading survived 82.50% of the time and the gold subheading only
+    46.65%.
+    """
+    index, embedder = levels
+    walk = HierarchicalClassifier(
+        index, embedder, k=5, per_heading=2, prune_by="parent"
+    )
+    reached = {
+        w.code[:6] for w in walk.walks("cotton t-shirt") if w.code.startswith("6109")
+    }
+    assert reached == {"610910", "610990"}
+
+
+def test_pruning_per_heading_can_lose_a_sibling_subheading(levels):
+    """The defect the parent mode fixes, pinned so it cannot come back quietly.
+
+    Heading 6109 has two subheadings, one with two tariff lines and one with
+    one. At per_heading=2 the heading gets two slots for all three paths, and
+    610910's two lines take both - so 610990 disappears even though it
+    survived the descent to six digits. Parent mode gives each subheading its
+    own two slots and all three paths live.
+    """
+    index, embedder = levels
+    walk = HierarchicalClassifier(
+        index, embedder, k=5, per_heading=2, prune_by="heading"
+    )
+    reached = {
+        w.code[:6] for w in walk.walks("cotton t-shirt") if w.code.startswith("6109")
+    }
+    assert reached == {"610910"}
+
+
+def test_an_unknown_prune_mode_is_refused(levels):
+    index, embedder = levels
+    with pytest.raises(ValueError, match="prune_by"):
+        HierarchicalClassifier(index, embedder, prune_by="subheading")

@@ -514,6 +514,30 @@ class GRIEngine:
         within = [code for code in candidates if code[:2] in SECTION_XI_CHAPTERS]
         if not within:
             return None
+
+        # Restricting to Section XI was necessary and not sufficient. The
+        # section runs from chapter 50 to 63 and spans two different
+        # instruments over two different kinds of goods: Note 2(A) subdivides
+        # goods *of chapters 50 to 55* - fibre, yarn, fabric - and Subheading
+        # Note 2(A) subdivides goods *of chapters 56 to 63*, the made-up
+        # articles. Comparing across them asks which of a yarn and a garment
+        # the goods are, and neither note answers that; GRI 1 does, from the
+        # terms of the headings.
+        #
+        # Taking the union let exactly that happen. A bolero came out as
+        # 5504.10.00 (artificial staple fibres) and a woman's cape as
+        # 5511.10.00 (yarn), because the predominant material matched and the
+        # garment provisions lost the tie-break. Found by listing the decided
+        # cases after a retrieval change widened the pool - the totals were
+        # unchanged at 17 decided while the right answers fell from 5 to 3.
+        #
+        # So when the candidates straddle the two scopes the rule declines,
+        # and the walk carries on to the rules that settle what goods are.
+        scopes = {
+            "50-55" if code[:2] in NOTE_2A_CHAPTERS else "56-63" for code in within
+        }
+        if len(scopes) > 1:
+            return None
         chapters = {code[:2] for code in within}
 
         cited = ["Section XI Note 2(A)"]
