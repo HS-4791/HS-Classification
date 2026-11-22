@@ -398,12 +398,29 @@ def render(decision: Decision, texts: dict[str, str] | None = None) -> str:
     notes = "; ".join(decision.notes_cited)
 
     if decision.code is None or decision.escalated:
+        if decision.rule_path:
+            walked = f"The rules were applied as far as {rules},"
+            stopped = (
+                f"and the case stopped there because {decision.reason}."
+                if decision.reason
+                else "and no rule resolved the case."
+            )
+        else:
+            # An empty rule path means the walk never started - stage 2
+            # proposed nothing, so there were no heading terms to compare and
+            # GRI 1 was never evaluated. Saying "applied as far as no rule"
+            # was both ungrammatical and a claim about work that did not
+            # happen.
+            walked = "No rule was reached,"
+            stopped = (
+                f"because {decision.reason}."
+                if decision.reason
+                else "because there was nothing to classify."
+            )
         body = _sentence([
             "These goods were not classified automatically.",
-            f"The rules were applied as far as {rules},",
-            f"and the case stopped there because {decision.reason}."
-            if decision.reason
-            else "and no rule resolved the case.",
+            walked,
+            stopped,
         ])
         if decision.shortlist:
             body += (

@@ -753,12 +753,11 @@ uvicorn --factory hsclass.serve.app:create_app --port 8000
 **The deployed path carries no embeddings, no ONNX runtime and no model download.** Precedent
 retrieval is BM25 over ruling text, so the bundle is 14.7 MB, the cold start is about a second
 and no API key is needed — where the schedule's vector index alone is 44 MB of floats for a
-tenth of the accuracy. A classification measured 2.1 ms end to end locally.
+tenth of the accuracy.
 
 The page returns one of **two clearly labelled tiers**, and keeping them apart is the point:
 
 - **Settled by the rules** — the deterministic answer with its GRI path and the notes consulted.
-  About 2% of cases, right 41.7% of the time on the held-out set.
 - **Precedent suggests, not confirmed by the rules** — the nearest CBP ruling's code, with its
   accuracy printed beside it and the rulings themselves listed.
 
@@ -767,9 +766,84 @@ better-than-even guess, or pass a similarity match off as an adjudicated one. Ev
 states the schedule revision, because a classification is only true against a version of the
 nomenclature.
 
-**Not yet verified: the container.** Docker Desktop was not running when this was written, so
-the image has never been built. What *is* verified is the `serve` extra installing, the app
-building, the service answering over HTTP, and the page working in a browser.
+### What the container measures
+
+**The served path is a different configuration from the ablations above and is measured
+separately.** Everything in the tables earlier proposes candidates from the 44 MB vector index;
+the container has no vector index at all. Borrowing those numbers would describe a system that
+is not the one deployed — the pipeline settles 4 of the 200 test cases and the container settles
+3, and not the same 3.
+
+`scripts/measure_served.py` scores the running service over HTTP; the results are in
+[`reports/served-test-200.json`](reports/served-test-200.json). Measured against the built image
+on 2026-11-22:
+
+| | served configuration, test-200 |
+| --- | --- |
+| Precedent tier, top-1 at six digits | **52.5%** (105/200) |
+| Precedent tier, top-1 at ten digits | 46.0% (92/200) |
+| Excluding the 40 leaked descriptions, six digits | 46.3% (74/160) |
+| Excluding the 40 leaked descriptions, ten digits | 40.0% (64/160) |
+| Decided by the rules | 3 of 200 (1.5%), **1 of the 3 right** |
+| What the page shows, six digits | 52.5% (105/200) |
+| Suggestions naming a code absent from the revision | 35 of 200 (17.5%) — of which 19 still right at six digits |
+| Latency observed over HTTP | median ~6 ms, **p95 ~31 ms** |
+| Latency the server reports about itself | median 1.6 ms, p95 3.4 ms |
+| Resident memory | 116 MB |
+
+Both latency rows are given because they are different claims, and an earlier draft of this
+section quoted only the cheaper one. `latency_ms` in each response starts timing after FastAPI
+has parsed the request and stops before the response is serialised, so it excludes most of what
+a caller waits for — at the 95th percentile, by roughly a factor of ten. The script measures the
+client's wall clock as well, since "scores the service over HTTP" is what it claimed to do.
+
+The observed figures are approximate on purpose: they moved between 5.7 and 6.0 ms at the median
+across consecutive identical runs, so a figure quoted to one decimal would be reporting noise as
+a measurement. [`reports/served-test-200.json`](reports/served-test-200.json) holds the exact
+numbers for the run that produced it, and that file is the record.
+
+Two things to read honestly here. The precedent tier reproduces
+[`reports/precedent-bm25-test-200.json`](reports/precedent-bm25-test-200.json) **count for
+count** — 0.525 and 0.4625 at six digits, 0.46 and 0.40 at ten — which is the evidence that
+building the bundle did not quietly alter the index. That sentence used to be prose; the script
+now opens the report and asserts the four counts, and **refuses to compare across revisions**
+rather than quietly doing it. The decided tier does not reproduce the pipeline's 41.7%
+and **three cases cannot establish a rate** — but one of its two misses is worth naming: *"a
+chisel"* resolved at GRI 1 to 8209.00.0030, cermet tool plates, because no candidate in the
+shortlist was 8205.30, chisels. A deterministic engine over a bad pool is not unsure, it is
+confidently wrong, and that is the sharpest statement of this project's real limit: stage 3 can
+only adjudicate what stage 2 proposes.
+
+**Verified: the container.** Built 2026-11-22 — 456 MB image, HEALTHCHECK reporting `healthy`,
+`/health` answering within half a second of start, all 200 test cases scored through it over
+HTTP, and the bundle made mandatory: mounting an empty directory over `data/deploy` exits the
+container with code 1 rather than serving a page that cannot classify.
+
+### What running it found that reading it did not
+
+Seven defects, in code that passed 358 tests and a lint run. None was found by reading:
+
+| | found by |
+| --- | --- |
+| Every `POST` returned 422 — `from __future__ import annotations` makes FastAPI resolve route annotations against *module* globals, so a Pydantic model defined in the factory closure is invisible | opening the page |
+| Shortlist chains trimmed by character count: `6105901000 rts, knitted or crocheted` | reading the rendered page |
+| `suggested_basis` shipped its accuracy claim on responses with no suggestion | probing a nonsense description |
+| Suggested codes absent from the pinned revision printed as bare digits under a banner naming that revision | a chapter-73 query |
+| `tail()` returned 523 characters for a budget of 90 when one chain segment exceeded it alone — and the first fix for it did nothing, because the loop still returned early | a subagent cold read, then node |
+| The page asserted one cause, "renumbered statistical suffix", for all 35 flagged codes; true for 22 | counting the resolution shapes |
+| `rule_path` recorded `GRI 1` for cases where no candidate was ever proposed, so no heading was compared — a fabrication by this project's own definition | a cold read, reproduced with an empty description |
+
+The last one is the one that mattered most, and it was mine: `adjudicate()` returned
+`Decision(None, ["GRI 1"], …)` on an empty candidate pool, and the explanation then read "The
+rules were applied as far as GRI 1". No rule had been evaluated. It now returns an empty
+`rule_path` and says "No rule was reached, because no candidate headings were proposed."
+
+Two of these were defects in the *fix* for an earlier one, which is the argument for the cold
+read being a separate mechanism rather than a second opinion from the author.
+
+**Not yet verified: a public URL.** Deploying needs an account, which is the one step that
+cannot be done from inside the repo. `deploy/README.md` has the Hugging Face Spaces and Fly.io
+steps, both from this same verified image.
 
 ## Running it
 

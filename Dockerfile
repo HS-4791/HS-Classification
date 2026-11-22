@@ -24,8 +24,11 @@ COPY data/deploy ./data/deploy
 
 EXPOSE 8000
 
-# Honest about failure: if the bundle is missing the container should stop,
-# not serve a page that cannot classify anything.
+# Liveness only. It is NOT what makes a missing bundle fatal - verified by
+# mounting an empty directory over data/deploy, which exits the container with
+# code 1 before the first health probe is due, because create_app() reads the
+# bundle while building the app. The healthcheck earns its place for the other
+# failure: a process that is up but wedged.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD python -c "import urllib.request,sys; \
 sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status == 200 else 1)"

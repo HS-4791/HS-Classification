@@ -20,6 +20,7 @@ a classification is only true against a version of the nomenclature.
 from __future__ import annotations
 
 import json
+import os
 import time
 from pathlib import Path
 
@@ -39,6 +40,25 @@ SHORTLIST = 5
 #: Where ``scripts/build_deploy_bundle.py`` writes, and what the image copies.
 BUNDLE = Path("data/deploy")
 
+#: What the precedent tier is, and how often it is right.
+#:
+#: Measured on *this* configuration, end to end through HTTP against the built
+#: container, by ``scripts/measure_served.py`` - not borrowed from the
+#: adjudicated pipeline's ablations, because the two are not the same system.
+#: The pipeline proposes candidates from a 44 MB vector index and settles 4 of
+#: the 200 test cases; the container has no vector index and settles 3.
+#:
+#: The precedent tier, though, reproduces the library measurement exactly -
+#: 105/200 and 92/200, the counts behind the 0.525 and 0.46 in
+#: reports/precedent-bm25-test-200.json - so the bundle build is faithful to
+#: the index it was made from.
+SUGGESTED_BASIS = (
+    "nearest CBP ruling by BM25 over 18,253 rulings; on the 200-case test "
+    "split it is right 52.5% of the time at six digits (105/200) and 46.0% at "
+    "ten (92/200). Excluding the 40 test descriptions that appear verbatim in "
+    "the training data: 46.3% at six digits (74/160) and 40.0% at ten (64/160)"
+)
+
 
 class ClassifyRequest(BaseModel):
     """One description to classify.
@@ -54,12 +74,39 @@ class ClassifyRequest(BaseModel):
     description: str
 
 
+#: Where an HTS code can legitimately be truncated, deepest first: statistical
+#: suffix, US tariff line, international subheading, heading, chapter. Cutting
+#: anywhere else produces a string that is not a provision.
+#:
+#: The 2-digit rung is legally real but unreachable from this bundle, which
+#: carries 961 headings, 2,093 subheadings, 6,858 tariff lines and 19,949
+#: statistical suffixes and no chapter rows at all. It stays because the list
+#: describes the nomenclature, not this parse of it.
+LEVELS = (10, 8, 6, 4, 2)
+
+
 class Service:
     """Everything loaded once, so a request is retrieval plus arithmetic."""
 
     def __init__(self, bundle: Path = BUNDLE) -> None:
         meta = json.loads((bundle / "bundle.json").read_text(encoding="utf-8"))
         self.revision = meta["revision"]
+
+        # The Dockerfile bakes HTS_REVISION in and says "an image that
+        # classifies against a different revision than it claims is the bug
+        # this prevents" - but nothing read it, so
+        # ``--build-arg HTS_REVISION=2026HTSRev22`` over a Rev21 bundle built
+        # an image whose environment said one thing and whose every response
+        # said another, silently. Now it refuses to start.
+        declared = os.environ.get("HTS_REVISION")
+        if declared and declared != self.revision:
+            raise ValueError(
+                f"HTS_REVISION is {declared!r} but the bundle at {bundle} was "
+                f"built from {self.revision!r}. A classification is only valid "
+                f"against a schedule version, so this will not serve. Rebuild "
+                f"the bundle with scripts/build_deploy_bundle.py, or correct "
+                f"HTS_REVISION."
+            )
 
         rulings = json.loads((bundle / "precedents.json").read_text(encoding="utf-8"))
         self.precedents = PrecedentIndex(
@@ -76,6 +123,86 @@ class Service:
         self.engine = GRIEngine(build_exclusion_graph(notes))
         self.explainer = Explainer(texts=self.texts)
 
+    def resolve(self, code: str | None) -> dict:
+        """A code's provision text, or the nearest ancestor's, said out loud.
+
+        Found by running the service, not by reading it. CBP rulings are
+        historical and the schedule is not: **2,106 of the 18,253 indexed
+        rulings (11.5%) cite a code that does not exist in the pinned
+        revision**, and 665 of the 3,696 distinct codes (18.0%). Nearly all
+        are ten-digit statistical suffixes that were renumbered - a ruling
+        says 7306.30.50.32 and 2026HTSRev21 goes ...31 then ...35.
+
+        The page used to print those as bare digits with nothing beside them,
+        which reads as a broken lookup. Worse, it offered a code as an answer
+        without saying that the revision it names in the same breath does not
+        contain it.
+
+        So: walk back to the deepest level that does exist, show that text,
+        and report ``in_revision`` false so the caller can say which it got.
+        This does not touch accuracy - the ATLAS gold labels are historical
+        too, so a renumbered suffix can still be scored right - it is about
+        not presenting a code as current when it is not.
+
+        ``reason`` names *why*, because the first version of this asserted one
+        cause for all of them - "the revision renumbered the statistical
+        suffix" - and a cold read measured that true for only 22 of the 35
+        cases it fired on. When the eight-digit tariff line is gone too,
+        something other than the suffix changed, and 3 of the indexed rulings
+        cite a code that is not a legal length at all.
+        """
+        digits = "".join(c for c in (code or "") if c.isdigit())
+        if not digits:
+            return {
+                "text": None,
+                "text_of": None,
+                "in_revision": False,
+                "reason": "no code",
+            }
+
+        exact = self.texts.get(digits)
+        if exact is not None:
+            return {
+                "text": exact,
+                "text_of": digits,
+                "in_revision": True,
+                "reason": "in revision",
+            }
+
+        # A code whose own length is not a level of the nomenclature is
+        # malformed, not merely withdrawn. The guard here used to be
+        # ``level >= len(digits)``, which skipped level 10 for a nine-digit
+        # code and dropped it four levels to a bare heading: 390410000 landed
+        # on 3904 although 3904100000 is in the revision. Guessing which line
+        # was meant is not this function's business, but saying "renumbered
+        # suffix" about it was wrong, so it says "malformed" instead.
+        malformed = len(digits) not in LEVELS
+
+        for level in LEVELS:
+            if level >= len(digits):
+                continue
+            text = self.texts.get(digits[:level])
+            if text is None:
+                continue
+            if malformed:
+                reason = "malformed"
+            elif len(digits) == 10 and level == 8:
+                reason = "suffix renumbered"
+            else:
+                reason = "line withdrawn"
+            return {
+                "text": text,
+                "text_of": digits[:level],
+                "in_revision": False,
+                "reason": reason,
+            }
+        return {
+            "text": None,
+            "text_of": None,
+            "in_revision": False,
+            "reason": "malformed" if malformed else "unresolved",
+        }
+
     def classify(self, description: str) -> dict:
         started = time.perf_counter()
         candidates = self.precedents.codes(description, digits=10)[:SHORTLIST]
@@ -84,36 +211,54 @@ class Service:
         explanation = self.explainer.explain(decision, description)
 
         # Two tiers, labelled, because they carry different weight and a
-        # reviewer deserves to know which is which. The rules answer about 2%
-        # of cases and are right 42% of the time on those; precedent answers
-        # everything and is right 52.5% at six digits. Showing only the
-        # deterministic tier would mean answering "not classified" to almost
-        # every query while holding a better-than-even guess back - which
-        # reads as broken rather than careful. Showing only precedent would
-        # throw away the thing this project is for.
+        # reviewer deserves to know which is which. In this configuration the
+        # rules settle 3 of the 200 test cases and precedent answers all 200 at
+        # 52.5% top-1 at six digits. Showing only the deterministic tier would
+        # mean answering "not classified" to 99% of queries while holding a
+        # better-than-even guess back - which reads as broken rather than
+        # careful. Showing only precedent would throw away what this is for.
         suggested = candidates[0] if candidates else None
+        decided_at = self.resolve(decision.code)
+        suggested_at = self.resolve(suggested)
+        shortlist = []
+        for code in (decision.shortlist or candidates)[:SHORTLIST]:
+            at = self.resolve(code)
+            shortlist.append(
+                {
+                    "code": code,
+                    "text": at["text"] or "",
+                    "in_revision": at["in_revision"],
+                }
+            )
 
         return {
             "description": description,
             "schedule_revision": self.revision,
             "decided": decision.code is not None,
             "code": decision.code,
-            "code_text": self.texts.get(decision.code or "", None),
+            "code_text": decided_at["text"],
             "suggested": suggested,
-            "suggested_text": self.texts.get(suggested or "", None),
-            "suggested_basis": (
-                "nearest CBP ruling by BM25 over 18,253 rulings; 52.5% correct "
-                "at six digits on the 200-case test split, 46.3% excluding "
-                "descriptions duplicated in the training data"
-            ),
+            "suggested_text": suggested_at["text"],
+            # False when the ruling cites a code the pinned revision no longer
+            # carries - 11.5% of the index. ``suggested_text_of`` then names
+            # the ancestor the text actually belongs to.
+            "suggested_in_revision": suggested_at["in_revision"] if suggested else None,
+            "suggested_text_of": suggested_at["text_of"],
+            # Why it is not in the revision, rather than one asserted cause
+            # for every case: "suffix renumbered", "line withdrawn",
+            # "malformed" or "unresolved".
+            "suggested_reason": suggested_at["reason"] if suggested else None,
+            # None when there is nothing to justify. It used to be sent
+            # unconditionally, so a description matching no ruling came back
+            # with no suggestion and an accuracy claim for it anyway - the page
+            # hid it, but an API consumer saw a basis for an answer that did
+            # not exist.
+            "suggested_basis": SUGGESTED_BASIS if suggested else None,
             "rule_path": decision.rule_path,
             "notes_cited": decision.notes_cited,
             "conditions_applied": decision.conditions_applied,
             "escalated": decision.escalated,
-            "shortlist": [
-                {"code": code, "text": self.texts.get(code, "")}
-                for code in (decision.shortlist or candidates)[:SHORTLIST]
-            ],
+            "shortlist": shortlist,
             "explanation": explanation.text,
             # The reason precedent retrieval belongs in a system whose output
             # is a citation: these are checkable rulings, not a similarity.
@@ -175,9 +320,11 @@ PAGE = """<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>HS tariff classification</title>
 <style>
- :root { --ink:#1a1a1a; --dim:#666; --line:#e2e2e2; --bg:#fff; --accent:#0b5; }
+ :root { --ink:#1a1a1a; --dim:#666; --line:#e2e2e2; --bg:#fff; --accent:#0b5;
+         --warn:#b26b00; --warnbg:#fdf6ec; }
  @media (prefers-color-scheme: dark) {
-   :root { --ink:#e8e8e8; --dim:#999; --line:#333; --bg:#151515; }
+   :root { --ink:#e8e8e8; --dim:#999; --line:#333; --bg:#151515;
+           --warn:#d08a2c; --warnbg:#241d12; }
  }
  body { background:var(--bg); color:var(--ink); max-width:46rem; margin:0 auto;
         padding:2rem 1rem 4rem; font:16px/1.55 ui-sans-serif,system-ui,sans-serif; }
@@ -195,6 +342,8 @@ PAGE = """<!doctype html>
  .code { font:600 1.4rem ui-monospace,monospace; }
  .code.dim { color:var(--dim); }
  .refused { color:var(--dim); font-weight:600; }
+ .warn { border-left:3px solid var(--warn); padding:.4rem .7rem; margin:.5rem 0;
+         font-size:.85rem; color:var(--ink); background:var(--warnbg); }
  .tier { color:var(--accent); font-size:.7rem; font-weight:700;
          text-transform:uppercase; letter-spacing:.06em; margin:.8rem 0 .2rem; }
  .label { color:var(--dim); font-size:.75rem; text-transform:uppercase;
@@ -226,8 +375,13 @@ PAGE = """<!doctype html>
 
 <script>
 function set(a){ document.getElementById('q').value = a.textContent.trim(); go(); }
-function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g,
-  c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+// Quotes are escaped too. Every interpolation below lands in element text, so
+// &<> would be enough today - but 225 provision texts in the bundle contain a
+// double quote and 2,818 an apostrophe, and the first time one of these values
+// is put in a title= or data- attribute, &<> alone is an injection. Covering
+// it costs one character class.
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,
+  c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 async function go(){
   const q = document.getElementById('q').value.trim();
@@ -246,6 +400,71 @@ async function go(){
   }
 }
 
+// What resolve() measured about a code the revision does not carry. Measured
+// over the 200-case test split: 22 renumbered suffixes, 11 withdrawn lines,
+// 2 that resolve to nothing.
+const CAUSE = {
+  'suffix renumbered':
+    'The ruling predates this revision, which renumbered the ten-digit '
+    + 'statistical suffix under the same eight-digit tariff line.',
+  'line withdrawn':
+    'The eight-digit tariff line it sat under is not in this revision either, '
+    + 'so more than the statistical suffix changed.',
+  'malformed':
+    'It is not a valid length for an HTS code, so which line the ruling meant '
+    + 'cannot be determined from the code alone.',
+  'unresolved':
+    'No level of it matches a provision in this revision.'
+};
+
+// A provision's inherited chain is long, and the segments that distinguish it
+// from its siblings are at the end. So trim from the front - but by whole
+// segments, never mid-word: a chain cut at 90 characters renders as
+// "rts, knitted or crocheted" and "23 percent or more by weight of wool",
+// which reads as a bug rather than as an abbreviation.
+function tail(text, budget){
+  const ell = String.fromCharCode(8230);
+  const sep = ' ' + String.fromCharCode(8212) + ' ';
+  const parts = String(text == null ? '' : text).split(sep);
+  const kept = [];
+  let n = 0;
+  let dropped = false;
+  for(let i = parts.length - 1; i >= 0; i--){
+    const len = parts[i].length + (kept.length ? sep.length : 0);
+    if(kept.length && n + len > budget){ dropped = true; break; }
+    kept.unshift(parts[i]);
+    n += len;
+  }
+  // The guard above only fires once something is kept, so a single segment
+  // longer than the budget passes through whole: subheading 2933.91's chain
+  // ends in a 521-character enumeration of benzodiazepine INNs and rendered
+  // at 523 characters where 90 was asked for. So cap on the way out - and
+  // cap on EVERY path, because the first attempt at this fix put the cap
+  // after the loop while the loop still returned early, which left the
+  // overflow exactly as it was.
+  const lead = dropped ? ell + ' ' : '';
+  return lead + head(kept.join(sep), Math.max(1, budget - lead.length));
+}
+
+// Ruling descriptions are prose, not chains, so here the front is what matters.
+function head(text, budget){
+  // No regex here on purpose: PAGE is not a raw Python string, so a backslash
+  // character class is an invalid escape sequence that the suite warns about
+  // today and Python will reject outright later. Keep this page backslash-free.
+  const ell = String.fromCharCode(8230);
+  const s = String(text == null ? '' : text);
+  if(s.length <= budget) return s;
+  if(budget <= 1) return ell;
+  // Reserve a character for the ellipsis, so the result honours the budget
+  // rather than exceeding it by one.
+  const cut = s.slice(0, budget - 1);
+  const at = cut.lastIndexOf(' ');
+  // Cut at a word boundary when the budget holds one. A long unbroken token -
+  // a part number, a CAS name, a URL - has none, and then a mid-token cut is
+  // the only thing left; trimEnd keeps a trailing space out of the join.
+  return (at > 0 ? cut.slice(0, at) : cut).trimEnd() + ell;
+}
+
 function render(d, out){
   let h = '<div class="card">';
   if(d.decided){
@@ -260,6 +479,23 @@ function render(d, out){
       h += '<div class="code dim">' + esc(d.suggested) + '</div>';
       if(d.suggested_text)
         h += '<div class="sub">' + esc(d.suggested_text) + '</div>';
+      // A ruling can cite a code the pinned revision no longer carries: 11.5%
+      // of the index does. Saying so matters more than the suggestion itself,
+      // because the page names the revision two lines above. The cause is
+      // whatever resolve() measured, not one asserted for all of them - the
+      // first version of this said "renumbered statistical suffix" every
+      // time, which was true for 22 of the 35 cases it fired on.
+      if(d.suggested && d.suggested_in_revision === false)
+        h += '<div class="warn">Not a line in revision '
+           + esc(d.schedule_revision) + '. ' + esc(CAUSE[d.suggested_reason]
+               || 'The ruling that cites it predates this revision.')
+           + (d.suggested_text_of
+               ? ' The text above is the nearest provision that does exist, '
+                 + esc(d.suggested_text_of) + '.'
+               : d.suggested_reason === 'unresolved'
+                 ? ''  // CAUSE already says exactly this; do not say it twice
+                 : ' No provision text could be resolved for it at all.')
+           + '</div>';
       h += '<div class="sub">' + esc(d.suggested_basis) + '</div>';
     }
   }
@@ -273,11 +509,17 @@ function render(d, out){
   if(!d.decided && d.shortlist && d.shortlist.length)
     h += '<div class="label">Shortlist for a human</div><ul>'
        + d.shortlist.map(s=>'<li><code>'+esc(s.code)+'</code> '
-         + esc((s.text||'').slice(-90))+'</li>').join('') + '</ul>';
+         + (s.in_revision === false ? '<em>(not in this revision)</em> ' : '')
+         // An unresolvable code used to render as the digits, the marker and
+         // then empty space, which looks like a failed lookup rather than a
+         // statement. Six of the 200 test cases did this.
+         + (s.text ? esc(tail(s.text, 90))
+                   : '<em>no provision text in this revision</em>')
+         + '</li>').join('') + '</ul>';
   if(d.precedents && d.precedents.length)
     h += '<div class="label">Rulings this drew on</div><ul>'
        + d.precedents.map(p=>'<li><code>'+esc(p.code)+'</code> '
-         + esc(p.description.slice(0,110))+'</li>').join('') + '</ul>';
+         + esc(head(p.description, 110))+'</li>').join('') + '</ul>';
   h += '<div class="label">Answered against</div><div class="sub">revision '
      + esc(d.schedule_revision) + ' &middot; ' + esc(d.latency_ms) + ' ms</div>';
   out.innerHTML = h + '</div>';

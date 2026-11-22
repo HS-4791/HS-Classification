@@ -34,10 +34,40 @@ revision and how much is indexed. `GET /docs` is the generated OpenAPI page.
 docker build -t hsclass:latest .
 ```
 
-**Not yet verified.** Docker Desktop was not running when this was written, so the image has
-never been built. The pieces it depends on *are* verified — the `serve` extra installs, the app
-builds, and the service answers over HTTP — but the Dockerfile itself is untested, which this
-project's own rule says to state rather than imply.
+**Verified.** Built on 2026-11-22: 456 MB image, 2 minutes cold, 116 MB resident once serving.
+`docker inspect` reports the HEALTHCHECK `healthy` with a zero failing streak, `/health` answers
+within half a second of the container starting, and `scripts/measure_served.py` scored all 200
+test cases through it over HTTP — about 6 ms at the median observed by the client, p95 about
+31 ms. The server's own `latency_ms` reports 1.6 ms and 3.4 ms, because it excludes request
+parsing and response serialisation; both are in the report, and quoting only the second would
+overstate the service by roughly ten times at the tail.
+
+One environment note, since an unexecuted workflow is not a workflow: on this machine buildkit's
+build sandbox stopped resolving DNS part-way through the day (`Name or service not known` for
+files.pythonhosted.org) while ordinary containers resolved fine. `DOCKER_BUILDKIT=0 docker build`
+succeeds. Hugging Face and Fly build with their own builders, so this is local only.
+
+Mounting an empty directory over `data/deploy` exits the container with code 1 and serves
+nothing, which is the intended behaviour and was worth checking rather than assuming: it is
+`create_app()` reading the bundle that enforces it, not the HEALTHCHECK, which never gets a
+first probe in.
+
+Running it is what found seven defects the tests and the linter did not — the root README's
+"What running it found that reading it did not" lists them. Two of the seven were defects in the
+fix for an earlier one.
+
+## 3a. Measure what you are about to deploy
+
+```bash
+python -u scripts/measure_served.py http://127.0.0.1:8100
+```
+
+The ablation numbers in the root README were measured on the **adjudicated pipeline**, which
+proposes candidates from a 44 MB vector index. The container has none. That makes it a different
+configuration, so it gets its own measurement rather than borrowing one — the pipeline settles 4
+of the 200 test cases and the container settles 3, which is proof enough that they differ.
+
+Results are in [`reports/served-test-200.json`](../reports/served-test-200.json).
 
 ## 4. Deploy
 
@@ -64,14 +94,33 @@ Then push this repository plus `data/deploy/` to the Space remote:
 
 ```bash
 git remote add space https://huggingface.co/spaces/<user>/<space>
-git push space main
 ```
 
-`data/deploy/` is gitignored here, so force-add it **on the Space remote only**:
+`data/deploy/` is gitignored here, and the Space needs it. **A commit belongs to a
+branch, not to a remote**, so `git add -f data/deploy && git commit` on `main` puts the
+14.7 MB artefact into this repository's history and the next `git push origin main`
+carries it upstream — exactly what `.gitignore` is there to prevent. Use a throwaway
+branch that is only ever pushed to the Space:
 
 ```bash
-git add -f data/deploy && git commit -m "bundle" && git push space main
+git checkout -b space-deploy
 ```
+
+```bash
+git add -f data/deploy && git commit -m "Add the service bundle for the Space"
+```
+
+```bash
+git push space space-deploy:main
+```
+
+```bash
+git checkout main && git branch -D space-deploy
+```
+
+The branch is deleted straight after, so `main` never contains the bundle. Rebuild and
+repeat whenever the schedule revision changes — the service refuses to start if
+`HTS_REVISION` disagrees with what the bundle was built from.
 
 ### Fly.io
 
@@ -82,17 +131,41 @@ fly deploy
 
 `fly.toml` in this directory sets the internal port to 8000 and a 1 GB machine, which is more
 than the service needs — it holds the rulings, the provision text and an inverted index, and
-measured about 250 MB resident locally.
+measured **116 MB resident in the container** (`docker stats`, after serving 200 requests). An
+earlier draft of this file said about 250 MB; that was a uvicorn process in the Windows venv, not
+the image, and the image is the thing being sized.
 
 ## What a reviewer sees
 
 The page states the schedule revision, how many rulings are indexed, and that the rules decide
-or refuse. Typing a description returns one of two clearly labelled tiers:
+or refuse. Typing a description returns one of two clearly labelled tiers. Both figures below
+were measured **on this configuration**, through HTTP against the built container:
 
 * **Settled by the rules** — the deterministic answer, with its GRI path and the notes consulted.
-  Rare: about 2% of cases, right 41.7% of the time on the held-out set.
+  Rare: **3 of 200** test cases (1.5%), and **1 of those 3** was right. Three cases is not an
+  accuracy and this file will not print one; the measurement script prints the cases instead.
+  One of the two misses is instructive — "a chisel" resolved at GRI 1 to 8209.00.0030, cermet
+  tool plates, because no candidate in the shortlist was 8205.30, chisels. Stage 3 can only
+  adjudicate the pool stage 2 hands it, and a deterministic engine over a bad pool is
+  confidently wrong rather than unsure.
 * **Precedent suggests, not confirmed by the rules** — the nearest CBP ruling's code, with the
-  accuracy printed next to it (52.5% at six digits, 46.3% excluding leaked duplicates).
+  accuracy printed next to it: **52.5% at six digits (105/200)** and 46.0% at ten (92/200);
+  excluding the 40 test descriptions that appear verbatim in the training data, **46.3%
+  (74/160)** and 40.0% (64/160). These reproduce `reports/precedent-bm25-test-200.json` count
+  for count, and the measurement script now asserts that rather than claiming it.
+
+A third thing the page says, where it applies: **the suggested code is not a line in the pinned
+revision at all.** This fires on 35 of the 200 test cases, because CBP rulings are historical and
+the schedule is not — 2,106 of the 18,253 indexed rulings cite a code 2026HTSRev21 does not
+carry. The cause is measured per case rather than asserted: 22 renumbered statistical suffixes,
+11 whose eight-digit tariff line is gone too, 2 that resolve to nothing. **19 of the 35 are still
+right at six digits**, which is the plainest evidence in this project for why six- and ten-digit
+accuracy are reported as separate claims: the international subheading is stable, the US
+statistical suffix is not.
+
+Since the page shows the decided answer where it exists and the suggestion otherwise, the
+user-visible accuracy over all 200 cases is **52.5% at six digits and 46.0% at ten** — the
+decided tier is too small to move it either way.
 
 Keeping them apart is the point. Collapsing them would either answer "not classified" to almost
 every query while withholding a better-than-even guess, or pass a similarity match off as an

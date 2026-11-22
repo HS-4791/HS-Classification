@@ -607,7 +607,13 @@ class GRIEngine:
         """
         texts = texts or {}
         if not candidates:
-            return Decision(None, ["GRI 1"], escalated=True,
+            # An empty ``rule_path``, not ``["GRI 1"]``. With no candidates no
+            # heading terms were compared, so GRI 1 was not evaluated, and
+            # CLAUDE.md is explicit that naming a rule the walk never reached
+            # is a fabrication in a trace week 4 scores explanations against.
+            # It read "the rules were applied as far as GRI 1" for an empty
+            # description, which is a claim about work that did not happen.
+            return Decision(None, [], escalated=True,
                             reason="no candidate headings were proposed")
 
         narrowed, failed = self._condition_rule(facts, list(candidates), texts)

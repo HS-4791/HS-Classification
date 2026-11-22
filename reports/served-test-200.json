@@ -1,0 +1,102 @@
+{
+  "revision": "2026HTSRev21",
+  "set": "test-200",
+  "configuration": "served - BM25 precedent retrieval, no vector index",
+  "base_url": "http://127.0.0.1:8100",
+  "n": 200,
+  "rulings_indexed": 18253,
+  "latency_ms": {
+    "observed_over_http": {
+      "median": 6.0,
+      "p95": 31.5
+    },
+    "server_self_reported": {
+      "median": 1.6,
+      "p95": 3.4
+    }
+  },
+  "decided": {
+    "coverage": 0.015,
+    "n": 3,
+    "right_6": 1,
+    "right_10": 1,
+    "cases": [
+      {
+        "description": "a women's vest made from 90% cotton and 10% polyester knitted fleece fabric, featuring a hood with a drawstring, oversiz",
+        "code": "6110202035",
+        "gold": "6110202035",
+        "right_6": true,
+        "right_10": true,
+        "rule_path": [
+          "GRI 1",
+          "Section XI Subheading Note 2(A)",
+          "Section XI Note 2(A)"
+        ],
+        "leaked": false
+      },
+      {
+        "description": "a woman's 100% nylon lace, knit dress with a 100% polyester knit slip liner",
+        "code": "6108320010",
+        "gold": "6114901030",
+        "right_6": false,
+        "right_10": false,
+        "rule_path": [
+          "GRI 1",
+          "Section XI Subheading Note 2(A)",
+          "Section XI Note 2(A)"
+        ],
+        "leaked": false
+      },
+      {
+        "description": "a chisel",
+        "code": "8209000030",
+        "gold": "8205306000",
+        "right_6": false,
+        "right_10": false,
+        "rule_path": [
+          "GRI 1"
+        ],
+        "leaked": true
+      }
+    ]
+  },
+  "precedent": {
+    "n": 200,
+    "right_6": 105,
+    "right_10": 92,
+    "leaked": 40,
+    "clean_n": 160,
+    "clean_right_6": 74,
+    "clean_right_10": 64,
+    "not_in_revision": 35,
+    "not_in_revision_right_6": 19,
+    "not_in_revision_reasons": {
+      "line withdrawn": 11,
+      "suffix renumbered": 22,
+      "unresolved": 2
+    }
+  },
+  "shown": {
+    "n": 200,
+    "right_6": 105,
+    "right_10": 92
+  },
+  "reproduces_library": {
+    "checked": true,
+    "source": "precedent-bm25-test-200.json",
+    "expected": {
+      "right_6": 105,
+      "right_10": 92,
+      "clean_right_6": 74,
+      "clean_right_10": 64
+    },
+    "actual": {
+      "right_6": 105,
+      "right_10": 92,
+      "clean_right_6": 74,
+      "clean_right_10": 64
+    },
+    "matches": true,
+    "differences": {}
+  }
+}
