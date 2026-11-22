@@ -24,6 +24,10 @@ dependencies = [
 # Application Control policy refuses to load. Search is exact numpy, no faiss.
 retrieval = ["fastembed>=0.5"]
 data = ["datasets>=3.2", "pandas>=2.2"]
+# The live service. Deliberately thin: precedent retrieval is BM25 over text,
+# so the deployed path needs no embeddings, no ONNX runtime and no model
+# download - which is why it is the path that ships.
+serve = ["fastapi>=0.115", "uvicorn>=0.32"]
 llm = ["anthropic>=0.69"]
 dev = ["pytest>=8.3", "pytest-cov>=6.0", "ruff>=0.8", "mypy>=1.13"]
 

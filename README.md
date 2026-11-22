@@ -737,6 +737,40 @@ schedule — so the next thing to measure is whether the deterministic rules can
 *those* by law. A gain there would be a gain by reasoning, which is the one kind this
 architecture is built to produce.
 
+## The service
+
+A description in, a code and its reasoning out — or a refusal with the shortlist a human
+classifier would work from. `deploy/README.md` has the steps; the short version:
+
+```bash
+python -u scripts/build_deploy_bundle.py
+```
+
+```bash
+uvicorn --factory hsclass.serve.app:create_app --port 8000
+```
+
+**The deployed path carries no embeddings, no ONNX runtime and no model download.** Precedent
+retrieval is BM25 over ruling text, so the bundle is 14.7 MB, the cold start is about a second
+and no API key is needed — where the schedule's vector index alone is 44 MB of floats for a
+tenth of the accuracy. A classification measured 2.1 ms end to end locally.
+
+The page returns one of **two clearly labelled tiers**, and keeping them apart is the point:
+
+- **Settled by the rules** — the deterministic answer with its GRI path and the notes consulted.
+  About 2% of cases, right 41.7% of the time on the held-out set.
+- **Precedent suggests, not confirmed by the rules** — the nearest CBP ruling's code, with its
+  accuracy printed beside it and the rulings themselves listed.
+
+Collapsing them would either answer "not classified" to almost every query while withholding a
+better-than-even guess, or pass a similarity match off as an adjudicated one. Every response
+states the schedule revision, because a classification is only true against a version of the
+nomenclature.
+
+**Not yet verified: the container.** Docker Desktop was not running when this was written, so
+the image has never been built. What *is* verified is the `serve` extra installing, the app
+building, the service answering over HTTP, and the page working in a browser.
+
 ## Running it
 
 ```bash

@@ -2,6 +2,10 @@
 data/raw/
 data/interim/
 data/processed/
+# the 14.7 MB service bundle, built by scripts/build_deploy_bundle.py. Same
+# rule: a build artefact, not a source. It is force-added to the deployment
+# remote only — see deploy/README.md.
+data/deploy/
 *.faiss
 *.index
 

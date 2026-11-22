@@ -1,9 +1,14 @@
-.git
-.venv
-data
-traces
-docs
-__pycache__
-*.egg-info
-.pytest_cache
-.ruff_cache
+.venv/
+.git/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+# The processed directory is 177 MB, almost all of it embeddings the served
+# path never touches. Only data/deploy and data/manifests are copied in.
+data/raw/
+data/interim/
+data/processed/
+docs/
+reports/
+tests/
