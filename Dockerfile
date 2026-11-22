@@ -22,6 +22,11 @@ COPY scripts ./scripts
 # build the image. 14.7 MB of rulings, provision text and notes.
 COPY data/deploy ./data/deploy
 
+# Absolute, so the service does not depend on the working directory the host
+# starts the container in. A relative "data/deploy" works here and fails on a
+# platform that launches it from elsewhere.
+ENV HSCLASS_BUNDLE=/app/data/deploy
+
 EXPOSE 8000
 
 # Liveness only. It is NOT what makes a missing bundle fatal - verified by

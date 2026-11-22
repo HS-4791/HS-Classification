@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -102,6 +103,28 @@ def test_the_basis_is_sent_whenever_a_suggestion_is(bundle):
 def test_extracted_attributes_are_reported(bundle):
     answer = Service(bundle).classify("a pullover of 60% cotton and 40% modal")
     assert answer["attributes"]["materials"] == {"cotton": 60.0, "modal": 40.0}
+
+
+def test_the_bundle_path_can_be_set_by_environment(bundle, monkeypatch):
+    """So the service does not depend on the host's working directory.
+
+    ``BUNDLE`` is read at import, so this reloads the module rather than
+    pretending the module-level default can be monkeypatched in place.
+    """
+    import importlib
+
+    import hsclass.serve.app as module
+
+    monkeypatch.setenv("HSCLASS_BUNDLE", str(bundle))
+    reloaded = importlib.reload(module)
+    try:
+        assert reloaded.BUNDLE == bundle
+        # And the default is still the relative path a checkout expects.
+        monkeypatch.delenv("HSCLASS_BUNDLE")
+        assert importlib.reload(module).BUNDLE == Path("data/deploy")
+    finally:
+        monkeypatch.undo()
+        importlib.reload(module)
 
 
 def test_a_revision_mismatch_refuses_to_serve(bundle, monkeypatch):

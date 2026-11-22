@@ -38,7 +38,13 @@ from hsclass.schedule.notes import Note
 SHORTLIST = 5
 
 #: Where ``scripts/build_deploy_bundle.py`` writes, and what the image copies.
-BUNDLE = Path("data/deploy")
+#:
+#: Relative by default, which is right for a checkout, and overridable because
+#: a relative path depends on the working directory the platform happens to
+#: start the process in. The Dockerfile sets it to an absolute path so that a
+#: host which launches the container from somewhere other than /app does not
+#: fail at import with a FileNotFoundError.
+BUNDLE = Path(os.environ.get("HSCLASS_BUNDLE") or "data/deploy")
 
 #: What the precedent tier is, and how often it is right.
 #:
