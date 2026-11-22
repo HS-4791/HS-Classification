@@ -1,0 +1,58 @@
+{
+  "revision": "2026HTSRev21",
+  "rulings_indexed": 18253,
+  "n": 200,
+  "leakage_free_n": 160,
+  "reranked": true,
+  "depth": 50,
+  "model": "Xenova/ms-marco-MiniLM-L-6-v2",
+  "results": {
+    "top1@6": {
+      "all": 0.52,
+      "clean": 0.4562
+    },
+    "top5@6": {
+      "all": 0.77,
+      "clean": 0.7312
+    },
+    "top10@6": {
+      "all": 0.805,
+      "clean": 0.7688
+    },
+    "top20@6": {
+      "all": 0.83,
+      "clean": 0.8
+    },
+    "top1@10": {
+      "all": 0.46,
+      "clean": 0.4
+    },
+    "top5@10": {
+      "all": 0.695,
+      "clean": 0.6625
+    },
+    "top10@10": {
+      "all": 0.73,
+      "clean": 0.7063
+    },
+    "top20@10": {
+      "all": 0.75,
+      "clean": 0.7312
+    }
+  },
+  "pool_ceiling_at_6": {
+    "all": 0.835,
+    "clean": 0.8063
+  },
+  "latency_ms_p50": 1002.7,
+  "compared_with": {
+    "schedule_retrieval": {
+      "top1@6": 0.15,
+      "top5@6": 0.225
+    },
+    "atlas_paper": {
+      "top1@6": 0.575,
+      "top1@10": 0.4
+    }
+  }
+}

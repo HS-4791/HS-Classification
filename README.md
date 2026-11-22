@@ -666,6 +666,77 @@ fabric, a lace trim, and one plausible garment. The rules picked the only sensib
 offered. The engine behaved correctly on input it should never have been given, which is the
 case for fixing stage 1 and stage 2 before polishing stage 3 further.
 
+## Searching the rulings instead of the schedule, which is worth 37 points
+
+Every retrieval path above searches the **schedule**: 30,195 provisions, each embedded with its
+inherited chain. That is the obvious corpus and it runs straight into the finding that has
+defeated four separate mechanisms in this project — **the schedule's vocabulary is not the
+shipper's**. "Cardigan" appears in no HTS provision; the schedule says "Sweaters, pullovers,
+sweatshirts, waistcoats (vests) and similar articles". No amount of ranking repairs a query and
+a corpus that share no words.
+
+The training split is 18,253 CBP ruling descriptions, each with the code an officer assigned,
+written in the same register as the query. Searching those sidesteps the gap entirely — and it
+is what a customs broker does, because CROSS *is* a precedent database. BM25 over them, with no
+embeddings and no model:
+
+| | all 200 | leakage-free 160 | schedule retrieval | published fine-tune |
+| --- | ---: | ---: | ---: | ---: |
+| **top-1 @6** | **52.50%** | **46.25%** | 15.00% | 57.5% |
+| top-5 @6 | 73.00% | 68.12% | 22.50% | — |
+| top-20 @6 | 81.50% | 78.12% | 31.50% | — |
+| **top-1 @10** | **46.00%** | **40.00%** | 3.05% | **40.0%** |
+| top-5 @10 | 65.00% | 60.62% | — | — |
+| depth-50 pool ceiling @6 | 83.50% | 80.62% | — | — |
+
+**At ten digits — the harder, US-only claim — an inverted index matches a fine-tuned
+LLaMA-3.3-70B**: 40.00% on the leakage-free slice against the paper's 40.0%, and 46.00% over the
+full split. At six digits it reaches 52.50% against their 57.5%.
+
+**Two columns, because the official split leaks, and that is worth recording on its own
+account.** 40 of the 200 test descriptions appear **verbatim** in the training set: 31 with the
+same ten-digit code, and **9 with a different one**, which means the benchmark holds
+contradictory labels and no system can be right on both. Any method that memorises or retrieves
+from the training data collects those 31 free, a fine-tuned model included, so the published
+57.5% and the 52.50% here both carry it. The leakage-free column is the one to read.
+
+This does not put a model in stage 3. A precedent is a *candidate*, so this is stage 2, which is
+allowed to be probabilistic precisely because stage 3 adjudicates deterministically or refuses.
+What changes is the quality of what stage 3 is handed — and a precedent is **citable** in a way
+a cosine distance is not: `PrecedentIndex.citations` returns the rulings behind an answer, so an
+explanation can say "CBP ruled on near-identical goods under 6110.20" rather than quoting a
+similarity score.
+
+### The reranker fails here too, for a legible reason
+
+The gap between 52.50% top-1 and the 83.50% pool ceiling is 31 points of pure ordering, which is
+what a reranker is for. The prediction written down before the run was that the cross-encoder
+would do better here than the +4.5 points it managed over the schedule, because the pairing is
+finally the one it was trained on — a product description against another product description,
+query against passage in one register, rather than against a nomenclature chain. That was wrong.
+
+| | BM25 | + cross-encoder | delta |
+| --- | ---: | ---: | ---: |
+| top-1 @6, all 200 | 52.50% | 52.00% | **−0.50** |
+| top-1 @6, clean | 46.25% | 45.62% | −0.63 |
+| top-5 @6, all 200 | 73.00% | **77.00%** | +4.00 |
+| top-5 @6, clean | 68.12% | **73.12%** | +5.00 |
+| top-1 @10 | 46.00% | 46.00% | 0.00 |
+| latency p50 | ~0ms | **1,003ms** | +1s |
+
+It tightens the top five and cannot pick the best one, for a second per classification. That is
+**twice** this reranker has failed to convert recall into top-1, on two unrelated pools. The
+explanation that fits: among fifty near-identical garment descriptions the discriminating fact
+is a percentage, a gender, or knit against woven, and a model trained on web-search relevance
+scores topical similarity — by which all fifty are the same. Not adopted; the hook stays because
+the 31-point gap is real and something else may close it.
+
+Which points back at this project's own thesis. The engine's candidate quality has tripled —
+the right subheading is in precedent's top five **73%** of the time against 22.5% from the
+schedule — so the next thing to measure is whether the deterministic rules can choose among
+*those* by law. A gain there would be a gain by reasoning, which is the one kind this
+architecture is built to produce.
+
 ## Running it
 
 ```bash

@@ -213,6 +213,30 @@ class CrossEncoderReranker:
         self.model_name = model_name
         self.depth = depth
 
+    def order(self, description: str, texts: list[str]) -> list[int]:
+        """Indices of ``texts``, best first; the tail past ``depth`` keeps order.
+
+        The text-pair entry point, for reranking anything that is not a walk.
+        ``__call__`` scores the query against a *nomenclature chain* - "T-shirts
+        — Of cotton — Men's (338)" - which is not the pairing this family of
+        models was trained on. Precedent retrieval scores it against another
+        *product description*, query against passage with both in the same
+        register, which is what a ms-marco cross-encoder is for. That
+        difference is the reason to expect more from it here than the +4.5
+        points it managed over the schedule pool.
+        """
+        head = texts[: self.depth]
+        if len(head) < 2:
+            return list(range(len(texts)))
+        scores = list(self.encoder.rerank(description, head))
+        ranked = [
+            index
+            for _, index in sorted(
+                zip(scores, range(len(head)), strict=True), key=lambda pair: -pair[0]
+            )
+        ]
+        return [*ranked, *range(len(head), len(texts))]
+
     def __call__(self, description: str, walks: list[Walk]) -> list[Walk]:
         head, tail = walks[: self.depth], walks[self.depth:]
         if len(head) < 2:

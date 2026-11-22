@@ -94,17 +94,32 @@ class PrecedentIndex:
         return [(int(row), float(scores[row])) for row in order if scores[row] > 0]
 
     def codes(
-        self, description: str, ranking: str = "nearest", digits: int = 10
+        self,
+        description: str,
+        ranking: str = "nearest",
+        digits: int = 10,
+        reranker: object | None = None,
     ) -> list[str]:
         """Candidate codes from precedent, ranked, deduplicated.
 
         ``digits`` truncates before deduplicating, so asking for six returns
         distinct subheadings rather than distinct tariff lines - which is what
         a six-digit claim should be scored on.
+
+        ``reranker`` reorders the neighbouring rulings before they collapse to
+        codes, by scoring the query against each ruling's own description. The
+        headroom for it is measured: the gold six-digit code is somewhere in
+        the depth-50 neighbour pool for 83.50% of the official test split
+        while BM25 puts it first for 52.50%, so a third of the available
+        accuracy is sitting in the order rather than the recall.
         """
         if ranking not in RANKINGS:
             raise ValueError(f"ranking must be one of {RANKINGS}, not {ranking!r}")
         found = self.neighbours(description)
+
+        if reranker is not None and len(found) > 1:
+            texts = [self.precedents[row].description for row, _ in found]
+            found = [found[index] for index in reranker.order(description, texts)]
 
         if ranking == "nearest":
             ranked: list[str] = []

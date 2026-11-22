@@ -1,0 +1,58 @@
+{
+  "revision": "2026HTSRev21",
+  "rulings_indexed": 18253,
+  "n": 200,
+  "leakage_free_n": 160,
+  "reranked": false,
+  "depth": 50,
+  "model": null,
+  "results": {
+    "top1@6": {
+      "all": 0.525,
+      "clean": 0.4625
+    },
+    "top5@6": {
+      "all": 0.73,
+      "clean": 0.6813
+    },
+    "top10@6": {
+      "all": 0.79,
+      "clean": 0.75
+    },
+    "top20@6": {
+      "all": 0.815,
+      "clean": 0.7812
+    },
+    "top1@10": {
+      "all": 0.46,
+      "clean": 0.4
+    },
+    "top5@10": {
+      "all": 0.65,
+      "clean": 0.6062
+    },
+    "top10@10": {
+      "all": 0.705,
+      "clean": 0.675
+    },
+    "top20@10": {
+      "all": 0.74,
+      "clean": 0.7188
+    }
+  },
+  "pool_ceiling_at_6": {
+    "all": 0.835,
+    "clean": 0.8063
+  },
+  "latency_ms_p50": 0.4,
+  "compared_with": {
+    "schedule_retrieval": {
+      "top1@6": 0.15,
+      "top5@6": 0.225
+    },
+    "atlas_paper": {
+      "top1@6": 0.575,
+      "top1@10": 0.4
+    }
+  }
+}

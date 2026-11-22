@@ -66,3 +66,29 @@ def test_the_rulings_behind_an_answer_are_citable(index):
 def test_an_empty_index_is_refused():
     with pytest.raises(ValueError, match="at least one"):
         PrecedentIndex([])
+
+
+class StubReranker:
+    """Reverses the pool, so a test can see that the order was applied."""
+
+    depth = 50
+
+    def order(self, description, texts):
+        return list(reversed(range(len(texts))))
+
+
+def test_a_reranker_reorders_the_precedents_before_they_become_codes(index):
+    """The hook exists; the cross-encoder measured through it does not pay.
+
+    BM25 alone gets top-1 at six digits to 52.50% on the official split
+    against a depth-50 pool ceiling of 83.50%. Adding the cross-encoder moves
+    top-1 to 52.00% - one case the wrong way - lifts top-5 by 4 points, and
+    costs a second per classification. The hook is kept because the gap it was
+    built to close is real and measured; this particular model does not close
+    it.
+    """
+    plain = index.codes("knit cardigan acrylic", digits=10)
+    reversed_ = index.codes("knit cardigan acrylic", digits=10, reranker=StubReranker())
+    assert plain and reversed_
+    assert plain != reversed_
+    assert set(plain) == set(reversed_)
