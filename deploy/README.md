@@ -76,51 +76,47 @@ cannot be done from here.
 
 ### Hugging Face Spaces
 
-Free, public URL, Docker-native, and the bundle can live in the Space repo without putting data
-in the main one. Create a Space with **SDK: Docker**, then give its `README.md` this frontmatter:
+Free, public URL, Docker-native, and the bundle can live in the Space without going anywhere
+near this repository's history. Log in once — **this step is yours, so the token stays yours**:
 
-```yaml
----
-title: HS Tariff Classification
-emoji: 📦
-colorFrom: gray
-colorTo: green
-sdk: docker
-app_port: 8000
----
+```powershell
+.\.venv\Scripts\python.exe -c "from huggingface_hub.cli.hf import main; main()" auth login
 ```
 
-Then push this repository plus `data/deploy/` to the Space remote:
+Then:
 
-```bash
-git remote add space https://huggingface.co/spaces/<user>/<space>
+```powershell
+python -u scripts/deploy_space.py <user>/<space-name> --dry-run
 ```
 
-`data/deploy/` is gitignored here, and the Space needs it. **A commit belongs to a
-branch, not to a remote**, so `git add -f data/deploy && git commit` on `main` puts the
-14.7 MB artefact into this repository's history and the next `git push origin main`
-carries it upstream — exactly what `.gitignore` is there to prevent. Use a throwaway
-branch that is only ever pushed to the Space:
-
-```bash
-git checkout -b space-deploy
+```powershell
+python -u scripts/deploy_space.py <user>/<space-name>
 ```
 
-```bash
-git add -f data/deploy && git commit -m "Add the service bundle for the Space"
-```
+The script creates the Space with `sdk: docker`, uploads `deploy/space-README.md` as the
+Space's `README.md` — its YAML frontmatter is what tells the Hub to build the Dockerfile and
+which port to expose — and uploads the 69 files the image needs, 15.2 MB. It uploads from an
+**allow-list**, not an ignore-list, so a new top-level directory here cannot reach a public
+Space because nobody remembered to exclude it, and it refuses outright if anything matching
+`.env` appears in the set. It never touches the token: `huggingface_hub` reads the credential
+stored by `auth login`, so the value is never put on a command line or printed.
 
-```bash
-git push space space-deploy:main
-```
+Re-run it to update, including for a new schedule revision — rebuild the bundle first. The
+service refuses to start if `HTS_REVISION` disagrees with what the bundle was built from.
 
-```bash
-git checkout main && git branch -D space-deploy
-```
+#### Why not the git route
 
-The branch is deleted straight after, so `main` never contains the bundle. Rebuild and
-repeat whenever the schedule revision changes — the service refuses to start if
-`HTS_REVISION` disagrees with what the bundle was built from.
+Pushing a branch to a Space remote also works, and the obvious spelling of it is wrong three
+ways. **A commit belongs to a branch, not to a remote**, so `git add -f data/deploy && git
+commit` on `main` puts the 14.7 MB artefact into this repository's history and the next
+`git push origin main` carries it upstream — exactly what `.gitignore` exists to prevent. Doing
+it on a throwaway branch avoids that, but then **checking out `main` again deletes
+`data/deploy` from the working tree**, because the files were tracked on the branch and are
+ignored on `main`; that happened here, and the bundle had to be rebuilt. And the Space wants
+its own short `README.md`, which on a branch means overwriting this repository's.
+
+The Hub API has none of those properties: nothing is committed locally, `main` never carries the
+bundle, and the working tree is untouched.
 
 ### Fly.io
 
