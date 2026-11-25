@@ -29,5 +29,7 @@
         "n": 2000
       }
     }
-  }
+  },
+  "measured_before": "the tie-break fix of 2026-11-25",
+  "reproducibility": "The own-text-only arm is NOT a reproducible measurement. Stripping the inherited chain leaves 6,370 provisions whose own text is \"Other\", so index-levels-own-text holds 18,372 of 29,861 rows in byte-identical vector groups. Those tie exactly against every query, and np.argpartition chooses which k of 6,370 equal rows enter the pool arbitrarily - which kind=\"stable\" in VectorIndex.search does not fix. Re-running this report would not make the own-text-only figures stable. The direction of the finding is unaffected: a 7.5-point fall in top1@6 is far outside any tie-break swing, and ties this degenerate are themselves the mechanism the inherited chain prevents."
 }

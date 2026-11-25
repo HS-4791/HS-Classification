@@ -19,9 +19,9 @@ digits for schedule retrieval:
 
 | | all 200 | leakage-free 160 |
 | --- | --- | --- |
-| nearest, top1@6 | **52.50%** | **46.25%** |
-| nearest, top5@6 | **73.00%** | **68.12%** |
-| nearest, top20@6 | 81.50% | 78.12% |
+| nearest, top1@6 | **53.50%** | **46.25%** |
+| nearest, top5@6 | **73.50%** | **68.75%** |
+| nearest, top20@6 | 82.00% | 78.75% |
 
 **Two numbers, because the official split leaks.** 40 of the 200 test
 descriptions appear verbatim in the training set - 31 with the same ten-digit
@@ -73,7 +73,7 @@ class PrecedentIndex:
     """BM25 over ruling descriptions, returning the codes they were given.
 
     Lexical rather than dense, and that is a measurement rather than a
-    preference: BM25 alone takes top-1 at six digits from 15.00% to 52.50% on
+    preference: BM25 alone takes top-1 at six digits from 15.00% to 53.50% on
     this split. A dense index over the same descriptions can be fused in the
     same way the schedule index fuses, and is worth trying - but the cheap
     half is where the gain turned out to be, so it ships first and alone.
@@ -90,7 +90,22 @@ class PrecedentIndex:
     def neighbours(self, description: str) -> list[tuple[int, float]]:
         """Rows of the nearest rulings, best first, with their scores."""
         scores = self.lexical.scores(terms_in(description))
-        order = np.argsort(-scores)[: self.depth]
+        # kind="stable". The default is quicksort, which orders tied scores
+        # arbitrarily - and not even consistently between numpy builds, which
+        # is how the same bundle scored 105/200 at six digits in one image of
+        # this service and 108/200 in another built three days later.
+        #
+        # The ties are not rare. Measured over the 200-case test split: 40
+        # descriptions tie at rank 1, and in 14 of those the tied rulings
+        # disagree at six digits, so 14 of 200 scored answers were decided by
+        # sort order rather than by BM25. One tie is 74 rulings wide. A stable
+        # sort resolves them by row, which is fixed for a given bundle, so the
+        # same bundle now gives the same answer on any machine.
+        #
+        # This makes the number reproducible. It does not make it right: a
+        # 74-way tie means BM25 genuinely cannot separate those rulings, and
+        # picking the first is a convention, not a judgement.
+        order = np.argsort(-scores, kind="stable")[: self.depth]
         return [(int(row), float(scores[row])) for row in order if scores[row] > 0]
 
     def codes(
@@ -110,7 +125,7 @@ class PrecedentIndex:
         codes, by scoring the query against each ruling's own description. The
         headroom for it is measured: the gold six-digit code is somewhere in
         the depth-50 neighbour pool for 83.50% of the official test split
-        while BM25 puts it first for 52.50%, so a third of the available
+        while BM25 puts it first for 53.50%, so a third of the available
         accuracy is sitting in the order rather than the recall.
         """
         if ranking not in RANKINGS:

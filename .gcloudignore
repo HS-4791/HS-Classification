@@ -1,0 +1,37 @@
+# What Cloud Build is allowed to see.
+#
+# This file has to exist. With no .gcloudignore, gcloud generates one that
+# inherits .gitignore - and data/deploy is gitignored on purpose, because it is
+# a 14.7 MB build artefact reproducible from scripts. The upload would then
+# carry no bundle, the image would build cleanly, and create_app() would exit 1
+# on a container that never served a request.
+#
+# It is an allow-list rather than an ignore-list, for the same reason
+# scripts/deploy_space.py uses one: a new top-level directory in this
+# repository should not reach a public deployment because nobody remembered to
+# exclude it.
+
+# Ignore everything at the root, then re-admit only what the image needs.
+/*
+
+!/Dockerfile
+!/pyproject.toml
+!/.dockerignore
+!/src
+!/scripts
+!/data
+
+# Inside data/, only the two directories the Dockerfile copies. data/processed
+# alone is 177 MB of embeddings the served path never touches.
+/data/*
+!/data/manifests
+!/data/deploy
+
+# Never, whatever the rules above admit. Later patterns win, so these come last.
+.env
+*.env
+.env.*
+__pycache__/
+*.pyc
+*.key
+*.pem

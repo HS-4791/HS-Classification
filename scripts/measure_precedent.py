@@ -1,10 +1,23 @@
 """Retrieval over past rulings, with and without a cross-encoder reranking it.
 
 The check, stated before running. Precedent retrieval by BM25 alone takes
-top-1 at six digits from 15.00% - the schedule path - to 52.50% on the
+top-1 at six digits from 15.00% - the schedule path - to 53.50% on the
 official 200-case test split. The gold code is somewhere in the depth-50
 neighbour pool for **83.50%** of cases, so a third of the available accuracy
 sits in the order rather than the recall, and that is what a reranker is for.
+
+The all-200 top-1 figures here moved on 2026-11-25, from 52.50% and 46.00%,
+when the ranking stopped breaking tied BM25 scores with an unstable sort. Three
+of the leakage-free figures moved too (top5@6, top20@6, top5@10); the two
+leakage-free top-1 figures happened to land on the same counts either way.
+
+Do not read that as the clean column being tie-free. It is not: 24 of the 40
+rank-1 ties are leakage-free, and 8 of the 14 that disagree at six digits.
+Sampling 60 legal tie-breaks, top1@6 ranges 105-111 over the full split and
+74-77 over the clean one. 74 is the bottom of that range, so matching before
+and after is a coincidence of this numpy build. The noise floor for reading
+any of these numbers is about 6 cases on 200 and 3 on 160 for top-1, 2 cases
+for top-5. See hsclass/retrieval/precedent.py.
 
 Expected: a gain much larger than the +4.5 points the same reranker managed
 over the schedule pool, because the pairing is different. Over the schedule it

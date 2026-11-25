@@ -8,43 +8,43 @@
   "model": null,
   "results": {
     "top1@6": {
-      "all": 0.525,
+      "all": 0.535,
       "clean": 0.4625
     },
     "top5@6": {
-      "all": 0.73,
-      "clean": 0.6813
+      "all": 0.735,
+      "clean": 0.6875
     },
     "top10@6": {
       "all": 0.79,
       "clean": 0.75
     },
     "top20@6": {
-      "all": 0.815,
-      "clean": 0.7812
+      "all": 0.82,
+      "clean": 0.7875
     },
     "top1@10": {
-      "all": 0.46,
+      "all": 0.475,
       "clean": 0.4
     },
     "top5@10": {
-      "all": 0.65,
-      "clean": 0.6062
+      "all": 0.655,
+      "clean": 0.6125
     },
     "top10@10": {
       "all": 0.705,
       "clean": 0.675
     },
     "top20@10": {
-      "all": 0.74,
-      "clean": 0.7188
+      "all": 0.735,
+      "clean": 0.7125
     }
   },
   "pool_ceiling_at_6": {
     "all": 0.835,
     "clean": 0.8063
   },
-  "latency_ms_p50": 0.4,
+  "latency_ms_p50": 1.1,
   "compared_with": {
     "schedule_retrieval": {
       "top1@6": 0.15,

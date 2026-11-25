@@ -55,13 +55,24 @@ BUNDLE = Path(os.environ.get("HSCLASS_BUNDLE") or "data/deploy")
 #: the 200 test cases; the container has no vector index and settles 3.
 #:
 #: The precedent tier, though, reproduces the library measurement exactly -
-#: 105/200 and 92/200, the counts behind the 0.525 and 0.46 in
+#: 107/200 and 95/200, the counts behind the 0.535 and 0.475 in
 #: reports/precedent-bm25-test-200.json - so the bundle build is faithful to
 #: the index it was made from.
+#:
+#: Those two counts were 105 and 92 until 2026-11-25, and the reason they moved
+#: is worth keeping: the ranking sorted tied BM25 scores with an unstable sort,
+#: so which of several equally-scored rulings won was arbitrary and differed
+#: between numpy builds. Deploying this service is what exposed it - the same
+#: bundle scored 105/200 in the local container and 108/200 on Cloud Run.
+#:
+#: The two leakage-free counts below did not move, but not because the clean
+#: slice is tie-free: 24 of the 40 rank-1 ties are leakage-free, and over 60
+#: sampled tie-breaks the clean top1@6 ranges 74-77. It landed on 74 either
+#: way, which is luck rather than structure. See precedent.py.
 SUGGESTED_BASIS = (
     "nearest CBP ruling by BM25 over 18,253 rulings; on the 200-case test "
-    "split it is right 52.5% of the time at six digits (105/200) and 46.0% at "
-    "ten (92/200). Excluding the 40 test descriptions that appear verbatim in "
+    "split it is right 53.5% of the time at six digits (107/200) and 47.5% at "
+    "ten (95/200). Excluding the 40 test descriptions that appear verbatim in "
     "the training data: 46.3% at six digits (74/160) and 40.0% at ten (64/160)"
 )
 
@@ -219,7 +230,7 @@ class Service:
         # Two tiers, labelled, because they carry different weight and a
         # reviewer deserves to know which is which. In this configuration the
         # rules settle 3 of the 200 test cases and precedent answers all 200 at
-        # 52.5% top-1 at six digits. Showing only the deterministic tier would
+        # 53.5% top-1 at six digits. Showing only the deterministic tier would
         # mean answering "not classified" to 99% of queries while holding a
         # better-than-even guess back - which reads as broken rather than
         # careful. Showing only precedent would throw away what this is for.

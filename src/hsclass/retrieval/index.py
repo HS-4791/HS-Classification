@@ -115,7 +115,34 @@ class VectorIndex:
         top = np.argpartition(-scores, kth=k - 1, axis=1)[:, :k]
         results: list[list[Hit]] = []
         for row, columns in enumerate(top):
-            ordered = columns[np.argsort(-scores[row, columns])]
+            # kind="stable" for the reason given in precedent.py: an unstable
+            # sort orders tied scores differently between numpy builds, which
+            # made the same data score differently in two images.
+            #
+            # Say what this does not fix, because here it matters more than it
+            # does for BM25 and an earlier version of this comment said the
+            # opposite. Exact ties need byte-identical vectors, which means
+            # duplicate text. Counted over the built indices for 2026HTSRev21:
+            #
+            #   index                    rows   in a duplicate group   widest
+            #   index                  26,808                      6        2
+            #   index-levels           29,861                      6        2
+            #   index-levels-own-text  29,861                 18,372    6,370
+            #
+            # So "rarer than the BM25 ties" holds for the two indices the
+            # pipeline uses and is wrong by two orders of magnitude for the
+            # third: 61% of that index sits in a duplicate group because 6,370
+            # provisions have the own text "Other". That is the exact failure
+            # the "every node carries its inherited chain" rule exists to
+            # prevent, showing up as a determinism problem rather than an
+            # accuracy one.
+            #
+            # argpartition above still chooses WHICH k of those 6,370 equal
+            # rows enter the pool, and kind="stable" does not touch that. So
+            # ordering within the k is reproducible now; membership of the k
+            # is not, for that index. reports/chunking.json is measured on it
+            # and predates this change - see the README.
+            ordered = columns[np.argsort(-scores[row, columns], kind="stable")]
             results.append(
                 [Hit(self.candidates[i].code, self.candidates[i].text, float(scores[row, i]))
                  for i in ordered]

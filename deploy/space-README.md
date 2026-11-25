@@ -23,8 +23,8 @@ schedule revision 2026HTSRev21 — not borrowed from a different configuration:
 
 | | all 200 | excluding leaked duplicates |
 | --- | ---: | ---: |
-| precedent top-1, 6-digit | 52.5% (105/200) | 46.3% (74/160) |
-| precedent top-1, 10-digit | 46.0% (92/200) | 40.0% (64/160) |
+| precedent top-1, 6-digit | 53.5% (107/200) | 46.3% (74/160) |
+| precedent top-1, 10-digit | 47.5% (95/200) | 40.0% (64/160) |
 | settled by the rules | 3 of 200 | 1 of those 3 correct |
 
 For scale, the published fine-tuned LLaMA-3.3-70B baseline on this split is 57.5% at six digits
@@ -37,9 +37,9 @@ tool plates, because no candidate offered to the rule engine was 8205.30, chisel
 deterministic engine over a bad shortlist is not unsure — it is confidently wrong.
 
 The page will also tell you when a suggested code **is not a line in this revision at all**. That
-happens on 35 of the 200 cases, because CBP rulings are historical and the schedule is not: 22
+happens on 36 of the 200 cases, because CBP rulings are historical and the schedule is not: 23
 renumbered statistical suffixes, 11 whose eight-digit tariff line is gone too, 2 that resolve to
-nothing. 19 of the 35 are still right at six digits, which is why six- and ten-digit accuracy are
+nothing. 19 of the 36 are still right at six digits, which is why six- and ten-digit accuracy are
 reported as separate claims here rather than averaged.
 
 Source, including every measurement script and report:

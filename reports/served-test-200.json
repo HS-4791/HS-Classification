@@ -7,12 +7,12 @@
   "rulings_indexed": 18253,
   "latency_ms": {
     "observed_over_http": {
-      "median": 6.0,
-      "p95": 31.5
+      "median": 6.4,
+      "p95": 28.9
     },
     "server_self_reported": {
-      "median": 1.6,
-      "p95": 3.4
+      "median": 2.7,
+      "p95": 5.6
     }
   },
   "decided": {
@@ -62,37 +62,37 @@
   },
   "precedent": {
     "n": 200,
-    "right_6": 105,
-    "right_10": 92,
+    "right_6": 107,
+    "right_10": 95,
     "leaked": 40,
     "clean_n": 160,
     "clean_right_6": 74,
     "clean_right_10": 64,
-    "not_in_revision": 35,
+    "not_in_revision": 36,
     "not_in_revision_right_6": 19,
     "not_in_revision_reasons": {
       "line withdrawn": 11,
-      "suffix renumbered": 22,
+      "suffix renumbered": 23,
       "unresolved": 2
     }
   },
   "shown": {
     "n": 200,
-    "right_6": 105,
-    "right_10": 92
+    "right_6": 107,
+    "right_10": 95
   },
   "reproduces_library": {
     "checked": true,
     "source": "precedent-bm25-test-200.json",
     "expected": {
-      "right_6": 105,
-      "right_10": 92,
+      "right_6": 107,
+      "right_10": 95,
       "clean_right_6": 74,
       "clean_right_10": 64
     },
     "actual": {
-      "right_6": 105,
-      "right_10": 92,
+      "right_6": 107,
+      "right_10": 95,
       "clean_right_6": 74,
       "clean_right_10": 64
     },

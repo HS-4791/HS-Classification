@@ -14,9 +14,11 @@ stage 3 adjudicates over is built differently, and stage 2 bounds stage 3.
 So the served path gets its own measurement.
 
 What this run found, and what it did not. The precedent tier reproduces the
-library's figures exactly - 105/200 at six digits, 92/200 at ten, the counts
-behind the 0.525 and 0.46 in reports/precedent-bm25-test-200.json - so the
-bundle build is faithful to the index it was made from. The
+library's figures exactly - 107/200 at six digits, 95/200 at ten, the counts
+behind the 0.535 and 0.475 in reports/precedent-bm25-test-200.json - so the
+bundle build is faithful to the index it was made from. It is also what caught
+the tie-break bug: this check compared 105 against 108 when the same bundle
+ran on two machines, which is the only reason anyone looked. The
 decided tier does not: 1 of 3 right where the pipeline's 4 were right 41.7%
 of the time. Three cases cannot tell those apart, and the script says so
 rather than printing a rate and leaving it to be read as one.
@@ -35,10 +37,18 @@ Reported separately, never averaged:
 
 Usage: start the service, then
 
-    python -u scripts/measure_served.py [base-url]
+    python -u scripts/measure_served.py [base-url] [--out NAME.json]
 
-defaulting to ``http://127.0.0.1:8000``. Point it at the container to measure
-what actually ships; it takes a few seconds and costs nothing.
+defaulting to ``http://127.0.0.1:8000`` and ``served-test-200.json``. Point it
+at the container to measure what actually ships; it takes a few seconds and
+costs nothing.
+
+``--out`` exists because a deployment is its own measured result and must not
+quietly replace another. The container and the public service run the same
+image, so their accuracy columns should agree - but they do not share hardware
+or a network, so their latency rows are different numbers about different
+things, and overwriting one with the other would lose the comparison that
+proves the deployed thing is the thing that was measured.
 """
 
 from __future__ import annotations
@@ -173,13 +183,29 @@ def show(value: float | None) -> str:
 
 def main() -> int:
     args = [a for a in sys.argv[1:] if not a.startswith("-")]
+    flags = [a for a in sys.argv[1:] if a.startswith("-")]
     # A non-URL argument used to be ignored silently, so passing "8100"
     # measured port 8000 and reported it as though that had been asked for.
     if args and not args[0].startswith("http"):
         say(f"not a base URL: {args[0]!r}")
-        say("usage: python -u scripts/measure_served.py [http://host:port]")
+        say("usage: python -u scripts/measure_served.py [http://host:port] [--out NAME.json]")
         return 2
     base = args[0] if args else "http://127.0.0.1:8000"
+
+    # Unknown flags are rejected rather than dropped, for the reason above: a
+    # silently ignored argument makes the run report something other than what
+    # was asked for.
+    report_name = "served-test-200.json"
+    for flag in flags:
+        if flag.startswith("--out="):
+            report_name = flag.split("=", 1)[1]
+        else:
+            say(f"unknown option: {flag!r}")
+            say("usage: python -u scripts/measure_served.py [http://host:port] [--out NAME.json]")
+            return 2
+    if not report_name.endswith(".json") or "/" in report_name or "\\" in report_name:
+        say(f"--out wants a bare .json filename inside reports/, got {report_name!r}")
+        return 2
 
     try:
         with urllib.request.urlopen(base.rstrip("/") + "/health", timeout=10) as resp:
@@ -398,7 +424,7 @@ def main() -> int:
             say(f"    {key}: library {want}, served {got}")
 
     REPORTS.mkdir(exist_ok=True)
-    out = REPORTS / "served-test-200.json"
+    out = REPORTS / report_name
     out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     say("")
     say(f"wrote {out.relative_to(ROOT)}")

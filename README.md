@@ -682,23 +682,29 @@ embeddings and no model:
 
 | | all 200 | leakage-free 160 | schedule retrieval | published fine-tune |
 | --- | ---: | ---: | ---: | ---: |
-| **top-1 @6** | **52.50%** | **46.25%** | 15.00% | 57.5% |
-| top-5 @6 | 73.00% | 68.12% | 22.50% | — |
-| top-20 @6 | 81.50% | 78.12% | 31.50% | — |
-| **top-1 @10** | **46.00%** | **40.00%** | 3.05% | **40.0%** |
-| top-5 @10 | 65.00% | 60.62% | — | — |
+| **top-1 @6** | **53.50%** | **46.25%** | 15.00% | 57.5% |
+| top-5 @6 | 73.50% | 68.75% | 22.50% | — |
+| top-20 @6 | 82.00% | 78.75% | 31.50% | — |
+| **top-1 @10** | **47.50%** | **40.00%** | 3.05% | **40.0%** |
+| top-5 @10 | 65.50% | 61.25% | — | — |
 | depth-50 pool ceiling @6 | 83.50% | 80.62% | — | — |
 
 **At ten digits — the harder, US-only claim — an inverted index matches a fine-tuned
-LLaMA-3.3-70B**: 40.00% on the leakage-free slice against the paper's 40.0%, and 46.00% over the
-full split. At six digits it reaches 52.50% against their 57.5%.
+LLaMA-3.3-70B**: 40.00% on the leakage-free slice against the paper's 40.0%, and 47.50% over the
+full split. At six digits it reaches 53.50% against their 57.5%.
+
+Several of these figures moved on 2026-11-25, when the ranking stopped breaking tied BM25 scores
+with an unstable sort — see [what deploying it found](#what-deploying-it-found) below. Read every
+row against the measured tie-break noise floor given there: **±6 cases on the full split and ±3
+on the leakage-free one for top-1**, ±2 for top-5. Differences smaller than that are not
+differences.
 
 **Two columns, because the official split leaks, and that is worth recording on its own
 account.** 40 of the 200 test descriptions appear **verbatim** in the training set: 31 with the
 same ten-digit code, and **9 with a different one**, which means the benchmark holds
 contradictory labels and no system can be right on both. Any method that memorises or retrieves
 from the training data collects those 31 free, a fine-tuned model included, so the published
-57.5% and the 52.50% here both carry it. The leakage-free column is the one to read.
+57.5% and the 53.50% here both carry it. The leakage-free column is the one to read.
 
 This does not put a model in stage 3. A precedent is a *candidate*, so this is stage 2, which is
 allowed to be probabilistic precisely because stage 3 adjudicates deterministically or refuses.
@@ -709,7 +715,7 @@ similarity score.
 
 ### The reranker fails here too, for a legible reason
 
-The gap between 52.50% top-1 and the 83.50% pool ceiling is 31 points of pure ordering, which is
+The gap between 53.50% top-1 and the 83.50% pool ceiling is 30 points of pure ordering, which is
 what a reranker is for. The prediction written down before the run was that the cross-encoder
 would do better here than the +4.5 points it managed over the schedule, because the pairing is
 finally the one it was trained on — a product description against another product description,
@@ -724,12 +730,25 @@ query against passage in one register, rather than against a nomenclature chain.
 | top-1 @10 | 46.00% | 46.00% | 0.00 |
 | latency p50 | ~0ms | **1,003ms** | +1s |
 
+**Both columns of that table predate the tie-break fix of 2026-11-25 and are left as measured.**
+They should be read against the tie-break noise floor, and a first draft of this paragraph got
+that arithmetic backwards — it cited a 14-case floor and then called a 4-point (8-case) top-5
+gain "well outside" it. Each metric has its own floor and they differ a lot:
+
+* **top-1 swings 6 cases, 3.00 points.** The cross-encoder's −0.50 is one case. It was never a
+  result, and "the reranker costs accuracy" was over-read from noise.
+* **top-5 swings 2 cases, 1.00 point.** The +4.00 is eight cases, genuinely outside it.
+
+So the verdict survives, for the opposite reason to the one first given: the top-5 gain is real
+and the top-1 loss is not. A reranker that buys recall and cannot convert it is still a reranker
+that does not pay here.
+
 It tightens the top five and cannot pick the best one, for a second per classification. That is
 **twice** this reranker has failed to convert recall into top-1, on two unrelated pools. The
 explanation that fits: among fifty near-identical garment descriptions the discriminating fact
 is a percentage, a gender, or knit against woven, and a model trained on web-search relevance
 scores topical similarity — by which all fifty are the same. Not adopted; the hook stays because
-the 31-point gap is real and something else may close it.
+the 30-point gap is real and something else may close it.
 
 Which points back at this project's own thesis. The engine's candidate quality has tripled —
 the right subheading is in precedent's top five **73%** of the time against 22.5% from the
@@ -774,22 +793,45 @@ the container has no vector index at all. Borrowing those numbers would describe
 is not the one deployed — the pipeline settles 4 of the 200 test cases and the container settles
 3, and not the same 3.
 
-`scripts/measure_served.py` scores the running service over HTTP; the results are in
-[`reports/served-test-200.json`](reports/served-test-200.json). Measured against the built image
-on 2026-11-22:
+`scripts/measure_served.py` scores the running service over HTTP. It was run twice on
+2026-11-25 against the same bundle — once on this laptop and once against the public Cloud Run
+deployment — and the two agree count for count, which is the point of showing both:
+[`reports/served-test-200.json`](reports/served-test-200.json) and
+[`reports/served-cloudrun-test-200.json`](reports/served-cloudrun-test-200.json).
 
-| | served configuration, test-200 |
-| --- | --- |
-| Precedent tier, top-1 at six digits | **52.5%** (105/200) |
-| Precedent tier, top-1 at ten digits | 46.0% (92/200) |
-| Excluding the 40 leaked descriptions, six digits | 46.3% (74/160) |
-| Excluding the 40 leaked descriptions, ten digits | 40.0% (64/160) |
-| Decided by the rules | 3 of 200 (1.5%), **1 of the 3 right** |
-| What the page shows, six digits | 52.5% (105/200) |
-| Suggestions naming a code absent from the revision | 35 of 200 (17.5%) — of which 19 still right at six digits |
-| Latency observed over HTTP | median ~6 ms, **p95 ~31 ms** |
-| Latency the server reports about itself | median 1.6 ms, p95 3.4 ms |
-| Resident memory | 116 MB |
+| | local (uvicorn in the venv) | **live on Cloud Run** |
+| --- | --- | --- |
+| Precedent tier, top-1 at six digits | 53.5% (107/200) | **53.5%** (107/200) |
+| Precedent tier, top-1 at ten digits | 47.5% (95/200) | 47.5% (95/200) |
+| Excluding the 40 leaked descriptions, six digits | 46.3% (74/160) | 46.3% (74/160) |
+| Excluding the 40 leaked descriptions, ten digits | 40.0% (64/160) | 40.0% (64/160) |
+| Decided by the rules | 3 of 200 (1.5%), **1 of the 3 right** | same 3, same 1 |
+| What the page shows, six digits | 53.5% (107/200) | 53.5% (107/200) |
+| Suggestions naming a code absent from the revision | 36 of 200 (18.0%) — of which 19 still right at six digits | same |
+| Latency observed over HTTP | median 6.4 ms, p95 28.9 ms | median 181.2 ms, p95 230.6 ms |
+| Latency the server reports about itself | median 2.7 ms, p95 5.6 ms | median 2.4 ms, p95 4.0 ms |
+| Resident memory | not measured here | not measured |
+
+**Those two latency columns do not mean the deployed service is thirty times slower.** The
+measurement client is `urllib`, which opens a new connection per request, so every one of the
+200 observed timings includes a fresh DNS lookup and TLS handshake to Mumbai. The server's own
+figure barely moves — 2.7 ms against 2.4 ms — which is the honest statement about the service,
+and 181 ms is the honest statement about this measurement over the public internet. A browser or
+any keep-alive client pays the handshake once. Neither number is quoted alone.
+
+The accuracy columns being *identical* is the result worth reading. Before 2026-11-25 they were
+not, and finding out why is below.
+
+**What is not in that table, stated rather than implied.** The left column is a uvicorn process
+in the Windows venv, not the Docker image — Docker was not running on the machine when the
+tie-break fix was measured, and `reports/served-test-200.json` now holds that run rather than
+the container run of 2026-11-22 that it previously held. The container's own properties — 456 MB
+image, 116 MB resident under `docker stats`, HEALTHCHECK reporting `healthy`, exit code 1 when
+the bundle is missing — were verified on 2026-11-22 and are reported in `deploy/README.md`;
+they have **not** been re-verified since the fix. Nothing in the fix touches them, but "nothing
+should have changed" is not a measurement, so it is written here as unverified rather than
+carried forward as though it were. The Cloud Run column *is* a container, built from this same
+Dockerfile by Cloud Build, and it agrees with the venv on every accuracy figure.
 
 Both latency rows are given because they are different claims, and an earlier draft of this
 section quoted only the cheaper one. `latency_ms` in each response starts timing after FastAPI
@@ -841,9 +883,103 @@ rules were applied as far as GRI 1". No rule had been evaluated. It now returns 
 Two of these were defects in the *fix* for an earlier one, which is the argument for the cold
 read being a separate mechanism rather than a second opinion from the author.
 
-**Not yet verified: a public URL.** Deploying needs an account, which is the one step that
-cannot be done from inside the repo. `deploy/README.md` has the Hugging Face Spaces and Fly.io
-steps, both from this same verified image.
+### What deploying it found
+
+**It is live:** <https://hs-classification-257016385834.asia-south1.run.app>, on Cloud Run in
+Mumbai, scaling to zero between visits. The Hugging Face Spaces route in `deploy/README.md` was
+the plan and is now closed — Docker Spaces need a paid plan as of 2026 — which is recorded there
+rather than deleted.
+
+Putting the same image on a second machine found a bug that nothing on one machine could have.
+The deployed service and the local container disagreed: **105/200 at six digits locally, 108/200
+on Cloud Run**, same bundle, same Dockerfile, same revision. Neither was a better configuration;
+both were wrong to report a single number at all.
+
+The cause was one argument. `PrecedentIndex.neighbours` ranked with `np.argsort(-scores)`, whose
+default `kind="quicksort"` is **not stable**, so rulings with identical BM25 scores came back in
+an arbitrary order — arbitrary in a way that differs between numpy builds. Measured over the
+test split rather than argued:
+
+| | |
+| --- | ---: |
+| Test descriptions with a tie at rank 1 | **40 of 200** |
+| ...where the tied rulings disagree at six digits | **14** |
+| ...where they disagree at ten digits | 15 |
+| Widest tie | **74 rulings** |
+
+So 14 of the 200 published answers were being decided by sort order rather than by BM25, and
+±3 between two builds sits comfortably inside that. `kind="stable"` resolves ties by row, which
+is fixed for a given bundle. Both machines now return **107/200**, and `measure_served.py`'s
+reproduction check passes against the library report on both.
+
+**The leakage-free top-1 figures did not move — and the first draft of this section explained
+that with a story that is false.** It said the ties were concentrated in the 40 leaked
+descriptions, so the honest column had been deterministic all along. A cold read asked for the
+count, and the count says otherwise:
+
+| of the ties at rank 1 | leaked | leakage-free |
+| --- | ---: | ---: |
+| all 40 | 16 | **24** |
+| the 14 that disagree at six digits | 6 | **8** |
+| the 15 that disagree at ten digits | 6 | **9** |
+
+Most ties, and most *consequential* ties, are in the clean slice. And the clean column was never
+deterministic: sampling 60 legal tie-breaks over the same BM25 scores gives
+
+| | range | swing |
+| --- | ---: | ---: |
+| top-1 @6, all 200 | 105–111 | 6 cases, 3.00 points |
+| top-5 @6, all 200 | 146–148 | 2 cases, 1.00 point |
+| top-1 @6, clean 160 | 74–77 | 3 cases, 1.88 points |
+| top-5 @6, clean 160 | 109–111 | 2 cases, 1.25 points |
+
+74 is the *bottom* of the clean range. Landing on it both before and after the fix is a
+coincidence of this numpy build, not a property of the data — and three of the six leakage-free
+cells in the results table did move in the same commit: top-5 @6 68.12→68.75, top-20 @6
+78.12→78.75, top-5 @10 60.62→61.25. Only the two top-1 cells held.
+
+The honest statement is weaker than the one I first wrote and more useful: **both columns were
+coin flips, to about ±3 cases clean and ±6 full**, and the fix makes a given bundle answer the
+same way on every machine rather than making any number more correct. That table of swings is
+now the noise floor to read every row of the results table against, and it is the first time
+this project has had one for retrieval at all.
+
+Two things this does not do. It does not make the answer *better* — a 74-way tie means BM25
+genuinely cannot separate those rulings and taking the lowest row is a convention, not a
+judgement — and `top20@10` in fact moved *down*, 0.740 to 0.735. And it does not retroactively
+fix the reranker ablation, which was measured before the fix and now carries an explicit noise
+floor: a −0.50 point top-1 "result" was one case, inside the noise the whole time.
+
+**What else the same change touches, which the first draft of this section missed entirely.**
+The stable sort was applied to the schedule vector index as well, and `reports/chunking.json` is
+measured on `index-levels-own-text`. Counting byte-identical vectors in the built indices:
+
+| index | rows | in a duplicate-vector group | widest group |
+| --- | ---: | ---: | ---: |
+| `index` | 26,808 | 6 | 2 |
+| `index-levels` | 29,861 | 6 | 2 |
+| **`index-levels-own-text`** | 29,861 | **18,372 (61%)** | **6,370** |
+
+6,370 provisions in that index have the own text `"Other"`, so they are byte-identical vectors
+that tie exactly against every query — which is the chunking finding restated as a determinism
+problem. **`reports/chunking.json` therefore predates this fix and has not been re-run.** Worse,
+re-running it would not make it reproducible: `np.argpartition` still picks *which* 5 of 6,370
+equal rows enter the pool, and the stable sort only orders the 5 it was handed. The
+`own-text-only` configuration is not a reproducible measurement and is not currently marked as
+one anywhere but here. I applied the dating discipline to the reranker table and missed the
+table that was far more exposed to it.
+
+The regression test is `test_tied_rulings_come_back_in_row_order_not_in_sort_order`, and the only
+thing establishing that it is worth having is that it was **run against the reverted fix and
+failed**, returning the tie exactly reversed as `[1203, 1202, 1201, 1200]`.
+
+An earlier draft justified its 1,200 padding rulings by saying numpy uses insertion sort below a
+size threshold, so a small tie would pass with the bug present. That explanation is wrong, and
+the numbers quoted for it came from a different probe than the test's own construction. Measured
+with the construction the test actually uses: padding of 4, 8, 16, 32, 64, 128, 256, 512, 1,024
+and 1,200 all catch the bug, and padding of **384 does not**. It is the introsort pivot pattern,
+deterministic for a given array shape, not a stability threshold — so there is no "big enough"
+rule to trim the test by, and the size stands on the revert check rather than on an argument.
 
 ## Running it
 
@@ -1227,6 +1363,16 @@ Both arms are built from the same 29,861-provision tree. They were not at first:
 index predated a parser fix and held 30,195 provisions, so "the same index with and without
 context" compared two different schedules across a 342-provision gap. `VectorIndex.load` now
 takes the candidate list it is being used for and refuses a cached index that does not match.
+
+**The `own text only` row is not a reproducible measurement, and that was found on 2026-11-25
+rather than when it was published.** Stripping the inherited chain leaves 6,370 provisions whose
+own text is the single word "Other", so that index holds **18,372 of 29,861 rows in
+byte-identical vector groups** — they tie exactly against every query, and which five of 6,370
+enter the candidate pool is decided by `np.argpartition`, arbitrarily. The direction of the
+finding is not in doubt: a 7.5-point fall is far outside any tie-break swing, and ties this
+degenerate are themselves the mechanism the inherited chain prevents. But the specific figures
+in this table predate the tie-break fix, have not been re-run, and would not become reproducible
+if they were. `reports/chunking.json` is dated accordingly.
 
 It is also the only claim from the source documents that this week's measurements confirmed
 without qualification. The spec's "chemicals, textiles and machinery are contested" is two

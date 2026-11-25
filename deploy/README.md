@@ -34,13 +34,22 @@ revision and how much is indexed. `GET /docs` is the generated OpenAPI page.
 docker build -t hsclass:latest .
 ```
 
-**Verified.** Built on 2026-11-22: 456 MB image, 2 minutes cold, 116 MB resident once serving.
+**Verified, on 2026-11-22:** 456 MB image, 2 minutes cold, 116 MB resident once serving.
 `docker inspect` reports the HEALTHCHECK `healthy` with a zero failing streak, `/health` answers
 within half a second of the container starting, and `scripts/measure_served.py` scored all 200
 test cases through it over HTTP — about 6 ms at the median observed by the client, p95 about
-31 ms. The server's own `latency_ms` reports 1.6 ms and 3.4 ms, because it excludes request
-parsing and response serialisation; both are in the report, and quoting only the second would
-overstate the service by roughly ten times at the tail.
+31 ms. The server's own `latency_ms` reported 1.6 ms and 3.4 ms, because it excludes request
+parsing and response serialisation; quoting only the second would overstate the service by
+roughly ten times at the tail.
+
+**Not re-verified since the tie-break fix of 2026-11-25.** That fix changed which ruling wins a
+tied BM25 score, so the accuracy figures from the 2026-11-22 container run are superseded and
+`reports/served-test-200.json` now holds a venv uvicorn run instead — Docker was not running on
+the machine that day. The image properties above (size, resident memory, healthcheck, exit code
+on a missing bundle) are untouched by a sort argument, but untouched-in-principle is not a
+measurement, so they are dated rather than restated as current. The deployed Cloud Run revision
+*is* a container built from this Dockerfile and it reproduces the venv's accuracy exactly, which
+is the stronger check anyway.
 
 One environment note, since an unexecuted workflow is not a workflow: on this machine buildkit's
 build sandbox stopped resolving DNS part-way through the day (`Name or service not known` for
@@ -69,15 +78,37 @@ of the 200 test cases and the container settles 3, which is proof enough that th
 
 Results are in [`reports/served-test-200.json`](../reports/served-test-200.json).
 
+Measure the deployed service the same way, and keep both — `--out` exists so that one does not
+silently overwrite the other:
+
+```powershell
+python -u scripts/measure_served.py https://hs-classification-257016385834.asia-south1.run.app --out=served-cloudrun-test-200.json
+```
+
+Running exactly this against two machines is what caught the tie-break bug. Comparing the two
+reports is now the cheapest determinism check in the project: same bundle, same counts, or
+something is wrong.
+
 ## 4. Deploy
 
-Either target works from the same Dockerfile. Both need an account, so this is the step that
-cannot be done from here.
+Every target below works from the same Dockerfile. All need an account, so that part cannot be
+done from here. One of the three is no longer free; read the first section before choosing.
 
-### Hugging Face Spaces
+### Hugging Face Spaces — no longer free, as of 2026-11-25
 
-Free, public URL, Docker-native, and the bundle can live in the Space without going anywhere
-near this repository's history. Log in once — **this step is yours, so the token stays yours**:
+**This route needs a paid plan now.** `create_repo` returns `402 Payment Required`:
+
+> Static Spaces are free for everyone, but hosting Gradio and Docker Spaces on free cpu-basic
+> requires a PRO subscription.
+
+Static Spaces serve files and cannot run a server, so they are no use here. PRO is $9/month and
+the route then works unchanged. This was found by running it, not by reading the docs — several
+2026 pricing pages still describe CPU Basic as free for Docker Spaces, and the
+[Spaces overview](https://huggingface.co/docs/hub/en/spaces-overview) is the page that agrees
+with the error.
+
+The script is kept, because it is correct and runs the moment a subscription exists. Log in once
+— **this step is yours, so the token stays yours**:
 
 ```powershell
 .\.venv\Scripts\python.exe -c "from huggingface_hub.cli.hf import main; main()" auth login
@@ -118,6 +149,48 @@ its own short `README.md`, which on a branch means overwriting this repository's
 The Hub API has none of those properties: nothing is committed locally, `main` never carries the
 bundle, and the working tree is untouched.
 
+### Google Cloud Run — what is actually deployed
+
+**Live: <https://hs-classification-257016385834.asia-south1.run.app>**
+
+Deployed 2026-11-25 to `asia-south1` (Mumbai), public, scaling to zero between visits. Cloud
+Run's free allowance is 2M requests, 180,000 vCPU-seconds and 360,000 GiB-seconds a month,
+applied as a spending discount at Tier 1 rates rather than being restricted to US regions, and
+Mumbai is a Tier 1 region — so the nearest region is also the free one.
+
+```powershell
+gcloud run deploy hs-classification --source . --region asia-south1 --allow-unauthenticated --port 8000 --memory 512Mi --cpu 1 --min-instances 0 --max-instances 3
+```
+
+`--source .` builds in Cloud Build, so no local Docker daemon is needed — which also sidesteps
+the buildkit DNS failure noted above.
+
+Three things had to be true first, and two of them were not obvious:
+
+1. **`.gcloudignore` must exist.** With no such file gcloud generates one that *inherits
+   `.gitignore`*, and `data/deploy` is gitignored on purpose. The upload would carry no bundle,
+   the image would build cleanly, and `create_app()` would exit 1 on a container that never
+   served a request. The file in the repository root is an allow-list for the same reason
+   `deploy_space.py` uses one. Verified with `gcloud meta list-files-for-upload`, which prints
+   the exact set: **69 files, 15.2 MB, no `.env`** — the same count the Hugging Face script
+   computes from its own independent allow-list.
+2. **Billing must be enabled**, even though nothing is charged at this scale.
+3. **The default compute service account needs `roles/cloudbuild.builds.builder`.** On projects
+   created recently it starts without it and the first deploy fails with `PERMISSION_DENIED`
+   naming `serviceusage.serviceUsageConsumer`:
+
+   ```powershell
+   gcloud projects add-iam-policy-binding PROJECT_ID --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" --role="roles/cloudbuild.builds.builder"
+   ```
+
+Re-run the deploy command to ship a new revision, including for a new schedule revision —
+rebuild the bundle first. The service refuses to start if `HTS_REVISION` disagrees with what the
+bundle was built from.
+
+**Deploying is what found the tie-break bug.** The same bundle scored 105/200 at six digits in
+the local container and 108/200 here; `measure_served.py`'s reproduction check is what noticed.
+Both now return 107/200. The root README's "What deploying it found" has the measurement.
+
 ### Fly.io
 
 ```bash
@@ -145,22 +218,23 @@ were measured **on this configuration**, through HTTP against the built containe
   adjudicate the pool stage 2 hands it, and a deterministic engine over a bad pool is
   confidently wrong rather than unsure.
 * **Precedent suggests, not confirmed by the rules** — the nearest CBP ruling's code, with the
-  accuracy printed next to it: **52.5% at six digits (105/200)** and 46.0% at ten (92/200);
+  accuracy printed next to it: **53.5% at six digits (107/200)** and 47.5% at ten (95/200);
   excluding the 40 test descriptions that appear verbatim in the training data, **46.3%
   (74/160)** and 40.0% (64/160). These reproduce `reports/precedent-bm25-test-200.json` count
-  for count, and the measurement script now asserts that rather than claiming it.
+  for count, and the measurement script asserts that rather than claiming it — which is how the
+  tie-break bug below was caught.
 
 A third thing the page says, where it applies: **the suggested code is not a line in the pinned
-revision at all.** This fires on 35 of the 200 test cases, because CBP rulings are historical and
+revision at all.** This fires on 36 of the 200 test cases, because CBP rulings are historical and
 the schedule is not — 2,106 of the 18,253 indexed rulings cite a code 2026HTSRev21 does not
-carry. The cause is measured per case rather than asserted: 22 renumbered statistical suffixes,
-11 whose eight-digit tariff line is gone too, 2 that resolve to nothing. **19 of the 35 are still
+carry. The cause is measured per case rather than asserted: 23 renumbered statistical suffixes,
+11 whose eight-digit tariff line is gone too, 2 that resolve to nothing. **19 of the 36 are still
 right at six digits**, which is the plainest evidence in this project for why six- and ten-digit
 accuracy are reported as separate claims: the international subheading is stable, the US
 statistical suffix is not.
 
 Since the page shows the decided answer where it exists and the suggestion otherwise, the
-user-visible accuracy over all 200 cases is **52.5% at six digits and 46.0% at ten** — the
+user-visible accuracy over all 200 cases is **53.5% at six digits and 47.5% at ten** — the
 decided tier is too small to move it either way.
 
 Keeping them apart is the point. Collapsing them would either answer "not classified" to almost

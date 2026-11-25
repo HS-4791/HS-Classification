@@ -57,7 +57,7 @@ def test_precedent_is_offered_separately_from_the_rules(bundle):
     """Two tiers, labelled.
 
     The rules answer about 2% of cases at 42% accuracy; precedent answers
-    everything at 52.5% top-1. Collapsing them would either report "not
+    everything at 53.5% top-1. Collapsing them would either report "not
     classified" to almost every query while holding a better-than-even guess
     back, or pass a similarity match off as an adjudicated answer.
     """
