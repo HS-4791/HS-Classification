@@ -7,12 +7,12 @@
   "rulings_indexed": 18253,
   "latency_ms": {
     "observed_over_http": {
-      "median": 181.2,
-      "p95": 230.6
+      "median": 223.9,
+      "p95": 289.9
     },
     "server_self_reported": {
-      "median": 2.4,
-      "p95": 4.0
+      "median": 3.1,
+      "p95": 4.9
     }
   },
   "decided": {
