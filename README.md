@@ -290,8 +290,8 @@ The first run scored 7.00%, which is −7.5 points rather than −0.5. Two desig
 | Diagnostic | Finding |
 | --- | --- |
 | Heading recall @5 | **40.0%** — a beam of 5 loses 60% of cases before the walk descends |
-| Heading recall @20 | 66.5% |
-| Heading recall @50 | **78.5%** — the default now |
+| Heading recall @20 | 67.0% |
+| Heading recall @50 | **79.0%** — the default now |
 
 The heading step is the bottleneck: a heading is a handful of words scored against a detailed
 product description. The spec's own framing — *"which twenty headings might this be?"* — is the
@@ -425,10 +425,10 @@ the problem it was meant to simplify. No routing stage can help.
 
 | heading recall (test / held-out) | @5 | @20 | @50 |
 | --- | ---: | ---: | ---: |
-| dense | 40.0% / 38.6% | 66.5% / 61.8% | 78.5% / 77.2% |
+| dense | 40.0% / 38.8% | 67.0% / 62.0% | 79.0% / 77.3% |
 | BM25, a heading's own text only | 18.5% / 23.5% | 28.0% / 34.8% | 39.5% / 42.6% |
-| BM25 with descendant vocabulary | 36.5% / 37.3% | 52.0% / 57.5% | 64.0% / 67.2% |
-| **fused, reciprocal rank** | **49.0% / 49.4%** | **68.5% / 71.7%** | **83.5% / 82.5%** |
+| BM25 with descendant vocabulary | 36.5% / 37.4% | 52.0% / 57.5% | 64.0% / 67.3% |
+| **fused, reciprocal rank** | **49.5% / 49.4%** | **69.0% / 71.7%** | **84.0% / 82.5%** |
 
 **A heading's own text is too short to search lexically** — 16 tokens of legal drafting, and
 BM25 over it recalls 18.5%. Giving each provision the vocabulary of everything beneath it takes
@@ -462,11 +462,11 @@ are separate jobs, and only the second needs one comparable scale. Re-measured:
 
 | levels fused | test top1@6 / top5@6 | held-out top1@6 / top5@6 |
 | --- | ---: | ---: |
-| none, dense only | 13.50% / 21.00% | 13.50% / 24.55% |
-| heading | 14.50% / 22.00% | 13.75% / 24.55% |
-| **heading + subheading** | **15.00% / 22.50%** | **13.75% / 24.70%** |
-| heading + tariff line | 14.50% / 22.00% | 13.75% / 24.45% |
-| every level | 15.00% / 22.50% | 13.75% / 24.70% |
+| none, dense only | 13.50% / 21.00% | 13.50% / 24.60% |
+| heading | 14.50% / 22.00% | 13.75% / 24.60% |
+| **heading + subheading** | **15.00% / 22.50%** | **13.75% / 24.75%** |
+| heading + tariff line | 14.50% / 22.00% | 13.75% / 24.50% |
+| every level | 15.00% / 22.50% | 13.75% / 24.75% |
 
 There is no deep-level penalty. Fusing every level is tied for best, and identical to fusing
 heading and subheading on all four figures — so fusion at eight and ten digits changes nothing,
@@ -483,11 +483,11 @@ explanation was sound, and both were wrong.
 
 | | test split | held-out 2,000 |
 | --- | ---: | ---: |
-| gold heading retrieved into the beam | 83.5% | 82.5% |
-| gold heading still standing after the descent | 83.5% | 82.5% |
-| gold subheading in the candidate pool | 46.5% | 46.3% |
-| gold subheading in the final top 5 | 22.0% | 24.6% |
-| **when it is in the pool at all, ranked within 5** | **47.3%** | **53.0%** |
+| gold heading retrieved into the beam | 84.0% | 82.5% |
+| gold heading still standing after the descent | 84.0% | 82.5% |
+| gold subheading in the candidate pool | 47.0% | 46.7% |
+| gold subheading in the final top 5 | 22.5% | 24.8% |
+| **when it is in the pool at all, ranked within 5** | **47.9%** | **53.1%** |
 
 The last row is the finding, and it survived the retraction. The pool holds the right subheading
 twice as often as the output does, at a median rank of 7 on the test split. **Retrieval recall
@@ -962,24 +962,85 @@ measured on `index-levels-own-text`. Counting byte-identical vectors in the buil
 
 6,370 provisions in that index have the own text `"Other"`, so they are byte-identical vectors
 that tie exactly against every query — which is the chunking finding restated as a determinism
-problem. **`reports/chunking.json` therefore predates this fix and has not been re-run.** Worse,
-re-running it would not make it reproducible: `np.argpartition` still picks *which* 5 of 6,370
-equal rows enter the pool, and the stable sort only orders the 5 it was handed. The
-`own-text-only` configuration is not a reproducible measurement and is not currently marked as
-one anywhere but here. I applied the dating discipline to the reranker table and missed the
-table that was far more exposed to it.
+problem.
 
-The regression test is `test_tied_rulings_come_back_in_row_order_not_in_sort_order`, and the only
-thing establishing that it is worth having is that it was **run against the reverted fix and
-failed**, returning the tie exactly reversed as `[1203, 1202, 1201, 1200]`.
+This was initially left as "dated, and cannot be fixed", on the reasoning that `np.argpartition`
+still picks *which* 5 of 6,370 equal rows enter the pool and a stable sort only orders the 5 it
+was handed. The first half was right and the conclusion was wrong: the boundary can simply be
+resolved explicitly. `_top_k` now takes every row strictly above the cut, then fills from the
+rows sitting exactly on it in ascending order, so membership is as reproducible as ordering.
+Measured over the 200 test queries, against a deterministic (score desc, row asc) reference —
+and as *both* membership and order, because a first draft reported only the first and claimed
+the stable sort had already secured the second:
 
-An earlier draft justified its 1,200 padding rulings by saying numpy uses insertion sort below a
-size threshold, so a small tie would pass with the bug present. That explanation is wrong, and
-the numbers quoted for it came from a different probe than the test's own construction. Measured
-with the construction the test actually uses: padding of 4, 8, 16, 32, 64, 128, 256, 512, 1,024
-and 1,200 all catch the bug, and padding of **384 does not**. It is the introsort pivot pattern,
-deterministic for a given array shape, not a stability threshold — so there is no "big enough"
-rule to trim the test by, and the size stands on the revert check rather than on an argument.
+| old selection differs from deterministic | `index` | `index-levels` | `index-levels-own-text` |
+| --- | ---: | ---: | ---: |
+| as a **set**, k = 5 / 20 / 50 | 0 / 0 / 0 | 0 / 0 / 0 | **42 / 46 / 60** |
+| as an **ordered list**, k = 5 / 20 / 50 | 0 / 0 / 0 | 0 / 0 / **1** | **85 / 163 / 188** |
+| after the fix, either way | 0 | 0 | **0** |
+
+The stable sort was stable with respect to `argpartition`'s arbitrary output order, not with
+respect to row number, so the previous commit's claim that "ordering within the k is
+reproducible now, membership is not" was wrong in both halves.
+
+**And this fix corrects nothing that any report measures, which is the part worth saying out
+loud.** `VectorIndex.search` has exactly one caller in the repository — `VectorOnlyClassifier`,
+ablation 1 — and it runs on the flat `index`, where the old code was already returning the
+deterministic answer at every k. The hierarchical path never calls it at all: measured at **0
+calls over 20 classifications**, because `LevelIndex.rank` multiplies `vectors[rows] @ query`
+itself. The large own-text column describes a function nothing invokes on that index. It is
+fixed because a function should not return build-dependent results, not because a number moved.
+The cost is about 1.4× `argpartition` alone against about 30× for a full deterministic sort.
+
+**The fix that did move a number is in the traversal, and that one is not cosmetic.**
+`LevelIndex.rank` ranks siblings — the GRI 6 comparison, which this project calls legally
+required — with a default `argsort`. Reciprocal rank fusion ties far more readily than cosine
+does and needs no duplicate text to do it: fused scores sum `1/(K+rank)` over two lists, so any
+two rows whose ranks are swapped between the dense and lexical rankings are *exactly* equal by
+construction.
+
+`scripts/measure_tie_exposure.py` counts it during real walks, and exists because the first
+version of these figures came from a synthetic sweep over 400 sibling groups and was wrong in
+both directions — it reported 0.8% of calls and 112 of 200 cases. The measurement, in
+[`reports/tie-exposure-test-200.json`](reports/tie-exposure-test-200.json):
+
+| on `index-levels` | |
+| --- | ---: |
+| `rank()` calls over the 200 cases | 49,299 (246.5 per classification) |
+| calls holding an exact tie | **1,714 (3.48%)** |
+| ...of those, ties **straddling the cut** | **39** |
+| cases touching at least one tie | **191 of 200** |
+| tie widths | all 2 |
+
+The 39 are the ones that matter: a tie below the cut reorders candidates that were all going to
+be returned, while a tie across it changes which provisions stage 3 is ever offered. On
+`index-levels-own-text` the same count is 13.73% of calls, 785 straddling the cut, all 200 cases
+touched, and widths up to **20** — a single `rank(k=5)` choosing five of twenty interchangeable
+siblings.
+
+**Each of the three sites has its own regression test, and each was run against its own fix
+reverted** — which is the only thing that establishes any of them is worth having:
+
+| site | test | what it returns with the fix reverted |
+| --- | --- | --- |
+| `PrecedentIndex.neighbours` | `test_tied_rulings_come_back_in_row_order_not_in_sort_order` | `[1203, 1202, 1201, 1200]` — exactly reversed |
+| `VectorIndex.search` | `test_which_of_many_tied_candidates_gets_in_does_not_depend_on_the_sort` | row 16 of a 600-wide tie in the top slot instead of row 0 |
+| `LevelIndex.rank` | `test_tied_siblings_are_ranked_by_schedule_order_not_by_the_sort` | `[11, 10]` instead of `[10, 11]` |
+
+The third was added only after the cold read pointed out that **the change which actually moved
+a number had no test at all**: reverting `kind="stable"` in `traversal.py` left all 374 tests
+green.
+
+Sizing these tests is where the reasoning keeps going wrong, twice now. A first draft justified
+the precedent test's 1,200 padding rulings by saying numpy uses insertion sort below a size
+threshold; that explanation is wrong, and the figures quoted for it came from a different probe
+than the test's own construction. With the construction that test actually uses, padding of 4,
+8, 16, 32, 64, 128, 256, 512, 1,024 and 1,200 all catch the bug and padding of **384 does not**.
+Then the traversal test was written with its tied pair at rows 0 and 1 of 600 and **passed with
+the fix reverted** — at n=600, rows (0,1) and (598,599) keep their order under the default sort
+while (10,11) and (300,301) do not. It is the introsort pivot pattern, deterministic for a given
+array shape and sensitive to position as much as to size. There is no "big enough" rule to trim
+any of these by; each size stands on having watched it fail.
 
 ## Running it
 
@@ -1276,6 +1337,21 @@ long-run effect could apply. So the earlier published figures — a p95 of 6.7 t
 hybrid retrieval costing 70ms, the rule engine costing 8ms — were all contention. The real
 figures are 1.7 times, 6.3ms, and nothing measurable.
 
+**Confirmed again, by accident, on 2026-11-27.** Re-running the whole ablation sweep after the
+determinism fixes left all sixteen ablation entries byte-identical on every accuracy and count,
+and moved configuration 5's latency from p50 27.4ms to 35.3ms and p95 44.1ms to 87.4ms.
+Identical answers, a 2× p95 swing in the timing.
+
+The sort change was the obvious suspect and was measured out three ways. Per classification it
+costs **+0.03ms** end to end — three passes of the 200 test descriptions, `kind="stable"` against
+the default — against an 8ms shift. At the real sibling sizes the stable sort is at or below
+noise and sometimes *faster*. And the decisive one: configuration 1 is `VectorOnlyClassifier`,
+which makes **zero `rank()` calls**, and it slowed too (p50 9.95 → 10.38, held-out 10.73 →
+11.53). A configuration that never calls `rank()` cannot have been slowed by `rank()`'s sort. In
+the same sweep the own-text chunking run went *down*. **The latency fields in
+`reports/ablation-*.json` are not a measurement of anything** — the table above is, and it is
+the one to read.
+
 **What the third attempt does differently** is repeat each configuration three times, publish
 the spread, and check the cheapest configuration against a floor: one matmul cannot take 25ms,
 so if it does, the machine is busy and the sweep is discarded rather than published. That check
@@ -1351,8 +1427,8 @@ description alone:
 
 | | test top1@6 | test top5@6 | held-out top1@6 | held-out top5@6 |
 | --- | ---: | ---: | ---: | ---: |
-| inherited chain | **15.00%** | **22.50%** | **13.75%** | **24.70%** |
-| own text only | 7.50% | 17.00% | 7.05% | 14.70% |
+| inherited chain | **15.00%** | **22.50%** | **13.75%** | **24.75%** |
+| own text only | 7.50% | 17.00% | 7.05% | 14.80% |
 
 **Top-1 at six digits halves**: 15.00% to 7.50% on the test split and 13.75% to 7.05% on the
 held-out 2,000, with top-5 falling alongside. At ten digits the fall is much smaller — 3.05% to
@@ -1364,15 +1440,42 @@ index predated a parser fix and held 30,195 provisions, so "the same index with 
 context" compared two different schedules across a 342-provision gap. `VectorIndex.load` now
 takes the candidate list it is being used for and refuses a cached index that does not match.
 
-**The `own text only` row is not a reproducible measurement, and that was found on 2026-11-25
-rather than when it was published.** Stripping the inherited chain leaves 6,370 provisions whose
-own text is the single word "Other", so that index holds **18,372 of 29,861 rows in
-byte-identical vector groups** — they tie exactly against every query, and which five of 6,370
-enter the candidate pool is decided by `np.argpartition`, arbitrarily. The direction of the
-finding is not in doubt: a 7.5-point fall is far outside any tie-break swing, and ties this
-degenerate are themselves the mechanism the inherited chain prevents. But the specific figures
-in this table predate the tie-break fix, have not been re-run, and would not become reproducible
-if they were. `reports/chunking.json` is dated accordingly.
+**The `own text only` row was not a reproducible measurement when it was published, and is one
+now.** Stripping the inherited chain leaves 6,370 provisions whose own text is the single word
+"Other", so that index holds **18,372 of 29,861 rows in byte-identical vector groups**. They tie
+exactly against every query, and `np.argpartition` chose which five of 6,370 entered the
+candidate pool arbitrarily: over the 200 test queries its selection disagreed with a
+deterministic one on **42 queries at k=5, 46 at k=20 and 60 at k=50**. Against `index` and
+`index-levels` it disagreed on **0**, because neither has a tie straddling the cut at all —
+which is why the same fix could not move anything else in this README.
+
+The table above is the re-run, and the held-out `top5@6` for `own text only` moved, 14.70% to
+14.80% — two cases in two thousand. It moved because of the **traversal** fix, not the selection
+fix: this script walks levels, and the walk never calls `VectorIndex.search`.
+
+**How many numbers moved is a question I got wrong twice, in the same direction.** The first
+answer was "none", from a comparison run before the traversal change rather than after it. The
+second was "one", from re-running only the two reports I had thought to re-run. Re-running the
+retrieval measurement as well brought the total to **31 figures across `chunking.json`,
+`retrieval-measurements.json` and `reports/retrieval/`** — every one a movement of one or two
+cases, which is what a tie-break should produce. All sixteen ablation entries are byte-identical.
+Both wrong answers came from reasoning about which reports *could* have changed instead of
+re-running them and looking; the discipline this project states for accuracy claims applies to
+"nothing changed" claims too, and that is the harder one to remember because it feels like the
+safe thing to say.
+
+One of those 31 resolved a contradiction rather than creating one. `retrieval-measurements.json`
+held 24.70% for the fused held-out `top5@6` where `chunking.json` held 24.75% — the same
+configuration, published as two different numbers. After the fix both read 24.75%. The
+disagreement had been the tie-break all along.
+
+**Not re-run, and therefore unverified rather than unchanged:** `reports/rerank/` and
+`rerank-measurements-test-200.json`, `pruning-*.json`, `calibration.json`, `latency.json`,
+`explanation-quality.json`, `explanations-test-200.json` and `determinism.json`. All of them go
+through `LevelIndex.rank`, so all of them can have moved by a case or two. They are left alone
+because re-running them costs either a cross-encoder pass or paid model calls, not because
+anything here establishes they are unaffected — the ablations and retrieval are the evidence
+that the movements are one or two cases, and that is the size to expect, not a guarantee.
 
 It is also the only claim from the source documents that this week's measurements confirmed
 without qualification. The spec's "chemicals, textiles and machinery are contested" is two

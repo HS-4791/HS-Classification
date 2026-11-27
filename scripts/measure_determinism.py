@@ -11,6 +11,17 @@ same candidate list. Embeddings run through ONNX and the search is an exact
 matmul, so this should hold exactly; it is checked rather than assumed,
 because a non-deterministic proposer would make everything below meaningless.
 
+Be clear about what A does NOT cover, because it passed for weeks over code
+that was not deterministic. It repeats the same call in the same process on
+the same machine, so it catches state leaking between calls and nothing else.
+Ranking ties were being broken by whatever numpy's unstable sort did - the
+same answer every time here, a different answer on another numpy build. The
+same bundle scored 105/200 in one image of the service and 108/200 in another,
+and this script reported determinism throughout. Cross-build reproducibility
+is checked by running the same measurement on two machines and diffing the
+reports: see reports/served-test-200.json against
+reports/served-cloudrun-test-200.json.
+
 **B. Adjudication (stage 3).** The same candidates must produce the same code,
 the same ``rule_path``, the same citations and the same shortlist - 100 times.
 This is the property the architecture asserts, and it is checked on the real

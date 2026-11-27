@@ -5,7 +5,7 @@ Schedule version `2026HTSRev21` - n = 2000
 | metric | value | scored on |
 | --- | ---: | ---: |
 | top1@6 | 13.75% | 2000 |
-| top5@6 | 24.55% | 2000 |
+| top5@6 | 24.60% | 2000 |
 | top1@10 | 2.98% | 1979 |
 
 ## Coverage
@@ -16,6 +16,15 @@ Schedule version `2026HTSRev21` - n = 2000
 | covered_n | 2000 |
 | accuracy_on_covered@6 | 13.75% |
 | accuracy_if_forced@6 | 0.00% |
+
+## Latency per classification (n = 2000)
+
+| statistic | ms |
+| --- | ---: |
+| p50 | 12.3 |
+| p95 | 19.6 |
+| p99 | 25.2 |
+| mean | 12.9 |
 
 ## Weakest chapters (n >= 20)
 

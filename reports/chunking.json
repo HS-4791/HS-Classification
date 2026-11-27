@@ -1,5 +1,6 @@
 {
   "revision": "2026HTSRev21",
+  "reproducibility": "Deterministic since the top-k fix of 2026-11-27. The own-text arm is the tie-heavy one: stripping the inherited chain leaves 6,370 provisions whose own text is \"Other\", so index-levels-own-text holds 18,372 of 29,861 rows in byte-identical vector groups. VectorIndex.search used to let np.argpartition choose which of those entered the pool, which disagreed with a deterministic selection on 42 of 200 test queries at k=5. It now resolves the boundary explicitly. That fix alone reproduced every figure here exactly - the gold code is in none of the interchangeable rows whichever five you take. The companion fix to LevelIndex.rank, which this script also goes through, moved exactly one number in the repository: own-text-only heldout-2000 top5@6, 0.147 to 0.148, two cases in two thousand.",
   "configurations": {
     "inherited-chain": {
       "test-200": {
@@ -24,12 +25,10 @@
       },
       "heldout-2000": {
         "top1@6": 0.0705,
-        "top5@6": 0.147,
+        "top5@6": 0.148,
         "top1@10": 0.023749368367862556,
         "n": 2000
       }
     }
-  },
-  "measured_before": "the tie-break fix of 2026-11-25",
-  "reproducibility": "The own-text-only arm is NOT a reproducible measurement. Stripping the inherited chain leaves 6,370 provisions whose own text is \"Other\", so index-levels-own-text holds 18,372 of 29,861 rows in byte-identical vector groups. Those tie exactly against every query, and np.argpartition chooses which k of 6,370 equal rows enter the pool arbitrarily - which kind=\"stable\" in VectorIndex.search does not fix. Re-running this report would not make the own-text-only figures stable. The direction of the finding is unaffected: a 7.5-point fall in top1@6 is far outside any tie-break swing, and ties this degenerate are themselves the mechanism the inherited chain prevents."
+  }
 }

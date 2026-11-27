@@ -155,12 +155,38 @@ class LevelIndex:
         """
         if not rows:
             return []
+        # kind="stable" throughout, so a tie between siblings resolves to the
+        # one that comes first in the schedule rather than to whatever the
+        # sort did. This is the GRI 6 comparison, so an arbitrary order here
+        # is an arbitrary choice between two provisions at the same level.
+        #
+        # Fused scores tie far more readily than cosine ones, and not because
+        # of duplicate text: reciprocal rank fusion sums 1/(K+rank) over two
+        # lists, so any two rows whose ranks are swapped between the dense and
+        # lexical rankings produce exactly equal sums.
+        #
+        # Measured during real walks by scripts/measure_tie_exposure.py, which
+        # exists because the first version of these numbers came from a
+        # synthetic sweep over 400 sibling groups and was wrong. Over the 200
+        # test cases on index-levels: 49,299 rank() calls, 246.5 per
+        # classification, 1,714 of them containing an exact tie (3.48%), every
+        # one two rows wide, and 191 of the 200 cases touching at least one.
+        #
+        # Of those 1,714, **39 straddle the cut** - that is the number that
+        # matters, because a tie below the cut reorders candidates that were
+        # all going to be returned anyway, while a tie across it changes which
+        # provisions stage 3 is ever offered.
+        #
+        # The widths are two only on this index. On index-levels-own-text, the
+        # chunking ablation's second arm, 13.73% of calls tie, 785 straddle
+        # the cut, all 200 cases are touched and groups run up to 20 wide -
+        # one rank(k=5) call choosing five of twenty interchangeable siblings.
         similarity = self.index.vectors[rows] @ query
         if self.lexical is None or not terms:
-            order = np.argsort(-similarity)[:k]
+            order = np.argsort(-similarity, kind="stable")[:k]
             return [(rows[i], float(similarity[i]), float(similarity[i])) for i in order]
         fused = reciprocal_rank_fusion(similarity, self.lexical.scores(terms, rows))
-        order = np.argsort(-fused)[:k]
+        order = np.argsort(-fused, kind="stable")[:k]
         return [(rows[i], float(fused[i]), float(similarity[i])) for i in order]
 
 
@@ -252,11 +278,11 @@ class HierarchicalClassifier:
     #:
     #: | levels fused | test | held-out |
     #: | --- | --- | --- |
-    #: | none, dense only | 13.50 / 21.00 | 13.50 / 24.55 |
-    #: | (4,) | 14.50 / 22.00 | 13.75 / 24.55 |
-    #: | **(4, 6)** | **15.00 / 22.50** | **13.75 / 24.70** |
-    #: | (4, 8) | 14.50 / 22.00 | 13.75 / 24.45 |
-    #: | (4, 6, 8, 10) | 15.00 / 22.50 | 13.75 / 24.70 |
+    #: | none, dense only | 13.50 / 21.00 | 13.50 / 24.60 |
+    #: | (4,) | 14.50 / 22.00 | 13.75 / 24.60 |
+    #: | **(4, 6)** | **15.00 / 22.50** | **13.75 / 24.75** |
+    #: | (4, 8) | 14.50 / 22.00 | 13.75 / 24.50 |
+    #: | (4, 6, 8, 10) | 15.00 / 22.50 | 13.75 / 24.75 |
     #:
     #: ``(4, 6)`` and every level are identical on all four figures, so
     #: fusing at eight and ten digits changes nothing - consistent with

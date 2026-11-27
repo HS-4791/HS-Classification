@@ -1,0 +1,48 @@
+{
+  "revision": "2026HTSRev21",
+  "what_this_measures": "Exact ties in the scores LevelIndex.rank orders by, counted during real classifications rather than over a synthetic sweep of sibling groups. A tie straddling the cut changes which provisions stage 3 is offered; a tie below it changes only their order.",
+  "indices": {
+    "index-levels": {
+      "candidates": 29861,
+      "cases": 200,
+      "rank_calls": 49299,
+      "rank_calls_per_case": {
+        "mean": 246.5,
+        "min": 164,
+        "max": 360
+      },
+      "calls_with_a_tie": 1714,
+      "calls_with_a_tie_pct": 3.48,
+      "calls_tied_across_the_cut": 39,
+      "queries_touching_a_tie": 191,
+      "tie_widths": {
+        "2": 1714
+      }
+    },
+    "index-levels-own-text": {
+      "candidates": 29861,
+      "cases": 200,
+      "rank_calls": 47416,
+      "rank_calls_per_case": {
+        "mean": 237.1,
+        "min": 156,
+        "max": 345
+      },
+      "calls_with_a_tie": 6510,
+      "calls_with_a_tie_pct": 13.73,
+      "calls_tied_across_the_cut": 785,
+      "queries_touching_a_tie": 200,
+      "tie_widths": {
+        "2": 5566,
+        "3": 552,
+        "4": 284,
+        "5": 61,
+        "6": 26,
+        "7": 16,
+        "8": 1,
+        "19": 2,
+        "20": 2
+      }
+    }
+  }
+}

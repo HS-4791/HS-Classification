@@ -90,7 +90,12 @@ def main() -> int:
     )
     stripped_dir = settings.processed_dir / "index-levels-own-text"
     if (stripped_dir / "vectors.npy").exists():
-        stripped = VectorIndex.load(stripped_dir)
+        # expecting= here too. This arm used to load without it, which meant
+        # the one staleness guard the README credits with closing the
+        # 342-provision bug was bypassed on the arm the chunking finding rests
+        # on - the two arms have to be the same tree or the comparison is
+        # between two schedules.
+        stripped = VectorIndex.load(stripped_dir, expecting=own_text_only(current))
         print(f"loaded the own-text index: {len(stripped)} nodes", flush=True)
     else:
         candidates = own_text_only(current)
@@ -110,7 +115,28 @@ def main() -> int:
         "inherited-chain": with_chain,
         "own-text-only": stripped,
     }
-    report: dict[str, dict] = {"revision": revision, "configurations": {}}
+    # Written every run rather than added to the file by hand, because this
+    # script owns the file and rewrites it - a note pasted into the JSON
+    # disappears the next time anyone measures.
+    report: dict = {
+        "revision": revision,
+        "reproducibility": (
+            "Deterministic since the LevelIndex.rank tie-break fix of "
+            "2026-11-27, which is the one that matters here: this script "
+            "builds a HierarchicalClassifier, and the walk ranks siblings "
+            "through rank() - it never calls VectorIndex.search, measured at "
+            "0 calls over 20 classifications. rank() used to order tied "
+            "scores with an unstable sort. Measured during real walks by "
+            "scripts/measure_tie_exposure.py, the own-text arm ties on 13.73% "
+            "of rank() calls with 785 of those straddling the cut and groups "
+            "up to 20 wide, because stripping the inherited chain leaves "
+            "6,370 provisions reading \"Other\". Fixing it moved one number: "
+            "own-text-only heldout-2000 top5@6, 0.147 to 0.148, two cases in "
+            "two thousand. An earlier version of this note credited the "
+            "VectorIndex.search fix, which this report never executes."
+        ),
+        "configurations": {},
+    }
     for label, index in configurations.items():
         classifier = HierarchicalClassifier(
             LevelIndex(index, LexicalIndex.build(index.candidates)), embedder, k=5
@@ -132,7 +158,7 @@ def main() -> int:
                   f"top1@10={result.metrics['top1@10']:.2%}", flush=True)
 
     path = settings.reports_dir / "chunking.json"
-    path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(f"\nwrote {path}", flush=True)
     return 0
 

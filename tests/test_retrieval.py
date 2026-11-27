@@ -47,6 +47,44 @@ def test_search_never_returns_more_than_the_index_holds(index):
     assert len(idx.search(embedder.encode(["anything"]), k=99)[0]) == len(CANDIDATES)
 
 
+def test_which_of_many_tied_candidates_gets_in_does_not_depend_on_the_sort():
+    """A tie wider than k used to be resolved by whatever argpartition did.
+
+    ``np.argpartition`` chooses WHICH k rows it returns, and when the k-th and
+    (k+1)-th scores are equal it picks among the tied rows arbitrarily - so the
+    stable sort that followed put a reproducible order on an irreproducible
+    set. This is not hypothetical: stripping the inherited chain leaves 6,370
+    provisions whose own text is the single word "Other", giving
+    byte-identical vectors that tie exactly against every query.
+
+    Measured over the 200 test queries against that index, the old selection
+    disagreed with a deterministic one on 42 queries at k=5, 46 at k=20 and 60
+    at k=50. Against ``index`` and ``index-levels`` it disagreed on 0, because
+    neither has a tie straddling the cut - which is why this fix cannot move
+    any published pipeline number.
+    """
+    # 600 provisions that read identically once the chain is stripped, so
+    # every one of them scores the same against the query, plus a few real
+    # ones. The codes carry the row number so the assertion can name them.
+    tied = [Candidate(f"9999{n:06d}", "Other") for n in range(600)]
+    distinct = [
+        Candidate("0803901045", "Bananas, fresh - plantains"),
+        Candidate("3924104000", "Tableware and kitchenware of plastics"),
+    ]
+    embedder = HashingEmbedder()
+    idx = VectorIndex.build(tied + distinct, embedder, revision="TESTREV")
+
+    hits = idx.search(embedder.encode(["Other"]), k=5)[0]
+    # All five come from the tie, and they are the five lowest rows in it.
+    assert [h.code for h in hits] == [f"9999{n:06d}" for n in range(5)], (
+        "the five candidates admitted from a 600-wide tie are not the five "
+        "lowest rows, so which ones get in depends on the sort rather than on "
+        "the index"
+    )
+    # And the tie really is a tie, or the assertion above proves nothing.
+    assert len({h.score for h in hits}) == 1
+
+
 def test_the_index_round_trips_through_disk(tmp_path, index):
     idx, _ = index
     idx.save(tmp_path / "index")

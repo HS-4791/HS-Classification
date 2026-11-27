@@ -17,6 +17,15 @@ Schedule version `2026HTSRev21` - n = 200
 | accuracy_on_covered@6 | 15.00% |
 | accuracy_if_forced@6 | 0.00% |
 
+## Latency per classification (n = 200)
+
+| statistic | ms |
+| --- | ---: |
+| p50 | 29.9 |
+| p95 | 58.9 |
+| p99 | 70.3 |
+| mean | 32.9 |
+
 ## Weakest chapters (n >= 20)
 
 | chapter | n | top1@6 |

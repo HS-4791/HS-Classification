@@ -5,7 +5,7 @@ Schedule version `2026HTSRev21` - n = 2000
 | metric | value | scored on |
 | --- | ---: | ---: |
 | top1@6 | 7.05% | 2000 |
-| top5@6 | 14.70% | 2000 |
+| top5@6 | 14.80% | 2000 |
 | top1@10 | 2.37% | 1979 |
 
 ## Coverage
@@ -21,9 +21,9 @@ Schedule version `2026HTSRev21` - n = 2000
 
 | statistic | ms |
 | --- | ---: |
-| p50 | 21.2 |
-| p95 | 36.4 |
-| p99 | 45.7 |
+| p50 | 21.1 |
+| p95 | 36.6 |
+| p99 | 44.6 |
 | mean | 22.8 |
 
 ## Weakest chapters (n >= 20)

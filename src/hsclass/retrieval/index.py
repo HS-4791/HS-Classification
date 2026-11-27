@@ -72,6 +72,65 @@ class Hit:
     score: float
 
 
+def _top_k(scores: np.ndarray, k: int) -> np.ndarray:
+    """The k best rows, highest score first, ties broken by lowest row.
+
+    Why this is not just ``argpartition`` followed by a stable sort, which is
+    what it used to be. ``argpartition`` chooses WHICH k rows it returns, and
+    when the k-th and (k+1)-th scores are equal it picks among the tied rows
+    arbitrarily. The stable sort that followed was stable with respect to
+    *that arbitrary output order*, not with respect to row number, so neither
+    the membership nor the order was a function of the data alone.
+
+    Say plainly what this is worth, because the first version of this comment
+    overstated it. ``search`` has one caller in the repository -
+    ``VectorOnlyClassifier``, which is ablation 1 - and it runs on the flat
+    ``index``. The hierarchical path never calls it: ``LevelIndex.rank``
+    multiplies ``vectors[rows] @ query`` itself. Measured over the 200 test
+    queries against the old selection:
+
+      index                  set differs   order differs   (k = 5 / 20 / 50)
+      index                    0 / 0 / 0       0 / 0 / 0
+      index-levels             0 / 0 / 0       0 / 0 / 1
+      index-levels-own-text   42 / 46 / 60    85 / 163 / 188
+
+    So on the index ``search`` is actually used against, the old code was
+    already giving the deterministic answer, and this fix corrects nothing
+    that any report measures. The own-text column is large because stripping
+    the inherited chain leaves 6,370 provisions reading "Other" - 18,372 of
+    its 29,861 rows sit in a byte-identical vector group - but nothing calls
+    ``search`` on that index either. It is fixed because a function should not
+    return build-dependent results, not because a number moved.
+
+    The cost of being right is small, which is why the whole array is still
+    not sorted: argpartition finds the cut, then the boundary is resolved
+    explicitly. At 29,861 candidates and k=50 this costs about 1.4x
+    argpartition alone, against about 30x for a full deterministic sort. The
+    absolute figures move with the machine, so the ratios are what is quoted.
+    """
+    if k <= 0:
+        return np.empty(0, dtype=np.intp)
+    part = np.argpartition(-scores, kth=k - 1)[:k]
+    cut = scores[part].min()
+    # Everything strictly better than the cut is in, no question. The rows
+    # sitting exactly on it are the contested ones, and flatnonzero returns
+    # them in ascending row order, so taking a prefix takes the lowest rows.
+    above = np.flatnonzero(scores > cut)
+    tied = np.flatnonzero(scores == cut)
+    chosen = np.concatenate((above, tied[: k - len(above)]))
+    if len(chosen) < k:
+        # Only reachable if a score is NaN: the cut is then NaN, both
+        # comparisons above are False for every row, and this would hand back
+        # an empty list that the caller has no way to tell from "nothing
+        # matched". Not reachable today - _normalise clamps the norm, so no
+        # text produces a NaN - which is why this is a cheap length check
+        # rather than an isnan scan over 30,000 scores on every query. The
+        # fallback is the slow, obviously-correct ordering, and numpy sorts
+        # NaN last, so k rows still come back.
+        return np.lexsort((np.arange(len(scores)), -scores))[:k]
+    return chosen[np.argsort(-scores[chosen], kind="stable")]
+
+
 class VectorIndex:
     def __init__(self, candidates: list[Candidate], vectors: np.ndarray, embedder_name: str,
                  revision: str) -> None:
@@ -111,38 +170,9 @@ class VectorIndex:
         """Cosine similarity, because both sides are already normalised."""
         scores = np.asarray(queries, dtype=np.float32) @ self.vectors.T
         k = min(k, len(self.candidates))
-        # argpartition finds the top k without sorting all 24,000
-        top = np.argpartition(-scores, kth=k - 1, axis=1)[:, :k]
         results: list[list[Hit]] = []
-        for row, columns in enumerate(top):
-            # kind="stable" for the reason given in precedent.py: an unstable
-            # sort orders tied scores differently between numpy builds, which
-            # made the same data score differently in two images.
-            #
-            # Say what this does not fix, because here it matters more than it
-            # does for BM25 and an earlier version of this comment said the
-            # opposite. Exact ties need byte-identical vectors, which means
-            # duplicate text. Counted over the built indices for 2026HTSRev21:
-            #
-            #   index                    rows   in a duplicate group   widest
-            #   index                  26,808                      6        2
-            #   index-levels           29,861                      6        2
-            #   index-levels-own-text  29,861                 18,372    6,370
-            #
-            # So "rarer than the BM25 ties" holds for the two indices the
-            # pipeline uses and is wrong by two orders of magnitude for the
-            # third: 61% of that index sits in a duplicate group because 6,370
-            # provisions have the own text "Other". That is the exact failure
-            # the "every node carries its inherited chain" rule exists to
-            # prevent, showing up as a determinism problem rather than an
-            # accuracy one.
-            #
-            # argpartition above still chooses WHICH k of those 6,370 equal
-            # rows enter the pool, and kind="stable" does not touch that. So
-            # ordering within the k is reproducible now; membership of the k
-            # is not, for that index. reports/chunking.json is measured on it
-            # and predates this change - see the README.
-            ordered = columns[np.argsort(-scores[row, columns], kind="stable")]
+        for row in range(scores.shape[0]):
+            ordered = _top_k(scores[row], k)
             results.append(
                 [Hit(self.candidates[i].code, self.candidates[i].text, float(scores[row, i]))
                  for i in ordered]
