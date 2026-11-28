@@ -2,44 +2,106 @@
   "revision": "2026HTSRev21",
   "configurations": {
     "no-reranker": {
+      "proposer": {
+        "test-200": {
+          "top1@6": 0.15,
+          "top5@6": 0.225,
+          "top1@10": 0.030456852791878174,
+          "ms_per_classification": 26.5,
+          "escalation_rate": 0.0,
+          "covered_n": 200.0,
+          "accuracy_on_covered@6": 0.15,
+          "accuracy_if_forced@6": 0.0
+        }
+      },
       "adjudicated": {
         "test-200": {
           "top1@6": 0.015,
           "top5@6": 0.015,
           "top1@10": 0.0,
-          "ms_per_classification": 18.1,
-          "escalation_rate": 0.98,
-          "covered_n": 4.0,
-          "accuracy_on_covered@6": 0.75,
-          "accuracy_if_forced@6": 0.1531
+          "ms_per_classification": 24.7,
+          "escalation_rate": 0.985,
+          "covered_n": 3.0,
+          "accuracy_on_covered@6": 1.0,
+          "accuracy_if_forced@6": 0.1523
         }
       }
     },
     "lexical": {
+      "proposer": {
+        "test-200": {
+          "top1@6": 0.15,
+          "top5@6": 0.23,
+          "top1@10": 0.03553299492385787,
+          "ms_per_classification": 24.6,
+          "escalation_rate": 0.0,
+          "covered_n": 200.0,
+          "accuracy_on_covered@6": 0.15,
+          "accuracy_if_forced@6": 0.0
+        }
+      },
       "adjudicated": {
         "test-200": {
           "top1@6": 0.005,
           "top5@6": 0.005,
           "top1@10": 0.0,
-          "ms_per_classification": 15.2,
-          "escalation_rate": 0.97,
-          "covered_n": 6.0,
-          "accuracy_on_covered@6": 0.1667,
-          "accuracy_if_forced@6": 0.1546
+          "ms_per_classification": 26.6,
+          "escalation_rate": 0.975,
+          "covered_n": 5.0,
+          "accuracy_on_covered@6": 0.2,
+          "accuracy_if_forced@6": 0.1538
         }
       }
     },
     "cross-encoder-50": {
+      "proposer": {
+        "test-200": {
+          "top1@6": 0.195,
+          "top5@6": 0.26,
+          "top1@10": 0.06091370558375635,
+          "ms_per_classification": 1797.6,
+          "escalation_rate": 0.0,
+          "covered_n": 200.0,
+          "accuracy_on_covered@6": 0.195,
+          "accuracy_if_forced@6": 0.0
+        }
+      },
       "adjudicated": {
         "test-200": {
           "top1@6": 0.015,
           "top5@6": 0.015,
           "top1@10": 0.0,
-          "ms_per_classification": 1543.2,
+          "ms_per_classification": 4103.3,
           "escalation_rate": 0.98,
           "covered_n": 4.0,
           "accuracy_on_covered@6": 0.75,
           "accuracy_if_forced@6": 0.1837
+        }
+      }
+    },
+    "cross-encoder-100": {
+      "proposer": {
+        "test-200": {
+          "top1@6": 0.2,
+          "top5@6": 0.26,
+          "top1@10": 0.06598984771573604,
+          "ms_per_classification": 17840.5,
+          "escalation_rate": 0.0,
+          "covered_n": 200.0,
+          "accuracy_on_covered@6": 0.2,
+          "accuracy_if_forced@6": 0.0
+        }
+      },
+      "adjudicated": {
+        "test-200": {
+          "top1@6": 0.015,
+          "top5@6": 0.015,
+          "top1@10": 0.0,
+          "ms_per_classification": 3402.5,
+          "escalation_rate": 0.98,
+          "covered_n": 4.0,
+          "accuracy_on_covered@6": 0.75,
+          "accuracy_if_forced@6": 0.1888
         }
       }
     }

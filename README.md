@@ -548,15 +548,18 @@ system not at all. Both halves are the result. Everything here comes from
 | --- | ---: | ---: | ---: | ---: | ---: |
 | **proposer**, no reranker | 15.00% | 22.50% | — | — | 16ms |
 | **proposer**, cross-encoder | **19.50%** | **26.00%** | — | — | 1,729-1,948ms |
-| **adjudicated**, no reranker | 1.50% | 1.50% | 4 of 200 | 3/4 = 75.0% | 18ms |
+| **adjudicated**, no reranker | 1.50% | 1.50% | 3 of 200 | 3/3 = 100.0% | 18ms |
 | **adjudicated**, cross-encoder | 1.50% | 1.50% | 4 of 200 | 3/4 = 75.0% | 1,308-1,810ms |
 
-The two adjudicated rows here were measured **before** the
-[note-scope fix](#one-section-two-notes-and-a-cape-classified-as-yarn), which takes the test
-split to 3 of 3, and have not been re-run. They are left as measured rather than quietly
-adjusted; the reranker's effect on the adjudicated slice is due a re-measurement, and that
-matters more now than it did, because the pool recall the reranker would work on is the one
-lever with headroom left.
+Re-run on 2026-11-28; until then both adjudicated rows read 4 of 200 at 75.0%, from before the
+[note-scope fix](#one-section-two-notes-and-a-cape-classified-as-yarn). Only the first row
+moved. The cross-encoder still decides 4 — it reorders the pool enough to admit one more case
+the rules can settle, and gets that one wrong, so its accuracy on decided is lower while its
+top-1 is identical. That is the whole reranker verdict in one row: it changes what the engine
+sees without changing what the engine gets right.
+
+The pool recall the reranker works on remains the one lever with headroom left, which is why
+this row is worth keeping rather than deleting.
 
 **+4.5 points of top-1 on the proposer, and nothing whatever on the adjudicated system.** Not a
 regression, not noise — the same four cases, the same three correct, verified case by case
@@ -1500,11 +1503,16 @@ for longer than this work:
   `--model` writes a report with part C deleted, which is how a measured result gets destroyed by
   a re-measurement.
 
-**Still not re-run, and therefore unverified rather than unchanged:** `reports/rerank/` and
-`rerank-measurements-test-200.json` (a cross-encoder pass at ~4s per classification, hours over
-the held-out set), `explanation-quality.json` and `explanations-test-200.json` (paid calls).
-Nothing here establishes they are unaffected; the re-run reports are the evidence that movements
-are one or two cases, which is the size to expect, not a guarantee.
+* **`rerank-measurements-test-200.json`** was stale the same way `calibration.json` was, and is
+  re-run. Only the published combinations were measured: every `test-200` configuration, plus
+  held-out for the two that do not load a cross-encoder. The cross-encoder crossed with the
+  held-out 2,000 costs about an hour per configuration per stage and was never published, so
+  running it would have produced reports nobody reads.
+
+**Still not re-run, and therefore unverified rather than unchanged:** `explanation-quality.json`
+and `explanations-test-200.json`, which need paid model calls. Nothing here establishes they are
+unaffected; the re-run reports are the evidence that movements are one or two cases, which is
+the size to expect, not a guarantee.
 
 It is also the only claim from the source documents that this week's measurements confirmed
 without qualification. The spec's "chemicals, textiles and machinery are contested" is two
@@ -1528,12 +1536,14 @@ cautious. That test is one line and it is the clearest result here:
 
 | | answered by the rules | forced on the declined | ratio |
 | --- | ---: | ---: | ---: |
-| test split | **75.0%** (4 cases, 95% low 30.1%) | 15.3% (196 cases, 95% low 10.9%) | 0.20 |
+| test split | **100.0%** (3 cases, 95% low 43.9%) | 15.2% (197 cases, 95% low 10.9%) | 0.15 |
+| held-out 2,000 | **41.7%** (12 cases, 95% low 19.3%) | 13.7% (1,988 cases, 95% low 12.2%) | 0.33 |
 
-*Calibration was measured before the [note-scope fix](#one-section-two-notes-and-a-cape-classified-as-yarn)
-and is due a re-run: the decided slice is now 3 cases on the test split and 12 held-out, so every
-figure in this section rests on a smaller n than it states.*
-| held-out 2,000 | **29.4%** (17 cases, 95% low 13.3%) | 13.7% (1,983 cases, 95% low 12.2%) | 0.46 |
+Re-run on 2026-11-28. Until then this section carried the pre-[note-scope fix](#one-section-two-notes-and-a-cape-classified-as-yarn)
+figures — 75.0% on 4 test cases and 29.4% on 17 held-out — with a note saying they were due a
+re-run. The direction held and strengthened: on both splits the cases the rules answer score
+well above what the declined cases would have scored if forced. Three cases is still three
+cases, and the 95% lower bound of 43.9% is the honest way to read it.
 
 The cases the rules answer are two to five times as accurate as the ones they decline would
 have been. **Only the test split establishes it.** There the intervals are clear of each other,

@@ -21,10 +21,10 @@ Schedule version `2026HTSRev21` - n = 200
 
 | statistic | ms |
 | --- | ---: |
-| p50 | 21.8 |
-| p95 | 42.8 |
-| p99 | 58.0 |
-| mean | 24.7 |
+| p50 | 23.4 |
+| p95 | 46.9 |
+| p99 | 89.3 |
+| mean | 26.4 |
 
 ## Weakest chapters (n >= 20)
 

@@ -1,0 +1,57 @@
+{
+  "revision": "2026HTSRev21",
+  "configurations": {
+    "no-reranker": {
+      "proposer": {
+        "heldout-2000": {
+          "top1@6": 0.1375,
+          "top5@6": 0.2475,
+          "top1@10": 0.029813036887316825,
+          "ms_per_classification": 27.4,
+          "escalation_rate": 0.0,
+          "covered_n": 2000.0,
+          "accuracy_on_covered@6": 0.1375,
+          "accuracy_if_forced@6": 0.0
+        }
+      },
+      "adjudicated": {
+        "heldout-2000": {
+          "top1@6": 0.0025,
+          "top5@6": 0.0025,
+          "top1@10": 0.0,
+          "ms_per_classification": 27.9,
+          "escalation_rate": 0.994,
+          "covered_n": 12.0,
+          "accuracy_on_covered@6": 0.4167,
+          "accuracy_if_forced@6": 0.1373
+        }
+      }
+    },
+    "lexical": {
+      "proposer": {
+        "heldout-2000": {
+          "top1@6": 0.139,
+          "top5@6": 0.2285,
+          "top1@10": 0.039413845376452754,
+          "ms_per_classification": 28.6,
+          "escalation_rate": 0.0,
+          "covered_n": 2000.0,
+          "accuracy_on_covered@6": 0.139,
+          "accuracy_if_forced@6": 0.0
+        }
+      },
+      "adjudicated": {
+        "heldout-2000": {
+          "top1@6": 0.0015,
+          "top5@6": 0.0015,
+          "top1@10": 0.0,
+          "ms_per_classification": 29.8,
+          "escalation_rate": 0.993,
+          "covered_n": 14.0,
+          "accuracy_on_covered@6": 0.2143,
+          "accuracy_if_forced@6": 0.1395
+        }
+      }
+    }
+  }
+}
