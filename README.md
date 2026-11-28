@@ -221,7 +221,7 @@ No hierarchy, no notes, no rules. `BAAI/bge-small-en-v1.5` over 27,146 searchabl
 | top-5 @ 6 digits | 28.00% | 30.15% |
 | top-1 @ 10 digits | 6.09% | 4.55% |
 | escalation rate | 0% — the baseline never declines | 0% |
-| latency, p50 per classification | 9.4ms | 9.4ms |
+| latency, p50 per classification | 7.3ms | 7.3ms |
 
 Two sets, reported separately and never averaged. The official 200-row split is what the
 published baselines score on, so it is the comparable number; 200 rows carry a confidence
@@ -308,11 +308,17 @@ matters is coverage against accuracy on the slice the system actually answered:
 
 | | Decided | Accuracy on those | If those had been forced |
 | --- | ---: | ---: | ---: |
-| test split (n=200) | 4 cases — 2.00% | 3 / 4 = 75% | 13.85% |
-| held-out (n=2,000) | 15 cases — 0.75% | 5 / 15 = 33.3% | 13.45% |
-| held-out, on hybrid retrieval | 17 cases — 0.85% | 5 / 17 = 29.4% | 13.66% |
+| test split (n=200) | 3 cases — 1.50% | 3 / 3 = 100% | 13.71% |
+| held-out (n=2,000) | 12 cases — 0.60% | 5 / 12 = 41.7% | 13.53% |
+| held-out, on hybrid retrieval | 12 cases — 0.60% | 5 / 12 = 41.7% | 13.73% |
 
-**Nineteen decided cases is too small to claim much**, though both slices sit above the 14%
+These are the figures after the [note-scope fix](#one-section-two-notes-and-a-cape-classified-as-yarn).
+This table published the ones from before it — 4 at 75% and 17 at 29.4% — until 2026-11-28, so
+the README disagreed with itself for a fortnight: the ablation section said 17 while the
+note-scope section said 12 and called the 17 superseded. `reports/calibration.json` was stale
+the same way and still held 17; re-running it is what surfaced the gap.
+
+**Fifteen decided cases is too small to claim much**, though both slices sit above the 14%
 baseline. What the ablation does establish is *why* coverage is so narrow, and that is measured
 rather than guessed:
 
@@ -333,7 +339,7 @@ scores about 14%, the baseline, so "the refusal is not yet selecting hard cases 
 declining nearly everything". The first half is a measurement and the second was a guess, and
 the guess is wrong, at least on the test split: there the cases the rules answer score five
 times the accuracy the declined cases would have scored if forced, which is the spec's own test
-for whether a refusal is too cautious. On the held-out 2,000 the rules answer 17 cases and the
+for whether a refusal is too cautious. On the held-out 2,000 the rules answer 12 cases and the
 intervals overlap, so that set settles nothing either way. What the refusal selects for is
 **having facts to reason over**: nearly every case it answers lies inside the 239 where a
 composition was extractable. Not confidence — the rules' cases are rank-indistinguishable from
@@ -568,7 +574,7 @@ reason the proposer number must never be quoted on its own.
 `HierarchicalClassifier` takes `reranker=None` by default and nothing in the shipped pipeline
 passes one. On this evidence that stays, because the price is not only latency:
 
-- **Roughly eighty times slower, and the range is the honest form.** Against a 22.8ms pipeline,
+- **Roughly a hundred times slower, and the range is the honest form.** Against an 18.4ms pipeline,
   the cross-encoder measured 1,729ms and 1,948ms on the proposer across two runs, and 1,308ms
   and 1,810ms adjudicated — single runs, not the repeated sweep the other latency figures get,
   so the spread is a floor on the uncertainty rather than a measurement of it. A third run under
@@ -1300,18 +1306,27 @@ readable:
 
 | configuration | p50 (spread) | p95 | mean |
 | --- | ---: | ---: | ---: |
-| 1 · vector-only | **9.4ms** (9.3–9.6) | 16.2ms | 10.2ms |
-| 2 · + hierarchical traversal | 15.4ms (14.6–15.7) | 25.1ms | 16.0ms |
-| 4 · + hybrid retrieval | 21.7ms (20.8–23.0) | 37.9ms | 23.5ms |
-| 5 · + the GRI engine | **22.8ms** (22.0–23.9) | 39.4ms | 24.0ms |
-| 6 · without the note-chain | 22.4ms (22.4–23.6) | 42.3ms | 24.4ms |
-| 7 · without KAG conditions | 21.7ms (21.2–22.4) | 39.9ms | 23.9ms |
+| 1 · vector-only | **7.3ms** (6.8–10.2) | 11.0ms | 7.7ms |
+| 2 · + hierarchical traversal | 15.7ms (15.2–16.7) | 26.1ms | 16.6ms |
+| 4 · + hybrid retrieval | 18.7ms (18.4–18.8) | 32.3ms | 20.0ms |
+| 5 · + the GRI engine | **18.4ms** (18.3–19.1) | 33.1ms | 19.9ms |
+| 6 · without the note-chain | 19.9ms (19.2–22.6) | 34.8ms | 21.3ms |
+| 7 · without KAG conditions | 18.0ms (17.8–18.7) | 31.9ms | 19.6ms |
 
-**The whole pipeline is 22.8ms at the median.** Traversal adds 6ms over flat search, hybrid
-retrieval adds another 6.3ms, and the rule engine adds 1.1ms — which is inside the ±1ms spread,
-so the honest statement is that the deterministic stage is free. Rows 6 and 7 sit inside that
-same spread, so neither the note-chain nor the KAG conditions has a measurable cost either.
-The p95 is about 1.7 times the p50 in every row.
+**The whole pipeline is 18.4ms at the median.** Traversal adds 8.4ms over flat search and hybrid
+retrieval another 3.0ms. The rule engine measures **−0.3ms** — configuration 5 came out slightly
+faster than configuration 4, which it cannot be, so the honest statement is the same one as
+before: the deterministic stage is free. Rows 5, 6 and 7 span 18.0 to 19.9ms with spreads of 0.8
+to 3.4ms, so no difference between them is resolvable, and neither the note-chain nor the KAG
+conditions has a measurable cost. The p95 runs 1.5 to 1.8 times the p50.
+
+**Read the absolute numbers with the caution this section earns.** These are a re-measurement on
+2026-11-28, and every row came out faster than the 2026-11-14 run — configuration 1 moved 9.4ms
+to 7.3ms, on code whose only change made it marginally *slower* (`_top_k` costs about 1.4× the
+`argpartition` it replaced). Nothing in the pipeline got faster; the machine was quieter. The
+*shape* reproduced across a fortnight and two code changes — traversal dominates, the rule
+engine is free, p95 under 2× p50 — and the shape is the claim. The millisecond figures are
+true of this laptop on the day.
 
 #### What this number cost to get right
 
@@ -1331,7 +1346,7 @@ apart differed by six times. A fresh interpreter does not isolate a measurement 
 it runs on.
 
 **The diagnosis was also backwards.** The slow numbers were the artefact, not the fast ones.
-Configuration 1 is a single 27,000 × 384 matmul and takes 9.4ms; the sweep that reported it at
+Configuration 1 is a single 27,000 × 384 matmul and took 9.4ms then (7.3ms now); the sweep that reported it at
 42ms was measuring whole-machine contention from its very first classification, before any
 long-run effect could apply. So the earlier published figures — a p95 of 6.7 times the p50,
 hybrid retrieval costing 70ms, the rule engine costing 8ms — were all contention. The real
@@ -1469,13 +1484,27 @@ held 24.70% for the fused held-out `top5@6` where `chunking.json` held 24.75% �
 configuration, published as two different numbers. After the fix both read 24.75%. The
 disagreement had been the tie-break all along.
 
-**Not re-run, and therefore unverified rather than unchanged:** `reports/rerank/` and
-`rerank-measurements-test-200.json`, `pruning-*.json`, `calibration.json`, `latency.json`,
-`explanation-quality.json`, `explanations-test-200.json` and `determinism.json`. All of them go
-through `LevelIndex.rank`, so all of them can have moved by a case or two. They are left alone
-because re-running them costs either a cross-encoder pass or paid model calls, not because
-anything here establishes they are unaffected — the ablations and retrieval are the evidence
-that the movements are one or two cases, and that is the size to expect, not a guarantee.
+The reports that go through `LevelIndex.rank` were then re-run, and two of them had been stale
+for longer than this work:
+
+* **`calibration.json`** still held the pre-note-scope-fix operating point — 17 held-out cases at
+  29.41% — which the note-scope section of this README had already superseded with 12 at 41.67%.
+  Re-running it settled which figure the repository stands behind, and the ablation-3 table above
+  has been corrected to match.
+* **`latency.json`** and **`pruning-*.json`** moved almost entirely on timing (pruning's p50 from
+  43.5ms to 13.8ms, which is the machine, not the code), with a handful of one-case accuracy
+  shifts.
+* **`determinism.json`** parts A and B were re-run and both pass: **0 of 200** descriptions whose
+  candidate list varied over 10 repeats, **0 of 200** whose decision varied over 100. Part C
+  costs paid model calls, so the committed file is kept rather than overwritten — running without
+  `--model` writes a report with part C deleted, which is how a measured result gets destroyed by
+  a re-measurement.
+
+**Still not re-run, and therefore unverified rather than unchanged:** `reports/rerank/` and
+`rerank-measurements-test-200.json` (a cross-encoder pass at ~4s per classification, hours over
+the held-out set), `explanation-quality.json` and `explanations-test-200.json` (paid calls).
+Nothing here establishes they are unaffected; the re-run reports are the evidence that movements
+are one or two cases, which is the size to expect, not a guarantee.
 
 It is also the only claim from the source documents that this week's measurements confirmed
 without qualification. The spec's "chemicals, textiles and machinery are contested" is two

@@ -18,28 +18,28 @@
         "max": 242
       },
       "latency_ms": {
-        "p50": 43.5,
-        "p95": 72.3
+        "p50": 13.8,
+        "p95": 20.9
       }
     },
     "parent/per_heading=5": {
       "n": 200,
       "heading_in_pool": 0.84,
-      "subheading_in_pool": 0.555,
+      "subheading_in_pool": 0.56,
       "subheading_at": {
         "top1@6": 0.155,
-        "top5@6": 0.235,
-        "top10@6": 0.28,
-        "top20@6": 0.335
+        "top5@6": 0.24,
+        "top10@6": 0.285,
+        "top20@6": 0.34
       },
-      "median_rank_when_in_pool": 10,
+      "median_rank_when_in_pool": 9.5,
       "pool_size": {
-        "mean": 528.4,
+        "mean": 528.5,
         "max": 1027
       },
       "latency_ms": {
-        "p50": 45.6,
-        "p95": 78.8
+        "p50": 13.8,
+        "p95": 23.9
       }
     },
     "parent/per_heading=10": {
@@ -54,12 +54,12 @@
       },
       "median_rank_when_in_pool": 12,
       "pool_size": {
-        "mean": 716.3,
+        "mean": 716.4,
         "max": 1671
       },
       "latency_ms": {
-        "p50": 50.4,
-        "p95": 90.7
+        "p50": 15.1,
+        "p95": 27.5
       }
     },
     "parent/per_heading=20": {
@@ -78,8 +78,8 @@
         "max": 2018
       },
       "latency_ms": {
-        "p50": 52.2,
-        "p95": 103.0
+        "p50": 14.7,
+        "p95": 30.5
       }
     }
   }
